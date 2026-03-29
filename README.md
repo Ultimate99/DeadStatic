@@ -95,11 +95,11 @@ dead-static/
 |  |  `- build-standalone.mjs
 |  `- serve/
 |     `- serve-lan.mjs
-- .github/
+|- .github/
 |  `- workflows/
 |     |- deploy-pages.yml
 |     `- deploy-supabase-functions.yml
-- supabase/
+|- supabase/
 |  |- config.toml
 |  |- functions/
 |  |  |- leaderboard-list/
