@@ -34,6 +34,7 @@ export function registerRenderTests(run) {
 
     assert.match(html, /tabs-layout/);
     assert.match(harness.elements.get("tab-bar").innerHTML, /Overview/);
+    assert.match(harness.elements.get("tab-bar").innerHTML, /Leaderboard/);
     assert.match(harness.elements.get("tab-bar").innerHTML, /Log/);
     assert.match(harness.elements.get("tab-content").innerHTML, /Operations desk/);
     assert.match(harness.elements.get("tab-content").innerHTML, /Current directive/);
@@ -116,15 +117,26 @@ export function registerRenderTests(run) {
 
     const tabMarkup = harness.elements.get("tab-content").innerHTML;
     assert.match(tabMarkup, /Event pulse/);
-    assert.match(tabMarkup, /Global leaderboard/);
-    assert.match(tabMarkup, /Set callsign/);
-    assert.match(tabMarkup, /Save transfer/);
-    assert.match(tabMarkup, /Download save file/);
-    assert.match(tabMarkup, /Paste save code/);
     assert.match(tabMarkup, /log-pulse-stack/);
     assert.match(tabMarkup, /log-pulse-row/);
     assert.doesNotMatch(tabMarkup, /log-pulse-grid/);
     assert.doesNotMatch(tabMarkup, /log-pulse-card/);
+  });
+
+  run("leaderboard tab renders hosted board and username actions", () => {
+    const bundle = readFileSync(path.join(projectRoot, "dist", "js", "game.js"), "utf8");
+    const state = createInitialState();
+    state.ui.activeTab = "leaderboard";
+
+    const harness = createBundleHarness(SEARCH_PATTERN, { initialSave: state });
+    vm.runInNewContext(bundle, harness.context, { filename: "game.js" });
+
+    const tabMarkup = harness.elements.get("tab-content").innerHTML;
+    assert.match(tabMarkup, /Global leaderboard/);
+    assert.match(tabMarkup, /Set username/);
+    assert.match(tabMarkup, /Save transfer/);
+    assert.match(tabMarkup, /Download save file/);
+    assert.match(tabMarkup, /Paste save code/);
   });
 
   run("radio tab renders the new receiver board and spectrum", () => {

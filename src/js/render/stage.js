@@ -6,6 +6,7 @@ import {
   getVisibleUpgrades,
   hasMaterials,
 } from "../engine.js";
+import { getLeaderboardSnapshot, getLeaderboardState } from "../services/leaderboard.js";
 import {
   getBuiltShelterStructures,
   getOutpostStage,
@@ -28,8 +29,9 @@ function tabStageMeta(state, derived) {
     case "craft":
       return {
         label: "Build queue",
+        icon: "MK",
         title: "Convert salvage into systems",
-        detail: "Craft is now the main pressure release. Ready systems should be installed fast; blocked ones tell you what to hunt next.",
+        cues: ["install ready", "track blockers"],
         stats: [
           ["Ready", readyUpgrades.length],
           ["Blocked", Math.max(0, visibleUpgrades.length - readyUpgrades.length)],
@@ -40,8 +42,9 @@ function tabStageMeta(state, derived) {
     case "inventory":
       return {
         label: "Stores",
+        icon: "KT",
         title: "Everything you can still carry",
-        detail: "Keep loadout, field supplies, and strange salvage separate so decisions stay clean under pressure.",
+        cues: ["gear", "supplies", "odd salvage"],
         stats: [
           ["Weapon", state.equipped.weapon ? "set" : "none"],
           ["Armor", state.equipped.armor ? "set" : "none"],
@@ -52,8 +55,9 @@ function tabStageMeta(state, derived) {
     case "shelter":
       return {
         label: "Survival board",
+        icon: "HT",
         title: "Hold the room through another night",
-        detail: "Warmth, threat, noise, and food all pull against each other here. The shelter tab is where survival decisions stay immediate.",
+        cues: ["warmth", "defense", "pressure"],
         stats: [
           ["Warmth", state.shelter.warmth.toFixed(1)],
           ["Threat", state.shelter.threat.toFixed(1)],
@@ -64,8 +68,9 @@ function tabStageMeta(state, derived) {
     case "shelter_map":
       return {
         label: "Compound view",
+        icon: "MP",
         title: "Read the outpost like a living machine",
-        detail: "The map should show footprint, districts, damage, and future work without burying the actual compound shape.",
+        cues: ["footprint", "damage", "expansion"],
         stats: [
           ["Stage", getOutpostStage(activeCount)],
           ["Built", activeCount],
@@ -76,8 +81,9 @@ function tabStageMeta(state, derived) {
     case "map":
       return {
         label: "Route board",
+        icon: "RT",
         title: "Stage the next push before you leave",
-        detail: "Zones are no longer simple buttons. Travel posture, encounter odds, and supply burn now matter before the first step.",
+        cues: ["travel", "risk", "cost"],
         stats: [
           ["Zones", state.unlockedZones.length],
           ["Prepared", preview ? preview.zone.name : "none"],
@@ -88,8 +94,9 @@ function tabStageMeta(state, derived) {
     case "survivors":
       return {
         label: "Crew line",
+        icon: "CR",
         title: "Every body in the shelter changes the equation",
-        detail: "Survivors are now a visible staffing problem, not just a count. Each role should explain why it matters.",
+        cues: ["staff", "idle hands", "pressure"],
         stats: [
           ["Total", state.survivors.total],
           ["Idle", state.survivors.idle],
@@ -100,8 +107,9 @@ function tabStageMeta(state, derived) {
     case "radio":
       return {
         label: "Signal board",
+        icon: "RX",
         title: "The static is no longer background noise",
-        detail: "This screen now reads like a live receiver desk. Signal depth, trace heat, and impossible fragments should feel wrong in a useful way.",
+        cues: ["scan", "trace", "decode"],
         stats: [
           ["Signal", state.story.radioProgress],
           ["Secret", state.story.secretProgress],
@@ -112,8 +120,9 @@ function tabStageMeta(state, derived) {
     case "trade":
       return {
         label: "Market",
+        icon: "TR",
         title: "What the wasteland will still trade for",
-        detail: "This is the pragmatic layer: turn spare resources into missing gear without losing the shape of your economy.",
+        cues: ["trade", "restock", "flip shortages"],
         stats: [
           ["Offers", state.trader.offers.length],
           ["Scrap", state.resources.scrap],
@@ -124,8 +133,9 @@ function tabStageMeta(state, derived) {
     case "factions":
       return {
         label: "Alignment",
+        icon: "FX",
         title: "Choose who gets to shape the signal",
-        detail: "Faction choice is a worldview decision disguised as survival pragmatism. The UI should make that feel weighty, not checkbox-like.",
+        cues: ["choose", "lock in", "keep leverage"],
         stats: [
           ["Aligned", state.faction.aligned || "none"],
           ["Rep", state.resources.reputation],
@@ -136,8 +146,9 @@ function tabStageMeta(state, derived) {
     case "log":
       return {
         label: "Archive",
+        icon: "LG",
         title: "Track what the static has already taken",
-        detail: "The log is now a pulse monitor for the whole campaign, not just a dump of old text lines.",
+        cues: ["history", "pulse", "recent"],
         stats: [
           ["Entries", state.log.length],
           ["Latest", state.log[0]?.category || "general"],
@@ -145,12 +156,30 @@ function tabStageMeta(state, derived) {
           ["Radio", state.log.filter((entry) => entry.category === "radio").length],
         ],
       };
+    case "leaderboard": {
+      const leaderboardState = getLeaderboardState();
+      const leaderboardSnapshot = getLeaderboardSnapshot(state);
+      return {
+        label: "Hosted board",
+        icon: "LB",
+        title: "Track the strongest runs online",
+        cues: ["rank", "submit", "sync"],
+        stats: [
+          ["Score", leaderboardSnapshot.summary.score],
+          ["Ranks", leaderboardState.entries.length],
+          ["Day", state.time.day],
+          ["Signal", state.story.radioProgress],
+          ["Stage", leaderboardSnapshot.summary.stage],
+        ],
+      };
+    }
     case "overview":
     default:
       return {
         label: "Control layer",
+        icon: "OV",
         title: "Everything important in one scan",
-        detail: "Overview should immediately show pressure, next best action, route state, and what the shelter is becoming.",
+        cues: ["pressure", "next move", "growth"],
         stats: [
           ["Lanes", getAvailableScavengeSources(state).length],
           ["Builds", readyUpgrades.length],
@@ -167,9 +196,14 @@ export function renderTabStage(state, derived, bodyMarkup) {
     <div class="tab-stage tab-stage-${state.ui.activeTab}">
       <section class="stage-banner">
         <div class="stage-copy">
-          <span class="note-label">${meta.label}</span>
-          <h2>${meta.title}</h2>
-          <p class="note">${meta.detail}</p>
+          <div class="stage-titleline">
+            <span class="stage-icon" aria-hidden="true">${meta.icon || meta.label.slice(0, 2).toUpperCase()}</span>
+            <div>
+              <span class="note-label">${meta.label}</span>
+              <h2>${meta.title}</h2>
+            </div>
+          </div>
+          ${meta.cues?.length ? `<div class="chip-row stage-cues">${meta.cues.map((cue) => `<span class="chip">${cue}</span>`).join("")}</div>` : ""}
         </div>
         <div class="stage-stat-strip">
           ${meta.stats.map(([label, value]) => `

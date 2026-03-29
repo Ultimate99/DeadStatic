@@ -19,7 +19,7 @@ import {
 function renderLeaderboardPanel(state) {
   const remote = getLeaderboardState();
   const snapshot = getLeaderboardSnapshot(state);
-  const callsignReady = remote.profile.codename && remote.profile.codename.length >= 3;
+  const usernameReady = remote.profile.codename && remote.profile.codename.length >= 3;
   const statusLabel = {
     disabled: "offline",
     idle: "ready",
@@ -34,7 +34,7 @@ function renderLeaderboardPanel(state) {
         <div class="surface-head">
           <div>
             <span class="note-label">Current run</span>
-            <h4>${callsignReady ? remote.profile.codename : "Unnamed scavenger"}</h4>
+            <h4>${usernameReady ? remote.profile.codename : "No username"}</h4>
           </div>
           <span class="tag">${snapshot.summary.score}</span>
         </div>
@@ -48,23 +48,26 @@ function renderLeaderboardPanel(state) {
       <div class="action-stack leaderboard-actions">
         ${actionButton({
           action: "set-callsign",
-          label: callsignReady ? "Edit callsign" : "Set callsign",
-          meta: callsignReady ? remote.profile.codename : "3-24 visible characters",
+          label: usernameReady ? "Edit username" : "Set username",
+          meta: usernameReady ? remote.profile.codename : "3-24 characters",
           variant: "compact",
+          icon: "ID",
         })}
         ${actionButton({
           action: "refresh-leaderboard",
           label: "Refresh board",
-          meta: remote.enabled ? "pull hosted rankings" : "backend not configured",
+          meta: remote.enabled ? "pull ranks" : "backend off",
           variant: "compact",
           disabled: !remote.enabled,
+          icon: "LB",
         })}
         ${actionButton({
           action: "submit-leaderboard",
           label: "Submit run",
-          meta: remote.enabled ? (callsignReady ? "upload best score" : "set callsign first") : "backend not configured",
+          meta: remote.enabled ? (usernameReady ? "upload best" : "set username") : "backend off",
           variant: "primary compact",
-          disabled: !remote.enabled || !callsignReady || remote.submitStatus === "submitting",
+          disabled: !remote.enabled || !usernameReady || remote.submitStatus === "submitting",
+          icon: "UP",
         })}
       </div>
       <div class="list-block leaderboard-status">
@@ -100,6 +103,31 @@ function renderLeaderboardPanel(state) {
   `;
 }
 
+export function renderLeaderboardTab(state) {
+  return renderSplitPane(
+    [
+      surfaceCard({
+        title: "Global leaderboard",
+        meta: getLeaderboardState().entries.length ? `${getLeaderboardState().entries.length} ranked` : "hosted",
+        body: renderLeaderboardPanel(state),
+      }),
+    ],
+    [
+      surfaceCard({
+        title: "Save transfer",
+        meta: "phone + desktop",
+        body: renderSaveTransferPanel(),
+      }),
+      surfaceCard({
+        title: "Recent feed",
+        meta: `${Math.min(8, state.log.length)} latest`,
+        body: renderMiniLog(state.log, 8),
+      }),
+    ],
+    "tab-columns-log"
+  );
+}
+
 function renderSaveTransferPanel() {
   return `
     <div class="detail-list transfer-board">
@@ -107,11 +135,11 @@ function renderSaveTransferPanel() {
         <div class="surface-head">
           <div>
             <span class="note-label">Cross-device save</span>
-            <h4>Move your run between phone and desktop</h4>
+            <h4>Move your run</h4>
           </div>
           <span class="tag">local</span>
         </div>
-        <p class="note">Use file export for backups, or use a share code when you want to continue the same shelter on another device.</p>
+        <div class="chip-row">${tagList(["file backup", "share code", "phone -> desktop"])}</div>
       </div>
       <div class="action-stack transfer-actions">
         ${actionButton({
@@ -119,24 +147,28 @@ function renderSaveTransferPanel() {
           label: "Download save file",
           meta: "json backup",
           variant: "compact",
+          icon: "SV",
         })}
         ${actionButton({
           action: "copy-save-code",
           label: "Copy save code",
           meta: "portable text code",
           variant: "compact",
+          icon: "CP",
         })}
         ${actionButton({
           action: "trigger-save-import",
           label: "Import save file",
           meta: "load json backup",
           variant: "compact",
+          icon: "IN",
         })}
         ${actionButton({
           action: "import-save-code",
           label: "Paste save code",
           meta: "restore from text",
           variant: "compact",
+          icon: "CD",
         })}
       </div>
     </div>
@@ -157,7 +189,7 @@ export function renderSurvivorTab(state, derived) {
                   <h4>${role.label}</h4>
                   <span class="tag">${state.survivors.assigned[roleId]}</span>
                 </div>
-                <p class="note">${role.description}</p>
+                <div class="chip-row">${tagList([role.description])}</div>
                 <div class="action-row">
                   <button type="button" class="mini-button" data-action="adjust-role" data-role="${roleId}" data-delta="-1" ${state.survivors.assigned[roleId] < 1 ? "disabled" : ""}>-</button>
                   <button type="button" class="mini-button" data-action="adjust-role" data-role="${roleId}" data-delta="1" ${state.survivors.idle < 1 ? "disabled" : ""}>+</button>
@@ -184,8 +216,9 @@ export function renderSurvivorTab(state, derived) {
             ${actionButton({
               action: "recruit",
               label: "Recruit survivor",
-              meta: "Costs 18 scrap and 3 food.",
+              meta: "18 scrap / 3 food",
               disabled: state.survivors.total >= derived.survivorCap || !canAfford(state, { scrap: 18, food: 3 }),
+              icon: "+1",
             })}
           </div>
         `,
@@ -224,7 +257,7 @@ export function renderRadioTab(state) {
         title: "Transmission notes",
         meta: `${notes.length} threads`,
         body: notes.length
-          ? `<div class="detail-list">${notes.map((note) => `<div class="list-block"><p class="note">${note}</p></div>`).join("")}</div>`
+          ? `<div class="detail-list">${notes.map((note, index) => `<div class="list-block signal-note-card"><div class="surface-head"><h4>Trace ${String(index + 1).padStart(2, "0")}</h4><span class="tag">rx</span></div><div class="chip-row">${tagList([note])}</div></div>`).join("")}</div>`
           : `<p class="empty-state">Nothing legible yet.</p>`,
       }),
       surfaceCard({
@@ -237,18 +270,14 @@ export function renderRadioTab(state) {
                 <h4>Band state</h4>
                 <span class="tag">${state.flags.worldReveal ? "open" : "partial"}</span>
               </div>
-              <p class="note">${state.story.radioProgress > 0
-                ? "The receiver is now reading structured noise instead of dead air."
-                : "The rig is alive, but the band still mostly hisses back."}</p>
+              <div class="chip-row">${tagList([state.story.radioProgress > 0 ? "structured noise" : "mostly hiss"])}</div>
             </div>
             <div class="list-block">
               <div class="surface-head">
                 <h4>Route hooks</h4>
                 <span class="tag">${state.flags.bunkerRouteKnown ? "marked" : "hidden"}</span>
               </div>
-              <p class="note">${state.flags.bunkerRouteKnown
-                ? "A bunker line is now threaded through the static."
-                : "Keep scanning for route fragments and deeper coordinates."}</p>
+              <div class="chip-row">${tagList([state.flags.bunkerRouteKnown ? "bunker line marked" : "scan deeper"])}</div>
             </div>
           </div>
         `,
@@ -270,8 +299,9 @@ export function renderRadioTab(state) {
             ${actionButton({
               action: "scan-radio",
               label: "Sweep band",
-              meta: "Costs 1 fuel and 1 parts.",
+              meta: "1 fuel / 1 parts",
               disabled: state.resources.fuel < 1 || state.resources.parts < 1,
+              icon: "RX",
             })}
           </div>
         `,
@@ -303,13 +333,14 @@ export function renderTradeTab(state) {
                 <h4>${offer.name}</h4>
                 <span class="tag">${formatCost(offer.cost)}</span>
               </div>
-              <p class="note">${offer.description}</p>
+              <div class="chip-row">${tagList([offer.description])}</div>
               ${actionButton({
                 action: "buy-offer",
                 label: "Trade",
                 meta: "Take the deal",
                 disabled: !canAfford(state, offer.cost),
                 data: { offer: offer.id },
+                icon: "TR",
               })}
             </div>
           `).join("")}</div>`
@@ -331,7 +362,8 @@ export function renderTradeTab(state) {
             ${actionButton({
               action: "refresh-trader",
               label: "Refresh offers",
-              meta: "See what the market dragged in.",
+              meta: "new wall",
+              icon: "TR",
             })}
           </div>
         `,
@@ -350,14 +382,14 @@ export function renderFactionTab(state) {
           meta: state.faction.aligned === faction.id ? "aligned" : "available",
           className: "faction-card",
           body: `
-            <p class="note">${faction.description}</p>
-            <div class="chip-row">${tagList(faction.bonuses)}</div>
+            <div class="chip-row">${tagList([faction.description, ...faction.bonuses])}</div>
             ${actionButton({
               action: "choose-faction",
               label: state.faction.aligned === faction.id ? "Aligned" : `Align with ${faction.name}`,
-              meta: "Permanent choice",
+              meta: "locks choice",
               disabled: Boolean(state.faction.aligned),
               data: { faction: faction.id },
+              icon: "FX",
             })}
           `,
         })).join("")}
@@ -393,16 +425,6 @@ export function renderLogTab(state) {
       }),
     ],
     [
-      surfaceCard({
-        title: "Global leaderboard",
-        meta: getLeaderboardState().entries.length ? `${getLeaderboardState().entries.length} ranked` : "hosted",
-        body: renderLeaderboardPanel(state),
-      }),
-      surfaceCard({
-        title: "Save transfer",
-        meta: "phone + desktop",
-        body: renderSaveTransferPanel(),
-      }),
       surfaceCard({
         title: "Event pulse",
         meta: `${state.log.length} entries`,

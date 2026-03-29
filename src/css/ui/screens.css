@@ -91,6 +91,14 @@ body::after {
   border-radius: 16px;
 }
 
+.source-card .chip-row,
+.upgrade-card .chip-row,
+.trade-offer-card .chip-row,
+.faction-card .chip-row,
+.signal-note-card .chip-row {
+  gap: 6px;
+}
+
 .source-card::before,
 .ghost-card::before,
 .district-card::before {
@@ -150,6 +158,12 @@ body::after {
 
 .queue-header {
   background: rgba(11, 13, 13, 0.62);
+}
+
+.signal-note-card {
+  background:
+    linear-gradient(145deg, rgba(154, 125, 227, 0.08), transparent 55%),
+    rgba(12, 15, 15, 0.82);
 }
 
 .district-grid {
@@ -449,6 +463,11 @@ body::after {
 .leaderboard-actions,
 .transfer-actions {
   gap: 6px;
+}
+
+.leaderboard-actions .action-button,
+.transfer-actions .action-button {
+  border-radius: 12px;
 }
 
 .leaderboard-summary,

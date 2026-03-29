@@ -12,17 +12,18 @@ import { countLogCategories } from "./log.js";
 import { listRequirementGaps, stateMeetsRequirements } from "./requirements.js";
 
 export const TAB_DEFS = [
-  { id: "overview", label: "Overview", hint: "control", count: (state) => state.stats.searches || null },
-  { id: "craft", label: "Craft", hint: "build queue", unlock: "upgrades", count: (state) => getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id)).length || null },
-  { id: "inventory", label: "Inventory", hint: "gear hold", unlock: "inventory" },
-  { id: "shelter", label: "Shelter", hint: "survival", unlock: "shelter" },
-  { id: "shelter_map", label: "Shelter Map", hint: "compound", unlock: "shelter" },
-  { id: "map", label: "Map", hint: "routes", unlock: "map", count: (state) => state.unlockedZones.length || null },
-  { id: "survivors", label: "Crew", hint: "assignments", unlock: "survivors", count: (state) => state.survivors.total || null },
-  { id: "radio", label: "Radio", hint: "signals", unlock: "radio", count: (state) => state.story.radioProgress || null },
-  { id: "trade", label: "Trade", hint: "market", unlock: "trader", count: (state) => state.trader.offers.length || null },
-  { id: "factions", label: "Factions", hint: "alignment", unlock: "factions" },
-  { id: "log", label: "Log", hint: "history" },
+  { id: "overview", label: "Overview", hint: "control", icon: "OV", count: (state) => state.stats.searches || null },
+  { id: "craft", label: "Craft", hint: "build queue", icon: "MK", unlock: "upgrades", count: (state) => getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id)).length || null },
+  { id: "inventory", label: "Inventory", hint: "gear hold", icon: "KT", unlock: "inventory" },
+  { id: "shelter", label: "Shelter", hint: "survival", icon: "HT", unlock: "shelter" },
+  { id: "shelter_map", label: "Shelter Map", hint: "compound", icon: "MP", unlock: "shelter" },
+  { id: "map", label: "Map", hint: "routes", icon: "RT", unlock: "map", count: (state) => state.unlockedZones.length || null },
+  { id: "survivors", label: "Crew", hint: "assignments", icon: "CR", unlock: "survivors", count: (state) => state.survivors.total || null },
+  { id: "radio", label: "Radio", hint: "signals", icon: "RX", unlock: "radio", count: (state) => state.story.radioProgress || null },
+  { id: "trade", label: "Trade", hint: "market", icon: "TR", unlock: "trader", count: (state) => state.trader.offers.length || null },
+  { id: "factions", label: "Factions", hint: "alignment", icon: "FX", unlock: "factions" },
+  { id: "leaderboard", label: "Leaderboard", hint: "hosted", icon: "LB" },
+  { id: "log", label: "Log", hint: "history", icon: "LG" },
 ];
 
 export const DEFAULT_LOG_CATEGORIES = ["loot", "build", "night", "expedition", "radio", "combat", "trade", "notable"];
@@ -83,22 +84,22 @@ export function getSubtitle(state) {
 
 export function getSummaryPills(state, derived) {
   const pills = [
-    { label: "Warmth", value: state.shelter.warmth.toFixed(1) },
-    { label: "Threat", value: state.shelter.threat.toFixed(1) },
-    { label: "Noise", value: state.shelter.noise.toFixed(1) },
+    { label: "Warmth", value: state.shelter.warmth.toFixed(1), icon: "HT" },
+    { label: "Threat", value: state.shelter.threat.toFixed(1), icon: "TH" },
+    { label: "Noise", value: state.shelter.noise.toFixed(1), icon: "NZ" },
   ];
 
   if (state.discoveredResources.includes("food")) {
-    pills.push({ label: "Hunger", value: `${state.clocks.hunger}/6h` });
+    pills.push({ label: "Hunger", value: `${state.clocks.hunger}/6h`, icon: "FD" });
   }
   if (state.discoveredResources.includes("water")) {
-    pills.push({ label: "Thirst", value: `${state.clocks.thirst}/4h` });
+    pills.push({ label: "Thirst", value: `${state.clocks.thirst}/4h`, icon: "WT" });
   }
   if (state.unlockedSections.includes("survivors")) {
-    pills.push({ label: "Crew", value: `${state.survivors.total}/${derived.survivorCap}` });
+    pills.push({ label: "Crew", value: `${state.survivors.total}/${derived.survivorCap}`, icon: "CR" });
   }
   if (state.unlockedSections.includes("radio")) {
-    pills.push({ label: "Signal", value: `${state.story.radioProgress}` });
+    pills.push({ label: "Signal", value: `${state.story.radioProgress}`, icon: "RX" });
   }
 
   return pills;
@@ -114,19 +115,19 @@ export function getCurrentDirective(state, availableUpgrades) {
   if (state.combat) {
     return {
       title: "Combat contact",
-      detail: "Resolve the current encounter before you push any other operation.",
+      detail: "Clear the contact first.",
     };
   }
   if (!state.flags.burnUnlocked) {
     return {
       title: "Stabilize the room",
-      detail: `${Math.max(0, 3 - state.stats.searches)} more rubble searches unlock warmth control.`,
+      detail: `${Math.max(0, 3 - state.stats.searches)} more searches unlock warmth.`,
     };
   }
   if (readyUpgrade) {
     return {
       title: `Build ${readyUpgrade.name}`,
-      detail: "A funded upgrade is waiting. Converting salvage into systems is the fastest way forward.",
+      detail: "A funded build is waiting.",
     };
   }
   if (state.expedition.selectedZone) {
@@ -134,26 +135,26 @@ export function getCurrentDirective(state, availableUpgrades) {
     if (preview) {
       return {
         title: `Launch ${preview.zone.name}`,
-        detail: `${preview.approach.label} route is staged. ${preview.hours}h travel with ${Math.round(preview.encounterChance * 100)}% encounter pressure.`,
+        detail: `${preview.approach.label} / ${preview.hours}h / ${Math.round(preview.encounterChance * 100)}% contact.`,
       };
     }
   }
   if (state.unlockedSections.includes("radio") && state.resources.fuel > 0 && state.resources.parts > 0) {
     return {
       title: "Sweep the band",
-      detail: "The receiver has enough fuel and parts. Push signal progress while the line is viable.",
+      detail: "Fuel and parts are ready.",
     };
   }
   if (state.unlockedSections.includes("map") && !state.expedition.selectedZone) {
     return {
       title: "Prepare a route",
-      detail: "Use the map to stage a zone before the next push. Approach choice now matters.",
+      detail: "Stage the next zone.",
     };
   }
 
   return {
     title: "Push the scavenging lanes",
-    detail: "Keep the salvage loop moving until the next system or route unlocks.",
+    detail: "Keep the salvage loop moving.",
   };
 }
 

@@ -74,19 +74,21 @@ function renderOverviewActions(state) {
   if (state.flags.burnUnlocked) {
     utilityButtons.push(actionButton({
       action: "burn-warmth",
-      label: "Burn 10 scrap for warmth",
-      meta: "10 scrap / immediate shelter relief",
+      label: "Burn for warmth",
+      meta: "10 scrap",
       disabled: state.resources.scrap < 10,
       variant: "compact utility-trigger",
+      icon: "HT",
     }));
   }
 
   if (state.upgrades.includes("food_search")) {
     utilityButtons.push(actionButton({
       action: "forage-food",
-      label: "Fallback food search",
-      meta: "plain, safe, and still useful when pantries go dry",
+      label: "Food search",
+      meta: "safe pull",
       variant: "compact utility-trigger",
+      icon: "FD",
     }));
   }
 
@@ -102,21 +104,20 @@ function renderOverviewActions(state) {
                   <span class="note-label">Scavenge lane</span>
                   <h4>${source.label}</h4>
                 </div>
-                <span class="tag">${sourceRunCount(state, source.id)} runs</span>
+                <span class="tag">${sourceRunCount(state, source.id)}x</span>
               </div>
-              <p class="note">${source.detail}</p>
               <div class="lane-metrics">
                 <div><span>Travel</span><strong>${source.hours}h</strong></div>
                 <div><span>Lead</span><strong>${source.tags[1] || source.tags[0] || "salvage"}</strong></div>
               </div>
-              <div class="chip-row">${tagList([...source.tags, `ceiling ${ceiling.label}`])}</div>
-              <div class="chip-row">${tagList(source.focus)}</div>
+              <div class="chip-row">${tagList([source.detail, ...source.focus.slice(0, 2), ceiling.label])}</div>
               ${actionButton({
                 action: source.id === "rubble" ? "search-rubble" : "search-source",
                 label: source.label,
-                meta: `${source.hours}h / ${source.tags[1] || "salvage lane"}`,
+                meta: `${source.hours}h / ${source.tags[1] || "salvage"}`,
                 variant: source.id === "rubble" ? "primary source-trigger" : "source-trigger",
                 data: source.id === "rubble" ? {} : { source: source.id },
+                icon: source.id === "rubble" ? "RB" : "SV",
               })}
             </div>
           `;
@@ -144,14 +145,14 @@ function renderUpgradeCard(state, upgrade) {
         <h4>${upgrade.name}</h4>
         <span class="tag">${built ? "built" : ready ? "ready" : "scavenge"}</span>
       </div>
-      <p class="note">${upgrade.description}</p>
-      ${meta.length ? `<div class="chip-row">${tagList(meta)}</div>` : ""}
+      <div class="chip-row">${tagList([upgrade.description, ...meta])}</div>
       ${built ? "" : actionButton({
         action: "buy-upgrade",
         label: `${upgrade.verb || "Build"} ${upgrade.name}`,
         meta: ready ? "Permanent unlock" : "Need more salvage",
         disabled: !ready,
         data: { upgrade: upgrade.id },
+        icon: "MK",
       })}
     </div>
   `;
@@ -269,7 +270,7 @@ export function renderCraftTab(state) {
                     <h4>Ready now</h4>
                     <span class="tag">${ready.length}</span>
                   </div>
-                  <p class="note">These builds are funded and can be installed immediately.</p>
+                  <div class="chip-row">${tagList(["funded", "install now"])}</div>
                 </div>
                 ${ready.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}
               ` : ""}
@@ -279,7 +280,7 @@ export function renderCraftTab(state) {
                     <h4>Need salvage</h4>
                     <span class="tag">${blocked.length}</span>
                   </div>
-                  <p class="note">Useful systems waiting on material or resource recovery.</p>
+                  <div class="chip-row">${tagList(["hunt materials", "blocked"])}</div>
                 </div>
                 ${blocked.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}
               ` : ""}
@@ -405,10 +406,11 @@ export function renderNightPlanner(state) {
   const planButtons = Object.values(NIGHT_PLANS).map((plan) => actionButton({
     action: "set-night-plan",
     label: plan.label,
-    meta: plan.description,
+    meta: plan.short || plan.description,
     disabled: state.night.plan === plan.id,
     data: { plan: plan.id },
     variant: `compact ${state.night.plan === plan.id ? "primary" : ""}`,
+    icon: "NT",
   }));
 
   return `
@@ -446,15 +448,15 @@ export function renderExpeditionPlanner(state) {
 
   return `
     <div class="detail-list">
-      <div class="list-block compact-block">
-        <div class="surface-head">
-          <div>
-            <span class="note-label">Prepared zone</span>
-            <h4>${preview.zone.name}</h4>
+        <div class="list-block compact-block">
+          <div class="surface-head">
+            <div>
+              <span class="note-label">Prepared zone</span>
+              <h4>${preview.zone.name}</h4>
+            </div>
+            <span class="tag">${preview.approach.label}</span>
           </div>
-          <span class="tag">${preview.approach.label}</span>
-        </div>
-        <p class="note">${preview.approach.description}</p>
+        <div class="chip-row">${tagList([preview.zone.risk, preview.approach.description])}</div>
         <div class="fact-grid">
           <div class="fact"><span>Travel</span><strong>${preview.hours}h</strong></div>
           <div class="fact"><span>Encounter</span><strong>${Math.round(preview.encounterChance * 100)}%</strong></div>
@@ -472,8 +474,8 @@ export function renderExpeditionPlanner(state) {
                 <h4>${approach.label}</h4>
                 <span class="tag">${approach.short}</span>
               </div>
-              <p class="note">${approach.description}</p>
               <div class="chip-row">${tagList([
+                approach.description,
                 `${approachPreview.hours}h`,
                 `${Math.round(approachPreview.encounterChance * 100)}% encounter`,
                 Object.keys(approach.cost).length ? formatCost(approach.cost) : "no extra cost",
@@ -485,6 +487,7 @@ export function renderExpeditionPlanner(state) {
                 disabled: state.expedition.approach === approach.id,
                 data: { approach: approach.id },
                 variant: "compact",
+                icon: "AP",
               })}
             </div>
           `;
@@ -496,6 +499,7 @@ export function renderExpeditionPlanner(state) {
         meta: preview.canLaunch ? "prepared route" : `need ${formatCost(preview.cost)}`,
         disabled: !preview.canLaunch || Boolean(state.combat),
         variant: "primary",
+        icon: "GO",
       })}
     </div>
   `;
@@ -505,21 +509,24 @@ export function renderShelterTab(state, derived) {
   const actions = [
     actionButton({
       action: "eat-ration",
-      label: "Eat 1 food",
-      meta: "Push hunger back and stabilize condition.",
+      label: "Eat ration",
+      meta: "1 food",
       disabled: state.resources.food < 1,
+      icon: "FD",
     }),
     actionButton({
       action: "drink-water",
-      label: "Drink 1 water",
-      meta: "Reset thirst and steady yourself.",
+      label: "Drink water",
+      meta: "1 water",
       disabled: state.resources.water < 1,
+      icon: "WT",
     }),
     actionButton({
       action: "patch-barricade",
       label: "Patch barricade",
-      meta: "Spend 6 scrap to lower pressure outside.",
+      meta: "6 scrap",
       disabled: state.resources.scrap < 6,
+      icon: "BR",
     }),
   ];
 
@@ -527,8 +534,9 @@ export function renderShelterTab(state, derived) {
     actions.push(actionButton({
       action: "craft-ammo",
       label: "Press ammo",
-      meta: "Spend parts, scrap, and chemicals for 5 rounds.",
+      meta: "5 rounds",
       disabled: state.resources.parts < 1 || state.resources.scrap < 1 || state.resources.chemicals < 1,
+      icon: "AM",
     }));
   }
 
@@ -606,17 +614,15 @@ export function renderShelterTab(state, derived) {
           : `<p class="empty-state">Automation starts once you build beyond crisis management.</p>`,
       })}
       ${surfaceCard({
-        title: "Pressure notes",
+        title: "Ops cues",
         meta: `${getOutpostStage(liveStructures.length)}`,
         className: "span-4",
         body: `
-          <div class="detail-list">
-            <div class="list-block compact-block">
-              <p class="note">Warmth decays through the day. Threat rises with actions, time, and bad nights. Noise is what tells the outside where to look.</p>
-            </div>
-            <div class="list-block compact-block">
-              <p class="note">Use <strong>Shelter Map</strong> to inspect the compound footprint, click structures, and repair anything the last night chewed on.</p>
-            </div>
+          <div class="fact-grid">
+            <div class="fact"><span>Warmth</span><strong>drops daily</strong></div>
+            <div class="fact"><span>Threat</span><strong>rises on runs</strong></div>
+            <div class="fact"><span>Noise</span><strong>pulls contact</strong></div>
+            <div class="fact"><span>Repairs</span><strong>Map tab</strong></div>
           </div>
         `,
       })}
@@ -639,17 +645,12 @@ export function renderMapTab(state) {
         meta: state.expedition.selectedZone === zone.id ? `selected / risk ${zone.risk}` : `risk ${zone.risk}`,
         className: `span-4 zone-card ${state.expedition.selectedZone === zone.id ? "is-selected-route" : ""}`,
         body: `
-          <p class="note">${zone.description}</p>
+          <div class="chip-row">${tagList([zone.description, state.visitedZones.includes(zone.id) ? "visited" : "new route"])}</div>
           <div class="fact-grid zone-fact-grid">
             <div class="fact"><span>Travel</span><strong>${zone.hours}h</strong></div>
             <div class="fact"><span>Encounter</span><strong>${Math.round(zone.encounterChance * 100)}%</strong></div>
           </div>
-          <div class="chip-row">
-            ${tagList([
-              state.visitedZones.includes(zone.id) ? "visited" : "new route",
-              zone.risk,
-            ])}
-          </div>
+          <div class="chip-row">${tagList([zone.risk])}</div>
           <div class="chip-row">
             ${tagList(Object.entries(zone.loot)
               .filter(([, range]) => range[1] > 0)
@@ -659,9 +660,10 @@ export function renderMapTab(state) {
           ${actionButton({
             action: "prepare-zone",
             label: `Prepare ${zone.name}`,
-            meta: state.expedition.selectedZone === zone.id ? "selected for planner" : "route planning",
+            meta: state.expedition.selectedZone === zone.id ? "staged" : "stage route",
             disabled: Boolean(state.combat),
             data: { zone: zone.id },
+            icon: "RT",
           })}
         `,
       })).join("") : surfaceCard({

@@ -166,6 +166,22 @@ h1 {
   min-width: 0;
 }
 
+.resource-token {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(8, 10, 10, 0.92);
+  color: var(--accent-strong);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
 .resource-pill span {
   font-size: 0.62rem;
   letter-spacing: 0.12em;
@@ -222,9 +238,26 @@ h2 {
 }
 
 .summary-pill {
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
   padding: 6px 8px;
   border-radius: 10px;
   background: rgba(14, 17, 17, 0.84);
+}
+
+.summary-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  background: rgba(8, 10, 10, 0.92);
+  color: var(--accent-strong);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .summary-pill-top {
@@ -256,10 +289,27 @@ h2 {
 }
 
 .tab-button {
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
   min-width: 0;
   padding: 6px 9px;
   border-radius: 999px;
   background: rgba(15, 18, 18, 0.82);
+}
+
+.tab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(7, 9, 9, 0.82);
+  color: var(--accent-strong);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .tab-button > span:first-child {
@@ -337,7 +387,9 @@ button:hover:not(:disabled) {
 }
 
 .action-button {
-  gap: 2px;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
   padding: 7px 8px;
   border-radius: 10px;
 }
@@ -345,6 +397,31 @@ button:hover:not(:disabled) {
 .action-button.compact {
   min-width: 82px;
   padding: 6px 8px;
+}
+
+.action-button.compact .action-meta {
+  display: none;
+}
+
+.action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  background: rgba(8, 10, 10, 0.92);
+  color: var(--accent-strong);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.action-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
 }
 
 .action-label {

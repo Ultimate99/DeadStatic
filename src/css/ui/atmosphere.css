@@ -51,12 +51,38 @@
 
 .stage-copy {
   display: grid;
-  gap: 7px;
+  gap: 6px;
+}
+
+.stage-titleline {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.stage-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(8, 10, 10, 0.84);
+  color: var(--accent-strong);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 .stage-copy h2 {
   font-size: 1rem;
   letter-spacing: 0.16em;
+}
+
+.stage-cues {
+  gap: 6px;
 }
 
 .stage-stat-strip {
@@ -85,6 +111,22 @@
 .stage-stat strong {
   color: var(--accent-strong);
   font-size: 0.9rem;
+}
+
+.command-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  background: rgba(8, 10, 10, 0.82);
+  color: var(--accent-strong);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .tab-stage-radio .stage-banner {
@@ -507,6 +549,17 @@
 
   .stage-copy {
     gap: 6px;
+  }
+
+  .stage-titleline {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .stage-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
   }
 
   .stage-copy h2 {

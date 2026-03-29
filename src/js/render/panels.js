@@ -93,9 +93,14 @@ export function renderCommandDesk(state, derived, availableSources, availableUpg
   return `
     <div class="command-desk">
       <div class="command-card command-primary">
-        <span class="note-label">Current directive</span>
-        <h4>${model.directive.title}</h4>
-        <p class="note">${model.directive.detail}</p>
+        <div class="surface-head">
+          <div>
+            <span class="note-label">Current directive</span>
+            <h4>${model.directive.title}</h4>
+          </div>
+          <span class="command-badge">GO</span>
+        </div>
+        <div class="chip-row">${tagList([model.directive.detail, `${availableSources.length} lanes`, `${availableUpgrades.length} builds`])}</div>
         <div class="command-action">${highlightAction}</div>
       </div>
       <div class="command-card">
@@ -109,9 +114,14 @@ export function renderCommandDesk(state, derived, availableSources, availableUpg
         </div>
       </div>
       <div class="command-card">
-        <span class="note-label">Route board</span>
-        <h4>${model.routeTitle}</h4>
-        <p class="note">${model.routeDetail}</p>
+        <div class="surface-head">
+          <div>
+            <span class="note-label">Route board</span>
+            <h4>${model.routeTitle}</h4>
+          </div>
+          <span class="command-badge">RT</span>
+        </div>
+        <div class="chip-row">${tagList(model.routeDetail.split(" / "))}</div>
       </div>
       <div class="command-card">
         <span class="note-label">Signal + growth</span>
@@ -149,7 +159,7 @@ export function renderInventoryItemCard(itemId, amount) {
         <h4>${item.name}</h4>
         <span class="tag">${item.type} x${amount}</span>
       </div>
-      <p class="note">${item.description}</p>
+      <div class="chip-row">${tagList([item.type, `x${amount}`])}</div>
       ${actionMarkup}
     </div>
   `;
@@ -190,9 +200,8 @@ export function renderFactionStatus(state) {
       <div class="faction-status-copy">
         <span class="note-label">Alignment status</span>
         <h4>${status.aligned ? status.aligned.name : "No faction chosen"}</h4>
-        <p class="note">${status.description}</p>
       </div>
-      <div class="chip-row">${tagList(status.bonuses)}</div>
+      <div class="chip-row">${tagList([status.description, ...status.bonuses])}</div>
     </div>
   `;
 }

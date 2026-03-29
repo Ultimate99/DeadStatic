@@ -296,7 +296,7 @@ export function promptForCallsign() {
     return false;
   }
 
-  const nextValue = win.prompt("Set your callsign for the Dead Static leaderboard.", store.profile.codename || "");
+  const nextValue = win.prompt("Set your username for the Dead Static leaderboard.", store.profile.codename || "");
   if (nextValue === null) {
     return false;
   }
@@ -305,8 +305,8 @@ export function promptForCallsign() {
   saveProfile();
   store.submitStatus = "idle";
   store.message = store.profile.codename
-    ? `Callsign set to ${store.profile.codename}.`
-    : "Callsign cleared.";
+    ? `Username set to ${store.profile.codename}.`
+    : "Username cleared.";
   notify();
   return true;
 }
@@ -362,7 +362,7 @@ export async function submitLeaderboardScore(state) {
 
   if (!store.profile.codename || store.profile.codename.length < 3) {
     store.submitStatus = "error";
-    store.message = "Set a callsign with at least 3 characters before submitting.";
+    store.message = "Set a username with at least 3 characters before submitting.";
     notify();
     return false;
   }

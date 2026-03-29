@@ -2735,17 +2735,18 @@ function countLogCategories(logEntries, orderedCategories) {
 
 // selectors/ui.js
 const TAB_DEFS = [
-  { id: "overview", label: "Overview", hint: "control", count: (state) => state.stats.searches || null },
-  { id: "craft", label: "Craft", hint: "build queue", unlock: "upgrades", count: (state) => getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id)).length || null },
-  { id: "inventory", label: "Inventory", hint: "gear hold", unlock: "inventory" },
-  { id: "shelter", label: "Shelter", hint: "survival", unlock: "shelter" },
-  { id: "shelter_map", label: "Shelter Map", hint: "compound", unlock: "shelter" },
-  { id: "map", label: "Map", hint: "routes", unlock: "map", count: (state) => state.unlockedZones.length || null },
-  { id: "survivors", label: "Crew", hint: "assignments", unlock: "survivors", count: (state) => state.survivors.total || null },
-  { id: "radio", label: "Radio", hint: "signals", unlock: "radio", count: (state) => state.story.radioProgress || null },
-  { id: "trade", label: "Trade", hint: "market", unlock: "trader", count: (state) => state.trader.offers.length || null },
-  { id: "factions", label: "Factions", hint: "alignment", unlock: "factions" },
-  { id: "log", label: "Log", hint: "history" },
+  { id: "overview", label: "Overview", hint: "control", icon: "OV", count: (state) => state.stats.searches || null },
+  { id: "craft", label: "Craft", hint: "build queue", icon: "MK", unlock: "upgrades", count: (state) => getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id)).length || null },
+  { id: "inventory", label: "Inventory", hint: "gear hold", icon: "KT", unlock: "inventory" },
+  { id: "shelter", label: "Shelter", hint: "survival", icon: "HT", unlock: "shelter" },
+  { id: "shelter_map", label: "Shelter Map", hint: "compound", icon: "MP", unlock: "shelter" },
+  { id: "map", label: "Map", hint: "routes", icon: "RT", unlock: "map", count: (state) => state.unlockedZones.length || null },
+  { id: "survivors", label: "Crew", hint: "assignments", icon: "CR", unlock: "survivors", count: (state) => state.survivors.total || null },
+  { id: "radio", label: "Radio", hint: "signals", icon: "RX", unlock: "radio", count: (state) => state.story.radioProgress || null },
+  { id: "trade", label: "Trade", hint: "market", icon: "TR", unlock: "trader", count: (state) => state.trader.offers.length || null },
+  { id: "factions", label: "Factions", hint: "alignment", icon: "FX", unlock: "factions" },
+  { id: "leaderboard", label: "Leaderboard", hint: "hosted", icon: "LB" },
+  { id: "log", label: "Log", hint: "history", icon: "LG" },
 ];
 
 const DEFAULT_LOG_CATEGORIES = ["loot", "build", "night", "expedition", "radio", "combat", "trade", "notable"];
@@ -2806,22 +2807,22 @@ function getSubtitle(state) {
 
 function getSummaryPills(state, derived) {
   const pills = [
-    { label: "Warmth", value: state.shelter.warmth.toFixed(1) },
-    { label: "Threat", value: state.shelter.threat.toFixed(1) },
-    { label: "Noise", value: state.shelter.noise.toFixed(1) },
+    { label: "Warmth", value: state.shelter.warmth.toFixed(1), icon: "HT" },
+    { label: "Threat", value: state.shelter.threat.toFixed(1), icon: "TH" },
+    { label: "Noise", value: state.shelter.noise.toFixed(1), icon: "NZ" },
   ];
 
   if (state.discoveredResources.includes("food")) {
-    pills.push({ label: "Hunger", value: `${state.clocks.hunger}/6h` });
+    pills.push({ label: "Hunger", value: `${state.clocks.hunger}/6h`, icon: "FD" });
   }
   if (state.discoveredResources.includes("water")) {
-    pills.push({ label: "Thirst", value: `${state.clocks.thirst}/4h` });
+    pills.push({ label: "Thirst", value: `${state.clocks.thirst}/4h`, icon: "WT" });
   }
   if (state.unlockedSections.includes("survivors")) {
-    pills.push({ label: "Crew", value: `${state.survivors.total}/${derived.survivorCap}` });
+    pills.push({ label: "Crew", value: `${state.survivors.total}/${derived.survivorCap}`, icon: "CR" });
   }
   if (state.unlockedSections.includes("radio")) {
-    pills.push({ label: "Signal", value: `${state.story.radioProgress}` });
+    pills.push({ label: "Signal", value: `${state.story.radioProgress}`, icon: "RX" });
   }
 
   return pills;
@@ -2837,19 +2838,19 @@ function getCurrentDirective(state, availableUpgrades) {
   if (state.combat) {
     return {
       title: "Combat contact",
-      detail: "Resolve the current encounter before you push any other operation.",
+      detail: "Clear the contact first.",
     };
   }
   if (!state.flags.burnUnlocked) {
     return {
       title: "Stabilize the room",
-      detail: `${Math.max(0, 3 - state.stats.searches)} more rubble searches unlock warmth control.`,
+      detail: `${Math.max(0, 3 - state.stats.searches)} more searches unlock warmth.`,
     };
   }
   if (readyUpgrade) {
     return {
       title: `Build ${readyUpgrade.name}`,
-      detail: "A funded upgrade is waiting. Converting salvage into systems is the fastest way forward.",
+      detail: "A funded build is waiting.",
     };
   }
   if (state.expedition.selectedZone) {
@@ -2857,26 +2858,26 @@ function getCurrentDirective(state, availableUpgrades) {
     if (preview) {
       return {
         title: `Launch ${preview.zone.name}`,
-        detail: `${preview.approach.label} route is staged. ${preview.hours}h travel with ${Math.round(preview.encounterChance * 100)}% encounter pressure.`,
+        detail: `${preview.approach.label} / ${preview.hours}h / ${Math.round(preview.encounterChance * 100)}% contact.`,
       };
     }
   }
   if (state.unlockedSections.includes("radio") && state.resources.fuel > 0 && state.resources.parts > 0) {
     return {
       title: "Sweep the band",
-      detail: "The receiver has enough fuel and parts. Push signal progress while the line is viable.",
+      detail: "Fuel and parts are ready.",
     };
   }
   if (state.unlockedSections.includes("map") && !state.expedition.selectedZone) {
     return {
       title: "Prepare a route",
-      detail: "Use the map to stage a zone before the next push. Approach choice now matters.",
+      detail: "Stage the next zone.",
     };
   }
 
   return {
     title: "Push the scavenging lanes",
-    detail: "Keep the salvage loop moving until the next system or route unlocks.",
+    detail: "Keep the salvage loop moving.",
   };
 }
 
@@ -5541,7 +5542,7 @@ function promptForCallsign() {
     return false;
   }
 
-  const nextValue = win.prompt("Set your callsign for the Dead Static leaderboard.", store.profile.codename || "");
+  const nextValue = win.prompt("Set your username for the Dead Static leaderboard.", store.profile.codename || "");
   if (nextValue === null) {
     return false;
   }
@@ -5550,8 +5551,8 @@ function promptForCallsign() {
   saveProfile();
   store.submitStatus = "idle";
   store.message = store.profile.codename
-    ? `Callsign set to ${store.profile.codename}.`
-    : "Callsign cleared.";
+    ? `Username set to ${store.profile.codename}.`
+    : "Username cleared.";
   notify();
   return true;
 }
@@ -5607,7 +5608,7 @@ async function submitLeaderboardScore(state) {
 
   if (!store.profile.codename || store.profile.codename.length < 3) {
     store.submitStatus = "error";
-    store.message = "Set a callsign with at least 3 characters before submitting.";
+    store.message = "Set a username with at least 3 characters before submitting.";
     notify();
     return false;
   }
@@ -6101,11 +6102,68 @@ function byId(id) {
   return document.getElementById(id);
 }
 
-function actionButton({ action, label, meta = "", disabled = false, variant = "", data = {} }) {
+function tokenFromLabel(label) {
+  const words = String(label || "")
+    .replace(/[^a-z0-9 ]/gi, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (!words.length) {
+    return "DO";
+  }
+
+  if (words.length === 1) {
+    return words[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${words[0][0]}${words[1][0]}`.toUpperCase();
+}
+
+function actionToken(action, label) {
+  const tokens = {
+    "search-rubble": "SR",
+    "search-source": "SV",
+    "buy-upgrade": "MK",
+    "burn-warmth": "HT",
+    "forage-food": "FD",
+    "drink-water": "WT",
+    "eat-ration": "FD",
+    "patch-barricade": "BR",
+    "craft-ammo": "AM",
+    "set-night-plan": "NT",
+    "prepare-zone": "RT",
+    "set-approach": "AP",
+    "launch-prepared": "GO",
+    "equip-item": "EQ",
+    "use-item": "US",
+    "adjust-role": "CR",
+    "recruit": "+1",
+    "scan-radio": "RX",
+    "refresh-trader": "TR",
+    "buy-offer": "$$",
+    "choose-faction": "FX",
+    "refresh-leaderboard": "LB",
+    "submit-leaderboard": "UP",
+    "set-callsign": "ID",
+    "download-save-file": "SV",
+    "copy-save-code": "CP",
+    "trigger-save-import": "IN",
+    "import-save-code": "CD",
+    "combat-attack": "AT",
+    "combat-heal": "MD",
+    "combat-retreat": "EX",
+  };
+
+  return tokens[action] || tokenFromLabel(label);
+}
+
+function actionButton({ action, label, meta = "", disabled = false, variant = "", data = {}, icon = "" }) {
   const dataAttrs = Object.entries(data)
     .map(([key, value]) => ` data-${key}="${value}"`)
     .join("");
   const classes = ["action-button", variant].filter(Boolean).join(" ");
+  const badge = icon || actionToken(action, label);
 
   return `
     <button
@@ -6114,8 +6172,11 @@ function actionButton({ action, label, meta = "", disabled = false, variant = ""
       data-action="${action}"${dataAttrs}
       ${disabled ? "disabled" : ""}
     >
-      <span class="action-label">${label}</span>
-      ${meta ? `<span class="action-meta">${meta}</span>` : ""}
+      <span class="action-icon" aria-hidden="true">${badge}</span>
+      <span class="action-copy">
+        <span class="action-label">${label}</span>
+        ${meta ? `<span class="action-meta">${meta}</span>` : ""}
+      </span>
     </button>
   `;
 }
@@ -6168,6 +6229,23 @@ function renderSplitPane(mainCards, sideCards, className = "") {
 
 
 // render/shell.js
+const RESOURCE_TOKENS = {
+  scrap: "SC",
+  food: "FD",
+  water: "WT",
+  cloth: "CL",
+  fuel: "FL",
+  parts: "PT",
+  wire: "WR",
+  medicine: "MD",
+  ammo: "AM",
+  electronics: "EL",
+  chemicals: "CH",
+  morale: "MO",
+  reputation: "RP",
+  relics: "RL",
+};
+
 function meterClass(percent) {
   if (percent <= 30) {
     return "danger";
@@ -6193,7 +6271,7 @@ function renderResourceBar(state) {
     .map((resourceId) => `
       <div class="resource-pill tier-${RESOURCE_DEFS[resourceId].tier}">
         <div class="resource-pill-key">
-          <i class="tier-dot tier-${RESOURCE_DEFS[resourceId].tier}"></i>
+          <span class="resource-token tier-${RESOURCE_DEFS[resourceId].tier}">${RESOURCE_TOKENS[resourceId] || RESOURCE_DEFS[resourceId].label.slice(0, 2).toUpperCase()}</span>
           <span>${RESOURCE_DEFS[resourceId].label}</span>
         </div>
         <strong>${state.resources[resourceId]}</strong>
@@ -6214,6 +6292,7 @@ function renderSummaryStrip(state, derived) {
   byId("summary-strip").innerHTML = pills
     .map((pill) => `
       <div class="summary-pill">
+        <span class="summary-badge" aria-hidden="true">${pill.icon || pill.label.slice(0, 2).toUpperCase()}</span>
         <div class="summary-pill-top">
           <span>${pill.label}</span>
           <strong>${pill.value}</strong>
@@ -6238,9 +6317,9 @@ function renderTabBar(state, tabs) {
           data-action="set-tab"
           data-tab="${tab.id}"
         >
+          <span class="tab-icon" aria-hidden="true">${tab.icon || tab.label.slice(0, 2).toUpperCase()}</span>
           <span class="tab-copy">
             <strong>${tab.label}</strong>
-            <small>${tab.hint || "section"}</small>
           </span>
           ${count ? `<span class="tab-count">${count}</span>` : ""}
         </button>
@@ -6331,9 +6410,14 @@ function renderCommandDesk(state, derived, availableSources, availableUpgrades) 
   return `
     <div class="command-desk">
       <div class="command-card command-primary">
-        <span class="note-label">Current directive</span>
-        <h4>${model.directive.title}</h4>
-        <p class="note">${model.directive.detail}</p>
+        <div class="surface-head">
+          <div>
+            <span class="note-label">Current directive</span>
+            <h4>${model.directive.title}</h4>
+          </div>
+          <span class="command-badge">GO</span>
+        </div>
+        <div class="chip-row">${tagList([model.directive.detail, `${availableSources.length} lanes`, `${availableUpgrades.length} builds`])}</div>
         <div class="command-action">${highlightAction}</div>
       </div>
       <div class="command-card">
@@ -6347,9 +6431,14 @@ function renderCommandDesk(state, derived, availableSources, availableUpgrades) 
         </div>
       </div>
       <div class="command-card">
-        <span class="note-label">Route board</span>
-        <h4>${model.routeTitle}</h4>
-        <p class="note">${model.routeDetail}</p>
+        <div class="surface-head">
+          <div>
+            <span class="note-label">Route board</span>
+            <h4>${model.routeTitle}</h4>
+          </div>
+          <span class="command-badge">RT</span>
+        </div>
+        <div class="chip-row">${tagList(model.routeDetail.split(" / "))}</div>
       </div>
       <div class="command-card">
         <span class="note-label">Signal + growth</span>
@@ -6387,7 +6476,7 @@ function renderInventoryItemCard(itemId, amount) {
         <h4>${item.name}</h4>
         <span class="tag">${item.type} x${amount}</span>
       </div>
-      <p class="note">${item.description}</p>
+      <div class="chip-row">${tagList([item.type, `x${amount}`])}</div>
       ${actionMarkup}
     </div>
   `;
@@ -6428,9 +6517,8 @@ function renderFactionStatus(state) {
       <div class="faction-status-copy">
         <span class="note-label">Alignment status</span>
         <h4>${status.aligned ? status.aligned.name : "No faction chosen"}</h4>
-        <p class="note">${status.description}</p>
       </div>
-      <div class="chip-row">${tagList(status.bonuses)}</div>
+      <div class="chip-row">${tagList([status.description, ...status.bonuses])}</div>
     </div>
   `;
 }
@@ -7045,8 +7133,9 @@ function tabStageMeta(state, derived) {
     case "craft":
       return {
         label: "Build queue",
+        icon: "MK",
         title: "Convert salvage into systems",
-        detail: "Craft is now the main pressure release. Ready systems should be installed fast; blocked ones tell you what to hunt next.",
+        cues: ["install ready", "track blockers"],
         stats: [
           ["Ready", readyUpgrades.length],
           ["Blocked", Math.max(0, visibleUpgrades.length - readyUpgrades.length)],
@@ -7057,8 +7146,9 @@ function tabStageMeta(state, derived) {
     case "inventory":
       return {
         label: "Stores",
+        icon: "KT",
         title: "Everything you can still carry",
-        detail: "Keep loadout, field supplies, and strange salvage separate so decisions stay clean under pressure.",
+        cues: ["gear", "supplies", "odd salvage"],
         stats: [
           ["Weapon", state.equipped.weapon ? "set" : "none"],
           ["Armor", state.equipped.armor ? "set" : "none"],
@@ -7069,8 +7159,9 @@ function tabStageMeta(state, derived) {
     case "shelter":
       return {
         label: "Survival board",
+        icon: "HT",
         title: "Hold the room through another night",
-        detail: "Warmth, threat, noise, and food all pull against each other here. The shelter tab is where survival decisions stay immediate.",
+        cues: ["warmth", "defense", "pressure"],
         stats: [
           ["Warmth", state.shelter.warmth.toFixed(1)],
           ["Threat", state.shelter.threat.toFixed(1)],
@@ -7081,8 +7172,9 @@ function tabStageMeta(state, derived) {
     case "shelter_map":
       return {
         label: "Compound view",
+        icon: "MP",
         title: "Read the outpost like a living machine",
-        detail: "The map should show footprint, districts, damage, and future work without burying the actual compound shape.",
+        cues: ["footprint", "damage", "expansion"],
         stats: [
           ["Stage", getOutpostStage(activeCount)],
           ["Built", activeCount],
@@ -7093,8 +7185,9 @@ function tabStageMeta(state, derived) {
     case "map":
       return {
         label: "Route board",
+        icon: "RT",
         title: "Stage the next push before you leave",
-        detail: "Zones are no longer simple buttons. Travel posture, encounter odds, and supply burn now matter before the first step.",
+        cues: ["travel", "risk", "cost"],
         stats: [
           ["Zones", state.unlockedZones.length],
           ["Prepared", preview ? preview.zone.name : "none"],
@@ -7105,8 +7198,9 @@ function tabStageMeta(state, derived) {
     case "survivors":
       return {
         label: "Crew line",
+        icon: "CR",
         title: "Every body in the shelter changes the equation",
-        detail: "Survivors are now a visible staffing problem, not just a count. Each role should explain why it matters.",
+        cues: ["staff", "idle hands", "pressure"],
         stats: [
           ["Total", state.survivors.total],
           ["Idle", state.survivors.idle],
@@ -7117,8 +7211,9 @@ function tabStageMeta(state, derived) {
     case "radio":
       return {
         label: "Signal board",
+        icon: "RX",
         title: "The static is no longer background noise",
-        detail: "This screen now reads like a live receiver desk. Signal depth, trace heat, and impossible fragments should feel wrong in a useful way.",
+        cues: ["scan", "trace", "decode"],
         stats: [
           ["Signal", state.story.radioProgress],
           ["Secret", state.story.secretProgress],
@@ -7129,8 +7224,9 @@ function tabStageMeta(state, derived) {
     case "trade":
       return {
         label: "Market",
+        icon: "TR",
         title: "What the wasteland will still trade for",
-        detail: "This is the pragmatic layer: turn spare resources into missing gear without losing the shape of your economy.",
+        cues: ["trade", "restock", "flip shortages"],
         stats: [
           ["Offers", state.trader.offers.length],
           ["Scrap", state.resources.scrap],
@@ -7141,8 +7237,9 @@ function tabStageMeta(state, derived) {
     case "factions":
       return {
         label: "Alignment",
+        icon: "FX",
         title: "Choose who gets to shape the signal",
-        detail: "Faction choice is a worldview decision disguised as survival pragmatism. The UI should make that feel weighty, not checkbox-like.",
+        cues: ["choose", "lock in", "keep leverage"],
         stats: [
           ["Aligned", state.faction.aligned || "none"],
           ["Rep", state.resources.reputation],
@@ -7153,8 +7250,9 @@ function tabStageMeta(state, derived) {
     case "log":
       return {
         label: "Archive",
+        icon: "LG",
         title: "Track what the static has already taken",
-        detail: "The log is now a pulse monitor for the whole campaign, not just a dump of old text lines.",
+        cues: ["history", "pulse", "recent"],
         stats: [
           ["Entries", state.log.length],
           ["Latest", state.log[0]?.category || "general"],
@@ -7162,12 +7260,30 @@ function tabStageMeta(state, derived) {
           ["Radio", state.log.filter((entry) => entry.category === "radio").length],
         ],
       };
+    case "leaderboard": {
+      const leaderboardState = getLeaderboardState();
+      const leaderboardSnapshot = getLeaderboardSnapshot(state);
+      return {
+        label: "Hosted board",
+        icon: "LB",
+        title: "Track the strongest runs online",
+        cues: ["rank", "submit", "sync"],
+        stats: [
+          ["Score", leaderboardSnapshot.summary.score],
+          ["Ranks", leaderboardState.entries.length],
+          ["Day", state.time.day],
+          ["Signal", state.story.radioProgress],
+          ["Stage", leaderboardSnapshot.summary.stage],
+        ],
+      };
+    }
     case "overview":
     default:
       return {
         label: "Control layer",
+        icon: "OV",
         title: "Everything important in one scan",
-        detail: "Overview should immediately show pressure, next best action, route state, and what the shelter is becoming.",
+        cues: ["pressure", "next move", "growth"],
         stats: [
           ["Lanes", getAvailableScavengeSources(state).length],
           ["Builds", readyUpgrades.length],
@@ -7184,9 +7300,14 @@ function renderTabStage(state, derived, bodyMarkup) {
     <div class="tab-stage tab-stage-${state.ui.activeTab}">
       <section class="stage-banner">
         <div class="stage-copy">
-          <span class="note-label">${meta.label}</span>
-          <h2>${meta.title}</h2>
-          <p class="note">${meta.detail}</p>
+          <div class="stage-titleline">
+            <span class="stage-icon" aria-hidden="true">${meta.icon || meta.label.slice(0, 2).toUpperCase()}</span>
+            <div>
+              <span class="note-label">${meta.label}</span>
+              <h2>${meta.title}</h2>
+            </div>
+          </div>
+          ${meta.cues?.length ? `<div class="chip-row stage-cues">${meta.cues.map((cue) => `<span class="chip">${cue}</span>`).join("")}</div>` : ""}
         </div>
         <div class="stage-stat-strip">
           ${meta.stats.map(([label, value]) => `
@@ -7235,19 +7356,21 @@ function renderOverviewActions(state) {
   if (state.flags.burnUnlocked) {
     utilityButtons.push(actionButton({
       action: "burn-warmth",
-      label: "Burn 10 scrap for warmth",
-      meta: "10 scrap / immediate shelter relief",
+      label: "Burn for warmth",
+      meta: "10 scrap",
       disabled: state.resources.scrap < 10,
       variant: "compact utility-trigger",
+      icon: "HT",
     }));
   }
 
   if (state.upgrades.includes("food_search")) {
     utilityButtons.push(actionButton({
       action: "forage-food",
-      label: "Fallback food search",
-      meta: "plain, safe, and still useful when pantries go dry",
+      label: "Food search",
+      meta: "safe pull",
       variant: "compact utility-trigger",
+      icon: "FD",
     }));
   }
 
@@ -7263,21 +7386,20 @@ function renderOverviewActions(state) {
                   <span class="note-label">Scavenge lane</span>
                   <h4>${source.label}</h4>
                 </div>
-                <span class="tag">${sourceRunCount(state, source.id)} runs</span>
+                <span class="tag">${sourceRunCount(state, source.id)}x</span>
               </div>
-              <p class="note">${source.detail}</p>
               <div class="lane-metrics">
                 <div><span>Travel</span><strong>${source.hours}h</strong></div>
                 <div><span>Lead</span><strong>${source.tags[1] || source.tags[0] || "salvage"}</strong></div>
               </div>
-              <div class="chip-row">${tagList([...source.tags, `ceiling ${ceiling.label}`])}</div>
-              <div class="chip-row">${tagList(source.focus)}</div>
+              <div class="chip-row">${tagList([source.detail, ...source.focus.slice(0, 2), ceiling.label])}</div>
               ${actionButton({
                 action: source.id === "rubble" ? "search-rubble" : "search-source",
                 label: source.label,
-                meta: `${source.hours}h / ${source.tags[1] || "salvage lane"}`,
+                meta: `${source.hours}h / ${source.tags[1] || "salvage"}`,
                 variant: source.id === "rubble" ? "primary source-trigger" : "source-trigger",
                 data: source.id === "rubble" ? {} : { source: source.id },
+                icon: source.id === "rubble" ? "RB" : "SV",
               })}
             </div>
           `;
@@ -7305,14 +7427,14 @@ function renderUpgradeCard(state, upgrade) {
         <h4>${upgrade.name}</h4>
         <span class="tag">${built ? "built" : ready ? "ready" : "scavenge"}</span>
       </div>
-      <p class="note">${upgrade.description}</p>
-      ${meta.length ? `<div class="chip-row">${tagList(meta)}</div>` : ""}
+      <div class="chip-row">${tagList([upgrade.description, ...meta])}</div>
       ${built ? "" : actionButton({
         action: "buy-upgrade",
         label: `${upgrade.verb || "Build"} ${upgrade.name}`,
         meta: ready ? "Permanent unlock" : "Need more salvage",
         disabled: !ready,
         data: { upgrade: upgrade.id },
+        icon: "MK",
       })}
     </div>
   `;
@@ -7430,7 +7552,7 @@ function renderCraftTab(state) {
                     <h4>Ready now</h4>
                     <span class="tag">${ready.length}</span>
                   </div>
-                  <p class="note">These builds are funded and can be installed immediately.</p>
+                  <div class="chip-row">${tagList(["funded", "install now"])}</div>
                 </div>
                 ${ready.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}
               ` : ""}
@@ -7440,7 +7562,7 @@ function renderCraftTab(state) {
                     <h4>Need salvage</h4>
                     <span class="tag">${blocked.length}</span>
                   </div>
-                  <p class="note">Useful systems waiting on material or resource recovery.</p>
+                  <div class="chip-row">${tagList(["hunt materials", "blocked"])}</div>
                 </div>
                 ${blocked.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}
               ` : ""}
@@ -7566,10 +7688,11 @@ function renderNightPlanner(state) {
   const planButtons = Object.values(NIGHT_PLANS).map((plan) => actionButton({
     action: "set-night-plan",
     label: plan.label,
-    meta: plan.description,
+    meta: plan.short || plan.description,
     disabled: state.night.plan === plan.id,
     data: { plan: plan.id },
     variant: `compact ${state.night.plan === plan.id ? "primary" : ""}`,
+    icon: "NT",
   }));
 
   return `
@@ -7607,15 +7730,15 @@ function renderExpeditionPlanner(state) {
 
   return `
     <div class="detail-list">
-      <div class="list-block compact-block">
-        <div class="surface-head">
-          <div>
-            <span class="note-label">Prepared zone</span>
-            <h4>${preview.zone.name}</h4>
+        <div class="list-block compact-block">
+          <div class="surface-head">
+            <div>
+              <span class="note-label">Prepared zone</span>
+              <h4>${preview.zone.name}</h4>
+            </div>
+            <span class="tag">${preview.approach.label}</span>
           </div>
-          <span class="tag">${preview.approach.label}</span>
-        </div>
-        <p class="note">${preview.approach.description}</p>
+        <div class="chip-row">${tagList([preview.zone.risk, preview.approach.description])}</div>
         <div class="fact-grid">
           <div class="fact"><span>Travel</span><strong>${preview.hours}h</strong></div>
           <div class="fact"><span>Encounter</span><strong>${Math.round(preview.encounterChance * 100)}%</strong></div>
@@ -7633,8 +7756,8 @@ function renderExpeditionPlanner(state) {
                 <h4>${approach.label}</h4>
                 <span class="tag">${approach.short}</span>
               </div>
-              <p class="note">${approach.description}</p>
               <div class="chip-row">${tagList([
+                approach.description,
                 `${approachPreview.hours}h`,
                 `${Math.round(approachPreview.encounterChance * 100)}% encounter`,
                 Object.keys(approach.cost).length ? formatCost(approach.cost) : "no extra cost",
@@ -7646,6 +7769,7 @@ function renderExpeditionPlanner(state) {
                 disabled: state.expedition.approach === approach.id,
                 data: { approach: approach.id },
                 variant: "compact",
+                icon: "AP",
               })}
             </div>
           `;
@@ -7657,6 +7781,7 @@ function renderExpeditionPlanner(state) {
         meta: preview.canLaunch ? "prepared route" : `need ${formatCost(preview.cost)}`,
         disabled: !preview.canLaunch || Boolean(state.combat),
         variant: "primary",
+        icon: "GO",
       })}
     </div>
   `;
@@ -7666,21 +7791,24 @@ function renderShelterTab(state, derived) {
   const actions = [
     actionButton({
       action: "eat-ration",
-      label: "Eat 1 food",
-      meta: "Push hunger back and stabilize condition.",
+      label: "Eat ration",
+      meta: "1 food",
       disabled: state.resources.food < 1,
+      icon: "FD",
     }),
     actionButton({
       action: "drink-water",
-      label: "Drink 1 water",
-      meta: "Reset thirst and steady yourself.",
+      label: "Drink water",
+      meta: "1 water",
       disabled: state.resources.water < 1,
+      icon: "WT",
     }),
     actionButton({
       action: "patch-barricade",
       label: "Patch barricade",
-      meta: "Spend 6 scrap to lower pressure outside.",
+      meta: "6 scrap",
       disabled: state.resources.scrap < 6,
+      icon: "BR",
     }),
   ];
 
@@ -7688,8 +7816,9 @@ function renderShelterTab(state, derived) {
     actions.push(actionButton({
       action: "craft-ammo",
       label: "Press ammo",
-      meta: "Spend parts, scrap, and chemicals for 5 rounds.",
+      meta: "5 rounds",
       disabled: state.resources.parts < 1 || state.resources.scrap < 1 || state.resources.chemicals < 1,
+      icon: "AM",
     }));
   }
 
@@ -7767,17 +7896,15 @@ function renderShelterTab(state, derived) {
           : `<p class="empty-state">Automation starts once you build beyond crisis management.</p>`,
       })}
       ${surfaceCard({
-        title: "Pressure notes",
+        title: "Ops cues",
         meta: `${getOutpostStage(liveStructures.length)}`,
         className: "span-4",
         body: `
-          <div class="detail-list">
-            <div class="list-block compact-block">
-              <p class="note">Warmth decays through the day. Threat rises with actions, time, and bad nights. Noise is what tells the outside where to look.</p>
-            </div>
-            <div class="list-block compact-block">
-              <p class="note">Use <strong>Shelter Map</strong> to inspect the compound footprint, click structures, and repair anything the last night chewed on.</p>
-            </div>
+          <div class="fact-grid">
+            <div class="fact"><span>Warmth</span><strong>drops daily</strong></div>
+            <div class="fact"><span>Threat</span><strong>rises on runs</strong></div>
+            <div class="fact"><span>Noise</span><strong>pulls contact</strong></div>
+            <div class="fact"><span>Repairs</span><strong>Map tab</strong></div>
           </div>
         `,
       })}
@@ -7800,17 +7927,12 @@ function renderMapTab(state) {
         meta: state.expedition.selectedZone === zone.id ? `selected / risk ${zone.risk}` : `risk ${zone.risk}`,
         className: `span-4 zone-card ${state.expedition.selectedZone === zone.id ? "is-selected-route" : ""}`,
         body: `
-          <p class="note">${zone.description}</p>
+          <div class="chip-row">${tagList([zone.description, state.visitedZones.includes(zone.id) ? "visited" : "new route"])}</div>
           <div class="fact-grid zone-fact-grid">
             <div class="fact"><span>Travel</span><strong>${zone.hours}h</strong></div>
             <div class="fact"><span>Encounter</span><strong>${Math.round(zone.encounterChance * 100)}%</strong></div>
           </div>
-          <div class="chip-row">
-            ${tagList([
-              state.visitedZones.includes(zone.id) ? "visited" : "new route",
-              zone.risk,
-            ])}
-          </div>
+          <div class="chip-row">${tagList([zone.risk])}</div>
           <div class="chip-row">
             ${tagList(Object.entries(zone.loot)
               .filter(([, range]) => range[1] > 0)
@@ -7820,9 +7942,10 @@ function renderMapTab(state) {
           ${actionButton({
             action: "prepare-zone",
             label: `Prepare ${zone.name}`,
-            meta: state.expedition.selectedZone === zone.id ? "selected for planner" : "route planning",
+            meta: state.expedition.selectedZone === zone.id ? "staged" : "stage route",
             disabled: Boolean(state.combat),
             data: { zone: zone.id },
+            icon: "RT",
           })}
         `,
       })).join("") : surfaceCard({
@@ -7840,7 +7963,7 @@ function renderMapTab(state) {
 function renderLeaderboardPanel(state) {
   const remote = getLeaderboardState();
   const snapshot = getLeaderboardSnapshot(state);
-  const callsignReady = remote.profile.codename && remote.profile.codename.length >= 3;
+  const usernameReady = remote.profile.codename && remote.profile.codename.length >= 3;
   const statusLabel = {
     disabled: "offline",
     idle: "ready",
@@ -7855,7 +7978,7 @@ function renderLeaderboardPanel(state) {
         <div class="surface-head">
           <div>
             <span class="note-label">Current run</span>
-            <h4>${callsignReady ? remote.profile.codename : "Unnamed scavenger"}</h4>
+            <h4>${usernameReady ? remote.profile.codename : "No username"}</h4>
           </div>
           <span class="tag">${snapshot.summary.score}</span>
         </div>
@@ -7869,23 +7992,26 @@ function renderLeaderboardPanel(state) {
       <div class="action-stack leaderboard-actions">
         ${actionButton({
           action: "set-callsign",
-          label: callsignReady ? "Edit callsign" : "Set callsign",
-          meta: callsignReady ? remote.profile.codename : "3-24 visible characters",
+          label: usernameReady ? "Edit username" : "Set username",
+          meta: usernameReady ? remote.profile.codename : "3-24 characters",
           variant: "compact",
+          icon: "ID",
         })}
         ${actionButton({
           action: "refresh-leaderboard",
           label: "Refresh board",
-          meta: remote.enabled ? "pull hosted rankings" : "backend not configured",
+          meta: remote.enabled ? "pull ranks" : "backend off",
           variant: "compact",
           disabled: !remote.enabled,
+          icon: "LB",
         })}
         ${actionButton({
           action: "submit-leaderboard",
           label: "Submit run",
-          meta: remote.enabled ? (callsignReady ? "upload best score" : "set callsign first") : "backend not configured",
+          meta: remote.enabled ? (usernameReady ? "upload best" : "set username") : "backend off",
           variant: "primary compact",
-          disabled: !remote.enabled || !callsignReady || remote.submitStatus === "submitting",
+          disabled: !remote.enabled || !usernameReady || remote.submitStatus === "submitting",
+          icon: "UP",
         })}
       </div>
       <div class="list-block leaderboard-status">
@@ -7921,6 +8047,31 @@ function renderLeaderboardPanel(state) {
   `;
 }
 
+function renderLeaderboardTab(state) {
+  return renderSplitPane(
+    [
+      surfaceCard({
+        title: "Global leaderboard",
+        meta: getLeaderboardState().entries.length ? `${getLeaderboardState().entries.length} ranked` : "hosted",
+        body: renderLeaderboardPanel(state),
+      }),
+    ],
+    [
+      surfaceCard({
+        title: "Save transfer",
+        meta: "phone + desktop",
+        body: renderSaveTransferPanel(),
+      }),
+      surfaceCard({
+        title: "Recent feed",
+        meta: `${Math.min(8, state.log.length)} latest`,
+        body: renderMiniLog(state.log, 8),
+      }),
+    ],
+    "tab-columns-log"
+  );
+}
+
 function renderSaveTransferPanel() {
   return `
     <div class="detail-list transfer-board">
@@ -7928,11 +8079,11 @@ function renderSaveTransferPanel() {
         <div class="surface-head">
           <div>
             <span class="note-label">Cross-device save</span>
-            <h4>Move your run between phone and desktop</h4>
+            <h4>Move your run</h4>
           </div>
           <span class="tag">local</span>
         </div>
-        <p class="note">Use file export for backups, or use a share code when you want to continue the same shelter on another device.</p>
+        <div class="chip-row">${tagList(["file backup", "share code", "phone -> desktop"])}</div>
       </div>
       <div class="action-stack transfer-actions">
         ${actionButton({
@@ -7940,24 +8091,28 @@ function renderSaveTransferPanel() {
           label: "Download save file",
           meta: "json backup",
           variant: "compact",
+          icon: "SV",
         })}
         ${actionButton({
           action: "copy-save-code",
           label: "Copy save code",
           meta: "portable text code",
           variant: "compact",
+          icon: "CP",
         })}
         ${actionButton({
           action: "trigger-save-import",
           label: "Import save file",
           meta: "load json backup",
           variant: "compact",
+          icon: "IN",
         })}
         ${actionButton({
           action: "import-save-code",
           label: "Paste save code",
           meta: "restore from text",
           variant: "compact",
+          icon: "CD",
         })}
       </div>
     </div>
@@ -7978,7 +8133,7 @@ function renderSurvivorTab(state, derived) {
                   <h4>${role.label}</h4>
                   <span class="tag">${state.survivors.assigned[roleId]}</span>
                 </div>
-                <p class="note">${role.description}</p>
+                <div class="chip-row">${tagList([role.description])}</div>
                 <div class="action-row">
                   <button type="button" class="mini-button" data-action="adjust-role" data-role="${roleId}" data-delta="-1" ${state.survivors.assigned[roleId] < 1 ? "disabled" : ""}>-</button>
                   <button type="button" class="mini-button" data-action="adjust-role" data-role="${roleId}" data-delta="1" ${state.survivors.idle < 1 ? "disabled" : ""}>+</button>
@@ -8005,8 +8160,9 @@ function renderSurvivorTab(state, derived) {
             ${actionButton({
               action: "recruit",
               label: "Recruit survivor",
-              meta: "Costs 18 scrap and 3 food.",
+              meta: "18 scrap / 3 food",
               disabled: state.survivors.total >= derived.survivorCap || !canAfford(state, { scrap: 18, food: 3 }),
+              icon: "+1",
             })}
           </div>
         `,
@@ -8045,7 +8201,7 @@ function renderRadioTab(state) {
         title: "Transmission notes",
         meta: `${notes.length} threads`,
         body: notes.length
-          ? `<div class="detail-list">${notes.map((note) => `<div class="list-block"><p class="note">${note}</p></div>`).join("")}</div>`
+          ? `<div class="detail-list">${notes.map((note, index) => `<div class="list-block signal-note-card"><div class="surface-head"><h4>Trace ${String(index + 1).padStart(2, "0")}</h4><span class="tag">rx</span></div><div class="chip-row">${tagList([note])}</div></div>`).join("")}</div>`
           : `<p class="empty-state">Nothing legible yet.</p>`,
       }),
       surfaceCard({
@@ -8058,18 +8214,14 @@ function renderRadioTab(state) {
                 <h4>Band state</h4>
                 <span class="tag">${state.flags.worldReveal ? "open" : "partial"}</span>
               </div>
-              <p class="note">${state.story.radioProgress > 0
-                ? "The receiver is now reading structured noise instead of dead air."
-                : "The rig is alive, but the band still mostly hisses back."}</p>
+              <div class="chip-row">${tagList([state.story.radioProgress > 0 ? "structured noise" : "mostly hiss"])}</div>
             </div>
             <div class="list-block">
               <div class="surface-head">
                 <h4>Route hooks</h4>
                 <span class="tag">${state.flags.bunkerRouteKnown ? "marked" : "hidden"}</span>
               </div>
-              <p class="note">${state.flags.bunkerRouteKnown
-                ? "A bunker line is now threaded through the static."
-                : "Keep scanning for route fragments and deeper coordinates."}</p>
+              <div class="chip-row">${tagList([state.flags.bunkerRouteKnown ? "bunker line marked" : "scan deeper"])}</div>
             </div>
           </div>
         `,
@@ -8091,8 +8243,9 @@ function renderRadioTab(state) {
             ${actionButton({
               action: "scan-radio",
               label: "Sweep band",
-              meta: "Costs 1 fuel and 1 parts.",
+              meta: "1 fuel / 1 parts",
               disabled: state.resources.fuel < 1 || state.resources.parts < 1,
+              icon: "RX",
             })}
           </div>
         `,
@@ -8124,13 +8277,14 @@ function renderTradeTab(state) {
                 <h4>${offer.name}</h4>
                 <span class="tag">${formatCost(offer.cost)}</span>
               </div>
-              <p class="note">${offer.description}</p>
+              <div class="chip-row">${tagList([offer.description])}</div>
               ${actionButton({
                 action: "buy-offer",
                 label: "Trade",
                 meta: "Take the deal",
                 disabled: !canAfford(state, offer.cost),
                 data: { offer: offer.id },
+                icon: "TR",
               })}
             </div>
           `).join("")}</div>`
@@ -8152,7 +8306,8 @@ function renderTradeTab(state) {
             ${actionButton({
               action: "refresh-trader",
               label: "Refresh offers",
-              meta: "See what the market dragged in.",
+              meta: "new wall",
+              icon: "TR",
             })}
           </div>
         `,
@@ -8171,14 +8326,14 @@ function renderFactionTab(state) {
           meta: state.faction.aligned === faction.id ? "aligned" : "available",
           className: "faction-card",
           body: `
-            <p class="note">${faction.description}</p>
-            <div class="chip-row">${tagList(faction.bonuses)}</div>
+            <div class="chip-row">${tagList([faction.description, ...faction.bonuses])}</div>
             ${actionButton({
               action: "choose-faction",
               label: state.faction.aligned === faction.id ? "Aligned" : `Align with ${faction.name}`,
-              meta: "Permanent choice",
+              meta: "locks choice",
               disabled: Boolean(state.faction.aligned),
               data: { faction: faction.id },
+              icon: "FX",
             })}
           `,
         })).join("")}
@@ -8214,16 +8369,6 @@ function renderLogTab(state) {
       }),
     ],
     [
-      surfaceCard({
-        title: "Global leaderboard",
-        meta: getLeaderboardState().entries.length ? `${getLeaderboardState().entries.length} ranked` : "hosted",
-        body: renderLeaderboardPanel(state),
-      }),
-      surfaceCard({
-        title: "Save transfer",
-        meta: "phone + desktop",
-        body: renderSaveTransferPanel(),
-      }),
       surfaceCard({
         title: "Event pulse",
         meta: `${state.log.length} entries`,
@@ -8306,6 +8451,8 @@ function renderTabContent(state, derived) {
       return renderTradeTab(state);
     case "factions":
       return renderFactionTab(state);
+    case "leaderboard":
+      return renderLeaderboardTab(state);
     case "log":
       return renderLogTab(state);
     case "overview":

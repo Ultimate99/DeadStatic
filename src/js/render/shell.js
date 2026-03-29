@@ -3,6 +3,23 @@ import { getVisibleResourceIds } from "../selectors/resources.js";
 import { TAB_DEFS, getSubtitle, getSummaryPills, getVisibleTabs } from "../selectors/ui.js";
 import { byId } from "./primitives.js";
 
+const RESOURCE_TOKENS = {
+  scrap: "SC",
+  food: "FD",
+  water: "WT",
+  cloth: "CL",
+  fuel: "FL",
+  parts: "PT",
+  wire: "WR",
+  medicine: "MD",
+  ammo: "AM",
+  electronics: "EL",
+  chemicals: "CH",
+  morale: "MO",
+  reputation: "RP",
+  relics: "RL",
+};
+
 function meterClass(percent) {
   if (percent <= 30) {
     return "danger";
@@ -30,7 +47,7 @@ export function renderResourceBar(state) {
     .map((resourceId) => `
       <div class="resource-pill tier-${RESOURCE_DEFS[resourceId].tier}">
         <div class="resource-pill-key">
-          <i class="tier-dot tier-${RESOURCE_DEFS[resourceId].tier}"></i>
+          <span class="resource-token tier-${RESOURCE_DEFS[resourceId].tier}">${RESOURCE_TOKENS[resourceId] || RESOURCE_DEFS[resourceId].label.slice(0, 2).toUpperCase()}</span>
           <span>${RESOURCE_DEFS[resourceId].label}</span>
         </div>
         <strong>${state.resources[resourceId]}</strong>
@@ -51,6 +68,7 @@ export function renderSummaryStrip(state, derived) {
   byId("summary-strip").innerHTML = pills
     .map((pill) => `
       <div class="summary-pill">
+        <span class="summary-badge" aria-hidden="true">${pill.icon || pill.label.slice(0, 2).toUpperCase()}</span>
         <div class="summary-pill-top">
           <span>${pill.label}</span>
           <strong>${pill.value}</strong>
@@ -75,9 +93,9 @@ export function renderTabBar(state, tabs) {
           data-action="set-tab"
           data-tab="${tab.id}"
         >
+          <span class="tab-icon" aria-hidden="true">${tab.icon || tab.label.slice(0, 2).toUpperCase()}</span>
           <span class="tab-copy">
             <strong>${tab.label}</strong>
-            <small>${tab.hint || "section"}</small>
           </span>
           ${count ? `<span class="tab-count">${count}</span>` : ""}
         </button>
