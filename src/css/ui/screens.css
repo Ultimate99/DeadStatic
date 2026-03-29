@@ -658,3 +658,46 @@ body[data-mobile="true"] .crew-band-card {
   }
 }
 
+@media (min-width: 721px) {
+  body[data-mobile="false"] .log-pulse-row,
+  body[data-mobile="false"] .crew-band-card {
+    border-color: rgba(205, 196, 174, 0.08);
+    border-radius: 10px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.006), transparent 20%),
+      rgba(13, 16, 16, 0.9);
+  }
+
+  body[data-mobile="false"] .crew-band-card strong,
+  body[data-mobile="false"] .log-pulse-row strong {
+    color: var(--text);
+  }
+
+  body[data-mobile="false"] .tutorial-strip {
+    gap: 14px;
+    padding: 12px 14px;
+    border-color: rgba(198, 163, 109, 0.14);
+    border-radius: 12px;
+    background:
+      linear-gradient(180deg, rgba(198, 163, 109, 0.04), transparent 38%),
+      rgba(12, 15, 15, 0.9);
+  }
+
+  body[data-mobile="false"] .tutorial-copy {
+    gap: 5px;
+  }
+
+  body[data-mobile="false"] .tutorial-actions {
+    min-width: 196px;
+  }
+
+  body[data-mobile="false"] .faction-status-board,
+  body[data-mobile="false"] .faction-status-copy {
+    gap: 8px;
+  }
+
+  body[data-mobile="false"] .setting-row {
+    gap: 10px;
+  }
+}
+

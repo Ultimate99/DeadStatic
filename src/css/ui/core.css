@@ -1,18 +1,22 @@
+/* Design system: restrained contrast, sharp surfaces, and low-noise tactical hierarchy. */
 :root {
   --bg: #050606;
   --bg-soft: #0d0f0f;
   --panel: rgba(11, 13, 13, 0.9);
   --panel-soft: rgba(17, 20, 20, 0.92);
+  --panel-elevated: rgba(19, 23, 22, 0.96);
   --line: rgba(207, 194, 164, 0.18);
   --line-strong: rgba(207, 194, 164, 0.3);
   --text: #f4eedf;
   --muted: #9a9384;
   --accent: #d3a56a;
   --accent-strong: #f1cb87;
+  --accent-cool: #98b1a2;
   --good: #86bb82;
   --warn: #d49c5a;
   --danger: #ce7263;
   --shadow: rgba(0, 0, 0, 0.42);
+  --shadow-tight: rgba(0, 0, 0, 0.24);
   --mono: "Cascadia Code", "JetBrains Mono", "IBM Plex Mono", monospace;
   --mobile-topbar-height: 60px;
   --mobile-survival-height: 88px;
