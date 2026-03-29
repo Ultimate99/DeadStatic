@@ -58,7 +58,16 @@ class MockElement {
     this.textContent = "";
     this.dataset = {};
     this.classList = new MockClassList();
+    this.files = [];
+    this.value = "";
+    this.listeners = new Map();
   }
+
+  addEventListener(type, handler) {
+    this.listeners.set(type, handler);
+  }
+
+  click() {}
 }
 
 export function createBundleHarness(randomValues, options = {}) {
@@ -73,6 +82,7 @@ export function createBundleHarness(randomValues, options = {}) {
     "combat-banner",
     "tab-bar",
     "tab-content",
+    "save-import-input",
   ];
   const elements = new Map(ids.map((id) => [id, new MockElement(id)]));
   const bodyListeners = new Map();
@@ -91,6 +101,9 @@ export function createBundleHarness(randomValues, options = {}) {
     },
     querySelectorAll() {
       return [];
+    },
+    createElement() {
+      return new MockElement();
     },
   };
 
@@ -121,11 +134,29 @@ export function createBundleHarness(randomValues, options = {}) {
   const window = {
     document,
     localStorage,
+    navigator: {
+      clipboard: {
+        writeText() {
+          return Promise.resolve();
+        },
+      },
+    },
     setInterval() {
       return 1;
     },
     confirm() {
       return true;
+    },
+    prompt() {
+      return "";
+    },
+    alert() {},
+    Blob,
+    URL: {
+      createObjectURL() {
+        return "blob:dead-static";
+      },
+      revokeObjectURL() {},
     },
   };
 
@@ -134,6 +165,11 @@ export function createBundleHarness(randomValues, options = {}) {
     document,
     window,
     Math: math,
+    navigator: window.navigator,
+    Blob: window.Blob,
+    URL: window.URL,
+    btoa,
+    atob,
   };
   context.globalThis = context;
   window.Math = math;

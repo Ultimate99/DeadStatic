@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
@@ -22,8 +22,13 @@ export function registerRenderTests(run) {
     assert.match(html, /viewport-fit=cover/);
     assert.match(html, /theme-color/);
     assert.match(html, /DEAD_STATIC_CONFIG/);
+    assert.match(html, /site\.webmanifest/);
+    assert.match(html, /apple-touch-icon/);
+    assert.match(html, /social-card\.png/);
     assert.doesNotMatch(html, /href="\.\/css\/ui\.css"/);
     assert.doesNotMatch(html, /src="\.\/js\/game\.js"/);
+    assert.equal(existsSync(path.join(projectRoot, "dist", "site.webmanifest")), true);
+    assert.equal(existsSync(path.join(projectRoot, "dist", "assets", "favicon.svg")), true);
 
     vm.runInNewContext(bundle, harness.context, { filename: "game.js" });
 
@@ -113,6 +118,9 @@ export function registerRenderTests(run) {
     assert.match(tabMarkup, /Event pulse/);
     assert.match(tabMarkup, /Global leaderboard/);
     assert.match(tabMarkup, /Set callsign/);
+    assert.match(tabMarkup, /Save transfer/);
+    assert.match(tabMarkup, /Download save file/);
+    assert.match(tabMarkup, /Paste save code/);
     assert.match(tabMarkup, /log-pulse-stack/);
     assert.match(tabMarkup, /log-pulse-row/);
     assert.doesNotMatch(tabMarkup, /log-pulse-grid/);

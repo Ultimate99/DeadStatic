@@ -31,6 +31,11 @@ import {
   refreshLeaderboard,
   submitLeaderboardScore,
 } from "../services/leaderboard.js";
+import {
+  copySaveCode,
+  downloadSaveFile,
+  importSaveFromCode,
+} from "../services/save-transfer.js";
 
 function actionResult(changed = false, options = {}) {
   return {
@@ -95,6 +100,43 @@ export function createActionDispatcher({
     },
     "submit-leaderboard": ({ state }) => {
       submitLeaderboardScore(state);
+      return actionResult(false, { stop: true });
+    },
+    "download-save-file": ({ state }) => {
+      downloadSaveFile(state);
+      setSaveStatus("save file downloaded");
+      return actionResult(false, { stop: true });
+    },
+    "copy-save-code": ({ state }) => {
+      copySaveCode(state)
+        .then(() => setSaveStatus("save code copied"))
+        .catch(() => setSaveStatus("could not copy save code"));
+      return actionResult(false, { stop: true });
+    },
+    "trigger-save-import": () => {
+      document.getElementById("save-import-input")?.click();
+      return actionResult(false, { stop: true });
+    },
+    "import-save-code": ({ state }) => {
+      const raw = typeof window.prompt === "function"
+        ? window.prompt("Paste a Dead Static save code or raw JSON save.")
+        : "";
+      if (!raw) {
+        return actionResult(false, { stop: true });
+      }
+
+      try {
+        const nextState = importSaveFromCode(raw);
+        evaluateProgression(nextState);
+        setState(nextState);
+        persist("save imported");
+        rerender();
+      } catch (error) {
+        setSaveStatus(error.message || "import failed");
+        if (typeof window.alert === "function") {
+          window.alert(error.message || "Could not import save.");
+        }
+      }
       return actionResult(false, { stop: true });
     },
     "combat-attack": ({ state }) => actionResult(attackCombat(state)),

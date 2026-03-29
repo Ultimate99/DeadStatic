@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -32,6 +32,7 @@ async function readCssWithImports(filePath, seen = new Set()) {
 
 async function buildStandalone() {
   await mkdir(distDir, { recursive: true });
+  await cp(path.join(srcDir, "public"), distDir, { recursive: true, force: true });
 
   const [template, css, runtimeConfig, js] = await Promise.all([
     readFile(path.join(srcDir, "index.source.html"), "utf8"),

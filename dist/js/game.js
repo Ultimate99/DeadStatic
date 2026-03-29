@@ -5611,6 +5611,304 @@ async function submitLeaderboardScore(state) {
 }
 
 
+// state/schema.js
+function defaultAssignedRoles() {
+  return Object.fromEntries(Object.keys(SURVIVOR_ROLES).map((roleId) => [roleId, 0]));
+}
+
+function defaultBuffers() {
+  return Object.fromEntries(RESOURCE_ORDER.map((resourceId) => [resourceId, 0]));
+}
+
+function createInitialState() {
+  return {
+    version: 4,
+    time: {
+      day: 1,
+      hour: 7,
+    },
+    condition: 78,
+    resources: {
+      scrap: 0,
+      food: 0,
+      water: 0,
+      cloth: 0,
+      fuel: 0,
+      parts: 0,
+      wire: 0,
+      medicine: 0,
+      ammo: 0,
+      electronics: 0,
+      chemicals: 0,
+      morale: 0,
+      reputation: 0,
+      relics: 0,
+    },
+    discoveredResources: ["scrap"],
+    unlockedSections: [],
+    unlockedZones: [],
+    upgrades: [],
+    inventory: {},
+    equipped: {
+      weapon: null,
+      armor: null,
+    },
+    survivors: {
+      total: 0,
+      idle: 0,
+      assigned: defaultAssignedRoles(),
+    },
+    shelter: {
+      warmth: 0,
+      threat: 0,
+      noise: 0,
+      damage: {},
+    },
+    story: {
+      radioProgress: 0,
+      secretProgress: 0,
+    },
+    stats: {
+      searches: 0,
+      scavengeSources: {},
+      burnUses: 0,
+      foodSearches: 0,
+      expeditions: 0,
+      combatsWon: 0,
+      nightsSurvived: 0,
+      radioScans: 0,
+      traderRefreshes: 0,
+      zonesVisited: 0,
+    },
+    flags: {
+      burnUnlocked: false,
+      firstNightResolved: false,
+      worldReveal: false,
+      bunkerRouteKnown: false,
+    },
+    trader: {
+      offers: [],
+    },
+    faction: {
+      aligned: null,
+    },
+    buffers: {
+      resources: defaultBuffers(),
+      condition: 0,
+    },
+    clocks: {
+      hunger: 0,
+      thirst: 0,
+    },
+    night: {
+      plan: "hold_fast",
+      lastReport: null,
+    },
+    expedition: {
+      selectedZone: null,
+      approach: "standard",
+    },
+    ui: {
+      activeTab: "overview",
+      inspectedStructure: "shelter_core",
+      notableFind: null,
+    },
+    seenEvents: [],
+    visitedZones: [],
+    combat: null,
+    log: [
+      {
+        stamp: "D1 07:00",
+        text: "You wake in a room with one chair, one door, and too much silence outside.",
+      },
+      {
+        stamp: "D1 07:00",
+        text: "The radio on the floor is dead. The static in the walls is not.",
+      },
+    ],
+  };
+}
+
+
+// state/migrations.js
+function migrateState(rawState) {
+  const fresh = createInitialState();
+  const state = rawState && typeof rawState === "object" ? rawState : {};
+
+  return {
+    ...fresh,
+    ...state,
+    version: fresh.version,
+    time: { ...fresh.time, ...state.time },
+    resources: { ...fresh.resources, ...state.resources },
+    discoveredResources: Array.isArray(state.discoveredResources)
+      ? [...new Set(state.discoveredResources)]
+      : fresh.discoveredResources,
+    unlockedSections: Array.isArray(state.unlockedSections)
+      ? [...new Set(state.unlockedSections)]
+      : fresh.unlockedSections,
+    unlockedZones: Array.isArray(state.unlockedZones)
+      ? [...new Set(state.unlockedZones)]
+      : fresh.unlockedZones,
+    upgrades: Array.isArray(state.upgrades) ? [...new Set(state.upgrades)] : fresh.upgrades,
+    inventory: { ...fresh.inventory, ...state.inventory },
+    equipped: { ...fresh.equipped, ...state.equipped },
+    survivors: {
+      ...fresh.survivors,
+      ...state.survivors,
+      assigned: {
+        ...fresh.survivors.assigned,
+        ...(state.survivors?.assigned || {}),
+      },
+    },
+    shelter: { ...fresh.shelter, ...state.shelter },
+    story: { ...fresh.story, ...state.story },
+    stats: { ...fresh.stats, ...state.stats },
+    flags: { ...fresh.flags, ...state.flags },
+    trader: { ...fresh.trader, ...state.trader },
+    faction: { ...fresh.faction, ...state.faction },
+    ui: { ...fresh.ui, ...state.ui },
+    night: { ...fresh.night, ...state.night },
+    expedition: { ...fresh.expedition, ...state.expedition },
+    buffers: {
+      resources: {
+        ...fresh.buffers.resources,
+        ...(state.buffers?.resources || {}),
+      },
+      condition: typeof state.buffers?.condition === "number" ? state.buffers.condition : 0,
+    },
+    clocks: { ...fresh.clocks, ...state.clocks },
+    seenEvents: Array.isArray(state.seenEvents) ? [...new Set(state.seenEvents)] : fresh.seenEvents,
+    visitedZones: Array.isArray(state.visitedZones) ? [...new Set(state.visitedZones)] : fresh.visitedZones,
+    combat: state.combat || null,
+    log: Array.isArray(state.log) && state.log.length ? state.log.slice(0, 60) : fresh.log,
+  };
+}
+
+
+// state/storage.js
+function loadState() {
+  try {
+    const serialized = window.localStorage.getItem(SAVE_KEY);
+    if (!serialized) {
+      return createInitialState();
+    }
+
+    return migrateState(JSON.parse(serialized));
+  } catch (_error) {
+    return createInitialState();
+  }
+}
+
+function saveState(state) {
+  try {
+    window.localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  } catch (_error) {
+    // Allow play to continue even when the browser blocks local storage for local files.
+  }
+}
+
+function clearSave() {
+  try {
+    window.localStorage.removeItem(SAVE_KEY);
+  } catch (_error) {
+    // Ignore storage failures so reset can still rebuild in-memory state.
+  }
+}
+
+
+// state/index.js
+
+
+
+// state.js
+
+
+
+// services/save-transfer.js
+const SAVE_TRANSFER_PREFIX = "dead-static-save:";
+
+function encodeUtf8(value) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary);
+}
+
+function decodeUtf8(value) {
+  const binary = atob(value);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+function normalizeImportedText(raw) {
+  const text = String(raw || "").trim();
+  if (!text) {
+    throw new Error("No save data found.");
+  }
+
+  if (text.startsWith(SAVE_TRANSFER_PREFIX)) {
+    return decodeUtf8(text.slice(SAVE_TRANSFER_PREFIX.length));
+  }
+
+  return text;
+}
+
+function parseImportedState(raw) {
+  const parsed = JSON.parse(normalizeImportedText(raw));
+  return migrateState(parsed);
+}
+
+function safeStamp() {
+  return new Date().toISOString().replace(/[:.]/g, "-");
+}
+
+function encodeSaveState(state) {
+  return `${SAVE_TRANSFER_PREFIX}${encodeUtf8(JSON.stringify(state))}`;
+}
+
+function downloadSaveFile(state) {
+  const payload = JSON.stringify(state, null, 2);
+  const blob = new Blob([payload], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `dead-static-save-${safeStamp()}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function copySaveCode(state) {
+  const payload = encodeSaveState(state);
+  if (navigator?.clipboard?.writeText) {
+    await navigator.clipboard.writeText(payload);
+    return payload;
+  }
+
+  if (typeof window?.prompt === "function") {
+    window.prompt("Copy your Dead Static save code.", payload);
+  }
+  return payload;
+}
+
+function importSaveFromCode(raw) {
+  return parseImportedState(raw);
+}
+
+async function importSaveFromFile(file) {
+  if (!file) {
+    throw new Error("No file selected.");
+  }
+
+  const text = await file.text();
+  return parseImportedState(text);
+}
+
+
 // app/action-registry.js
 function actionResult(changed = false, options = {}) {
   return {
@@ -5675,6 +5973,43 @@ function createActionDispatcher({
     },
     "submit-leaderboard": ({ state }) => {
       submitLeaderboardScore(state);
+      return actionResult(false, { stop: true });
+    },
+    "download-save-file": ({ state }) => {
+      downloadSaveFile(state);
+      setSaveStatus("save file downloaded");
+      return actionResult(false, { stop: true });
+    },
+    "copy-save-code": ({ state }) => {
+      copySaveCode(state)
+        .then(() => setSaveStatus("save code copied"))
+        .catch(() => setSaveStatus("could not copy save code"));
+      return actionResult(false, { stop: true });
+    },
+    "trigger-save-import": () => {
+      document.getElementById("save-import-input")?.click();
+      return actionResult(false, { stop: true });
+    },
+    "import-save-code": ({ state }) => {
+      const raw = typeof window.prompt === "function"
+        ? window.prompt("Paste a Dead Static save code or raw JSON save.")
+        : "";
+      if (!raw) {
+        return actionResult(false, { stop: true });
+      }
+
+      try {
+        const nextState = importSaveFromCode(raw);
+        evaluateProgression(nextState);
+        setState(nextState);
+        persist("save imported");
+        rerender();
+      } catch (error) {
+        setSaveStatus(error.message || "import failed");
+        if (typeof window.alert === "function") {
+          window.alert(error.message || "Could not import save.");
+        }
+      }
       return actionResult(false, { stop: true });
     },
     "combat-attack": ({ state }) => actionResult(attackCombat(state)),
@@ -7553,6 +7888,49 @@ function renderLeaderboardPanel(state) {
   `;
 }
 
+function renderSaveTransferPanel() {
+  return `
+    <div class="detail-list transfer-board">
+      <div class="list-block transfer-copy">
+        <div class="surface-head">
+          <div>
+            <span class="note-label">Cross-device save</span>
+            <h4>Move your run between phone and desktop</h4>
+          </div>
+          <span class="tag">local</span>
+        </div>
+        <p class="note">Use file export for backups, or use a share code when you want to continue the same shelter on another device.</p>
+      </div>
+      <div class="action-stack transfer-actions">
+        ${actionButton({
+          action: "download-save-file",
+          label: "Download save file",
+          meta: "json backup",
+          variant: "compact",
+        })}
+        ${actionButton({
+          action: "copy-save-code",
+          label: "Copy save code",
+          meta: "portable text code",
+          variant: "compact",
+        })}
+        ${actionButton({
+          action: "trigger-save-import",
+          label: "Import save file",
+          meta: "load json backup",
+          variant: "compact",
+        })}
+        ${actionButton({
+          action: "import-save-code",
+          label: "Paste save code",
+          meta: "restore from text",
+          variant: "compact",
+        })}
+      </div>
+    </div>
+  `;
+}
+
 function renderSurvivorTab(state, derived) {
   return renderSplitPane(
     [
@@ -7809,6 +8187,11 @@ function renderLogTab(state) {
         body: renderLeaderboardPanel(state),
       }),
       surfaceCard({
+        title: "Save transfer",
+        meta: "phone + desktop",
+        body: renderSaveTransferPanel(),
+      }),
+      surfaceCard({
         title: "Event pulse",
         meta: `${state.log.length} entries`,
         body: renderLogPulse(state),
@@ -7916,225 +8299,12 @@ function renderGame(state) {
 }
 
 
-// state/schema.js
-function defaultAssignedRoles() {
-  return Object.fromEntries(Object.keys(SURVIVOR_ROLES).map((roleId) => [roleId, 0]));
-}
-
-function defaultBuffers() {
-  return Object.fromEntries(RESOURCE_ORDER.map((resourceId) => [resourceId, 0]));
-}
-
-function createInitialState() {
-  return {
-    version: 4,
-    time: {
-      day: 1,
-      hour: 7,
-    },
-    condition: 78,
-    resources: {
-      scrap: 0,
-      food: 0,
-      water: 0,
-      cloth: 0,
-      fuel: 0,
-      parts: 0,
-      wire: 0,
-      medicine: 0,
-      ammo: 0,
-      electronics: 0,
-      chemicals: 0,
-      morale: 0,
-      reputation: 0,
-      relics: 0,
-    },
-    discoveredResources: ["scrap"],
-    unlockedSections: [],
-    unlockedZones: [],
-    upgrades: [],
-    inventory: {},
-    equipped: {
-      weapon: null,
-      armor: null,
-    },
-    survivors: {
-      total: 0,
-      idle: 0,
-      assigned: defaultAssignedRoles(),
-    },
-    shelter: {
-      warmth: 0,
-      threat: 0,
-      noise: 0,
-      damage: {},
-    },
-    story: {
-      radioProgress: 0,
-      secretProgress: 0,
-    },
-    stats: {
-      searches: 0,
-      scavengeSources: {},
-      burnUses: 0,
-      foodSearches: 0,
-      expeditions: 0,
-      combatsWon: 0,
-      nightsSurvived: 0,
-      radioScans: 0,
-      traderRefreshes: 0,
-      zonesVisited: 0,
-    },
-    flags: {
-      burnUnlocked: false,
-      firstNightResolved: false,
-      worldReveal: false,
-      bunkerRouteKnown: false,
-    },
-    trader: {
-      offers: [],
-    },
-    faction: {
-      aligned: null,
-    },
-    buffers: {
-      resources: defaultBuffers(),
-      condition: 0,
-    },
-    clocks: {
-      hunger: 0,
-      thirst: 0,
-    },
-    night: {
-      plan: "hold_fast",
-      lastReport: null,
-    },
-    expedition: {
-      selectedZone: null,
-      approach: "standard",
-    },
-    ui: {
-      activeTab: "overview",
-      inspectedStructure: "shelter_core",
-      notableFind: null,
-    },
-    seenEvents: [],
-    visitedZones: [],
-    combat: null,
-    log: [
-      {
-        stamp: "D1 07:00",
-        text: "You wake in a room with one chair, one door, and too much silence outside.",
-      },
-      {
-        stamp: "D1 07:00",
-        text: "The radio on the floor is dead. The static in the walls is not.",
-      },
-    ],
-  };
-}
-
-
-// state/migrations.js
-function migrateState(rawState) {
-  const fresh = createInitialState();
-  const state = rawState && typeof rawState === "object" ? rawState : {};
-
-  return {
-    ...fresh,
-    ...state,
-    version: fresh.version,
-    time: { ...fresh.time, ...state.time },
-    resources: { ...fresh.resources, ...state.resources },
-    discoveredResources: Array.isArray(state.discoveredResources)
-      ? [...new Set(state.discoveredResources)]
-      : fresh.discoveredResources,
-    unlockedSections: Array.isArray(state.unlockedSections)
-      ? [...new Set(state.unlockedSections)]
-      : fresh.unlockedSections,
-    unlockedZones: Array.isArray(state.unlockedZones)
-      ? [...new Set(state.unlockedZones)]
-      : fresh.unlockedZones,
-    upgrades: Array.isArray(state.upgrades) ? [...new Set(state.upgrades)] : fresh.upgrades,
-    inventory: { ...fresh.inventory, ...state.inventory },
-    equipped: { ...fresh.equipped, ...state.equipped },
-    survivors: {
-      ...fresh.survivors,
-      ...state.survivors,
-      assigned: {
-        ...fresh.survivors.assigned,
-        ...(state.survivors?.assigned || {}),
-      },
-    },
-    shelter: { ...fresh.shelter, ...state.shelter },
-    story: { ...fresh.story, ...state.story },
-    stats: { ...fresh.stats, ...state.stats },
-    flags: { ...fresh.flags, ...state.flags },
-    trader: { ...fresh.trader, ...state.trader },
-    faction: { ...fresh.faction, ...state.faction },
-    ui: { ...fresh.ui, ...state.ui },
-    night: { ...fresh.night, ...state.night },
-    expedition: { ...fresh.expedition, ...state.expedition },
-    buffers: {
-      resources: {
-        ...fresh.buffers.resources,
-        ...(state.buffers?.resources || {}),
-      },
-      condition: typeof state.buffers?.condition === "number" ? state.buffers.condition : 0,
-    },
-    clocks: { ...fresh.clocks, ...state.clocks },
-    seenEvents: Array.isArray(state.seenEvents) ? [...new Set(state.seenEvents)] : fresh.seenEvents,
-    visitedZones: Array.isArray(state.visitedZones) ? [...new Set(state.visitedZones)] : fresh.visitedZones,
-    combat: state.combat || null,
-    log: Array.isArray(state.log) && state.log.length ? state.log.slice(0, 60) : fresh.log,
-  };
-}
-
-
-// state/storage.js
-function loadState() {
-  try {
-    const serialized = window.localStorage.getItem(SAVE_KEY);
-    if (!serialized) {
-      return createInitialState();
-    }
-
-    return migrateState(JSON.parse(serialized));
-  } catch (_error) {
-    return createInitialState();
-  }
-}
-
-function saveState(state) {
-  try {
-    window.localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-  } catch (_error) {
-    // Allow play to continue even when the browser blocks local storage for local files.
-  }
-}
-
-function clearSave() {
-  try {
-    window.localStorage.removeItem(SAVE_KEY);
-  } catch (_error) {
-    // Ignore storage failures so reset can still rebuild in-memory state.
-  }
-}
-
-
-// state/index.js
-
-
-
-// state.js
-
-
-
 // app.js
 let state = loadState();
 evaluateProgression(state);
 
 const saveStatus = document.getElementById("autosave-status");
+const saveImportInput = document.getElementById("save-import-input");
 
 function setSaveStatus(text) {
   saveStatus.textContent = text;
@@ -8147,6 +8317,13 @@ function rerender() {
 function persist(label) {
   saveState(state);
   setSaveStatus(label);
+}
+
+async function applyImportedState(nextState, label) {
+  evaluateProgression(nextState);
+  state = nextState;
+  persist(label);
+  rerender();
 }
 
 const handleAction = createActionDispatcher({
@@ -8174,6 +8351,25 @@ document.body.addEventListener("click", (event) => {
   }
 
   handleAction(button.dataset.action, button);
+});
+
+saveImportInput?.addEventListener("change", async () => {
+  const file = saveImportInput.files?.[0];
+  if (!file) {
+    return;
+  }
+
+  try {
+    const nextState = await importSaveFromFile(file);
+    await applyImportedState(nextState, "imported save");
+  } catch (error) {
+    setSaveStatus(error.message || "import failed");
+    if (typeof window.alert === "function") {
+      window.alert(error.message || "Could not import save.");
+    }
+  } finally {
+    saveImportInput.value = "";
+  }
 });
 
 rerender();

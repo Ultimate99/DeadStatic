@@ -100,6 +100,49 @@ function renderLeaderboardPanel(state) {
   `;
 }
 
+function renderSaveTransferPanel() {
+  return `
+    <div class="detail-list transfer-board">
+      <div class="list-block transfer-copy">
+        <div class="surface-head">
+          <div>
+            <span class="note-label">Cross-device save</span>
+            <h4>Move your run between phone and desktop</h4>
+          </div>
+          <span class="tag">local</span>
+        </div>
+        <p class="note">Use file export for backups, or use a share code when you want to continue the same shelter on another device.</p>
+      </div>
+      <div class="action-stack transfer-actions">
+        ${actionButton({
+          action: "download-save-file",
+          label: "Download save file",
+          meta: "json backup",
+          variant: "compact",
+        })}
+        ${actionButton({
+          action: "copy-save-code",
+          label: "Copy save code",
+          meta: "portable text code",
+          variant: "compact",
+        })}
+        ${actionButton({
+          action: "trigger-save-import",
+          label: "Import save file",
+          meta: "load json backup",
+          variant: "compact",
+        })}
+        ${actionButton({
+          action: "import-save-code",
+          label: "Paste save code",
+          meta: "restore from text",
+          variant: "compact",
+        })}
+      </div>
+    </div>
+  `;
+}
+
 export function renderSurvivorTab(state, derived) {
   return renderSplitPane(
     [
@@ -354,6 +397,11 @@ export function renderLogTab(state) {
         title: "Global leaderboard",
         meta: getLeaderboardState().entries.length ? `${getLeaderboardState().entries.length} ranked` : "hosted",
         body: renderLeaderboardPanel(state),
+      }),
+      surfaceCard({
+        title: "Save transfer",
+        meta: "phone + desktop",
+        body: renderSaveTransferPanel(),
       }),
       surfaceCard({
         title: "Event pulse",

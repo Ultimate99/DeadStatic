@@ -4,6 +4,7 @@ import { createInitialState } from "../../../src/js/state/index.js";
 import { setNightPlan, getNightForecast } from "../../../src/js/engine/night.js";
 import { prepareExpedition, setExpeditionApproach, getExpeditionPreview, launchPreparedExpedition } from "../../../src/js/engine/expeditions.js";
 import { searchRubble } from "../../../src/js/engine/scavenge.js";
+import { encodeSaveState, importSaveFromCode } from "../../../src/js/services/save-transfer.js";
 import { withRandomSequence } from "../helpers/harness.mjs";
 
 export function registerSystemsTests(run) {
@@ -54,5 +55,24 @@ export function registerSystemsTests(run) {
 
     assert.equal(state.stats.expeditions, 1);
     assert.ok(state.visitedZones.includes("ruined_street"));
+  });
+
+  run("save transfer codes round-trip game state safely", () => {
+    const state = createInitialState();
+    state.resources.scrap = 42;
+    state.resources.food = 7;
+    state.story.radioProgress = 3;
+    state.upgrades = ["backpack", "campfire"];
+    state.unlockedSections = ["upgrades", "inventory", "radio"];
+
+    const code = encodeSaveState(state);
+    const imported = importSaveFromCode(code);
+
+    assert.match(code, /^dead-static-save:/);
+    assert.equal(imported.resources.scrap, 42);
+    assert.equal(imported.resources.food, 7);
+    assert.equal(imported.story.radioProgress, 3);
+    assert.deepEqual(imported.upgrades, ["backpack", "campfire"]);
+    assert.ok(imported.unlockedSections.includes("radio"));
   });
 }

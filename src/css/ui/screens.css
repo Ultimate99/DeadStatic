@@ -440,12 +440,14 @@ body::after {
 }
 
 .leaderboard-board,
-.leaderboard-list {
+.leaderboard-list,
+.transfer-board {
   display: grid;
   gap: 8px;
 }
 
-.leaderboard-actions {
+.leaderboard-actions,
+.transfer-actions {
   gap: 6px;
 }
 
@@ -480,6 +482,10 @@ body::after {
   background:
     linear-gradient(145deg, rgba(211, 165, 106, 0.08), transparent 52%),
     rgba(15, 18, 18, 0.8);
+}
+
+.transfer-copy {
+  border-radius: 14px;
 }
 
 @media (max-width: 720px) {

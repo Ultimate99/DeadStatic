@@ -1,5 +1,8 @@
 # Dead Static
 
+Live site:
+`https://ultimate99.github.io/DeadStatic/`
+
 ## 1. Game Design Outline
 
 `Dead Static` is a browser-based incremental survival game that starts with one desperate action and unfolds into a layered ASCII-heavy apocalypse sim. The player begins alone, scraping through rubble for enough material to survive the first night. Over time the interface grows along with the fiction: shelter management, food pressure, weapons, expeditions, survivor assignments, traders, faction politics, radio investigation, anomaly zones, and a hidden bunker route.
@@ -239,6 +242,16 @@ Run the generated build by opening [`dist/index.html`](C:\GPT_Games\Dead Static\
 
 The root [`index.html`](C:\GPT_Games\Dead Static\index.html) is a thin launcher that redirects to the generated build.
 
+### Move Saves Between Devices
+
+Use the `Log` tab:
+
+1. `Download save file` to make a JSON backup.
+2. `Copy save code` to move a run through text.
+3. On another device, use `Import save file` or `Paste save code`.
+
+This keeps the main save local to each browser while still letting you continue the same shelter on desktop and phone.
+
 ### Open On Your Phone
 
 1. Build the game:
@@ -260,6 +273,9 @@ If Windows prompts for firewall access, allow `node` on private networks so the 
 4. Push to `main` or run [deploy-pages.yml](C:\GPT_Games\Dead Static\.github\workflows\deploy-pages.yml).
 
 The workflow builds the game, runs QA, and publishes `dist/`.
+
+Current published URL:
+`https://ultimate99.github.io/DeadStatic/`
 
 ### Supabase Leaderboard
 
