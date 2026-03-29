@@ -78,7 +78,7 @@ function renderOverviewActions(state) {
       meta: "10 scrap",
       disabled: state.resources.scrap < 10,
       variant: "compact utility-trigger",
-      icon: "HT",
+      icon: "warmth",
     }));
   }
 
@@ -88,7 +88,7 @@ function renderOverviewActions(state) {
       label: "Food search",
       meta: "safe pull",
       variant: "compact utility-trigger",
-      icon: "FD",
+      icon: "food",
     }));
   }
 
@@ -152,7 +152,7 @@ function renderUpgradeCard(state, upgrade) {
         meta: ready ? "Permanent unlock" : "Need more salvage",
         disabled: !ready,
         data: { upgrade: upgrade.id },
-        icon: "MK",
+        icon: "build",
       })}
     </div>
   `;
@@ -410,7 +410,7 @@ export function renderNightPlanner(state) {
     disabled: state.night.plan === plan.id,
     data: { plan: plan.id },
     variant: `compact ${state.night.plan === plan.id ? "primary" : ""}`,
-    icon: "NT",
+    icon: "night",
   }));
 
   return `
@@ -487,7 +487,7 @@ export function renderExpeditionPlanner(state) {
                 disabled: state.expedition.approach === approach.id,
                 data: { approach: approach.id },
                 variant: "compact",
-                icon: "AP",
+                icon: "route",
               })}
             </div>
           `;
@@ -499,7 +499,7 @@ export function renderExpeditionPlanner(state) {
         meta: preview.canLaunch ? "prepared route" : `need ${formatCost(preview.cost)}`,
         disabled: !preview.canLaunch || Boolean(state.combat),
         variant: "primary",
-        icon: "GO",
+        icon: "launch",
       })}
     </div>
   `;
@@ -512,21 +512,21 @@ export function renderShelterTab(state, derived) {
       label: "Eat ration",
       meta: "1 food",
       disabled: state.resources.food < 1,
-      icon: "FD",
+      icon: "food",
     }),
     actionButton({
       action: "drink-water",
       label: "Drink water",
       meta: "1 water",
       disabled: state.resources.water < 1,
-      icon: "WT",
+      icon: "water",
     }),
     actionButton({
       action: "patch-barricade",
       label: "Patch barricade",
       meta: "6 scrap",
       disabled: state.resources.scrap < 6,
-      icon: "BR",
+      icon: "barricade",
     }),
   ];
 
@@ -536,7 +536,7 @@ export function renderShelterTab(state, derived) {
       label: "Press ammo",
       meta: "5 rounds",
       disabled: state.resources.parts < 1 || state.resources.scrap < 1 || state.resources.chemicals < 1,
-      icon: "AM",
+      icon: "ammo",
     }));
   }
 
@@ -663,7 +663,7 @@ export function renderMapTab(state) {
             meta: state.expedition.selectedZone === zone.id ? "staged" : "stage route",
             disabled: Boolean(state.combat),
             data: { zone: zone.id },
-            icon: "RT",
+            icon: "map",
           })}
         `,
       })).join("") : surfaceCard({

@@ -2735,18 +2735,18 @@ function countLogCategories(logEntries, orderedCategories) {
 
 // selectors/ui.js
 const TAB_DEFS = [
-  { id: "overview", label: "Overview", hint: "control", icon: "OV", count: (state) => state.stats.searches || null },
-  { id: "craft", label: "Craft", hint: "build queue", icon: "MK", unlock: "upgrades", count: (state) => getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id)).length || null },
-  { id: "inventory", label: "Inventory", hint: "gear hold", icon: "KT", unlock: "inventory" },
-  { id: "shelter", label: "Shelter", hint: "survival", icon: "HT", unlock: "shelter" },
-  { id: "shelter_map", label: "Shelter Map", hint: "compound", icon: "MP", unlock: "shelter" },
-  { id: "map", label: "Map", hint: "routes", icon: "RT", unlock: "map", count: (state) => state.unlockedZones.length || null },
-  { id: "survivors", label: "Crew", hint: "assignments", icon: "CR", unlock: "survivors", count: (state) => state.survivors.total || null },
-  { id: "radio", label: "Radio", hint: "signals", icon: "RX", unlock: "radio", count: (state) => state.story.radioProgress || null },
-  { id: "trade", label: "Trade", hint: "market", icon: "TR", unlock: "trader", count: (state) => state.trader.offers.length || null },
-  { id: "factions", label: "Factions", hint: "alignment", icon: "FX", unlock: "factions" },
-  { id: "leaderboard", label: "Leaderboard", hint: "hosted", icon: "LB" },
-  { id: "log", label: "Log", hint: "history", icon: "LG" },
+  { id: "overview", label: "Overview", hint: "control", icon: "overview", count: (state) => state.stats.searches || null },
+  { id: "craft", label: "Craft", hint: "build queue", icon: "craft", unlock: "upgrades", count: (state) => getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id)).length || null },
+  { id: "inventory", label: "Inventory", hint: "gear hold", icon: "inventory", unlock: "inventory" },
+  { id: "shelter", label: "Shelter", hint: "survival", icon: "shelter", unlock: "shelter" },
+  { id: "shelter_map", label: "Shelter Map", hint: "compound", icon: "shelter_map", unlock: "shelter" },
+  { id: "map", label: "Map", hint: "routes", icon: "map", unlock: "map", count: (state) => state.unlockedZones.length || null },
+  { id: "survivors", label: "Crew", hint: "assignments", icon: "crew", unlock: "survivors", count: (state) => state.survivors.total || null },
+  { id: "radio", label: "Radio", hint: "signals", icon: "radio", unlock: "radio", count: (state) => state.story.radioProgress || null },
+  { id: "trade", label: "Trade", hint: "market", icon: "trade", unlock: "trader", count: (state) => state.trader.offers.length || null },
+  { id: "factions", label: "Factions", hint: "alignment", icon: "factions", unlock: "factions" },
+  { id: "leaderboard", label: "Leaderboard", hint: "hosted", icon: "leaderboard" },
+  { id: "log", label: "Log", hint: "history", icon: "log" },
 ];
 
 const DEFAULT_LOG_CATEGORIES = ["loot", "build", "night", "expedition", "radio", "combat", "trade", "notable"];
@@ -2807,22 +2807,22 @@ function getSubtitle(state) {
 
 function getSummaryPills(state, derived) {
   const pills = [
-    { label: "Warmth", value: state.shelter.warmth.toFixed(1), icon: "HT" },
-    { label: "Threat", value: state.shelter.threat.toFixed(1), icon: "TH" },
-    { label: "Noise", value: state.shelter.noise.toFixed(1), icon: "NZ" },
+    { label: "Warmth", value: state.shelter.warmth.toFixed(1), icon: "warmth" },
+    { label: "Threat", value: state.shelter.threat.toFixed(1), icon: "threat" },
+    { label: "Noise", value: state.shelter.noise.toFixed(1), icon: "noise" },
   ];
 
   if (state.discoveredResources.includes("food")) {
-    pills.push({ label: "Hunger", value: `${state.clocks.hunger}/6h`, icon: "FD" });
+    pills.push({ label: "Hunger", value: `${state.clocks.hunger}/6h`, icon: "food" });
   }
   if (state.discoveredResources.includes("water")) {
-    pills.push({ label: "Thirst", value: `${state.clocks.thirst}/4h`, icon: "WT" });
+    pills.push({ label: "Thirst", value: `${state.clocks.thirst}/4h`, icon: "water" });
   }
   if (state.unlockedSections.includes("survivors")) {
-    pills.push({ label: "Crew", value: `${state.survivors.total}/${derived.survivorCap}`, icon: "CR" });
+    pills.push({ label: "Crew", value: `${state.survivors.total}/${derived.survivorCap}`, icon: "crew" });
   }
   if (state.unlockedSections.includes("radio")) {
-    pills.push({ label: "Signal", value: `${state.story.radioProgress}`, icon: "RX" });
+    pills.push({ label: "Signal", value: `${state.story.radioProgress}`, icon: "radio" });
   }
 
   return pills;
@@ -6097,65 +6097,326 @@ function createActionDispatcher({
 }
 
 
+// render/icons.js
+const ATTRS = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"';
+
+const ICONS = {
+  overview: `
+    <rect x="4" y="4" width="7" height="7" rx="1.5"></rect>
+    <rect x="13" y="4" width="7" height="4" rx="1.5"></rect>
+    <rect x="13" y="10" width="7" height="10" rx="1.5"></rect>
+    <rect x="4" y="13" width="7" height="7" rx="1.5"></rect>
+  `,
+  craft: `
+    <path d="M7 18l10-10"></path>
+    <path d="M14 5l5 5"></path>
+    <path d="M5 14l5 5"></path>
+    <path d="M6 6l3 3"></path>
+  `,
+  inventory: `
+    <path d="M8 8V6a4 4 0 0 1 8 0v2"></path>
+    <path d="M6 8h12l1 10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L6 8Z"></path>
+    <path d="M9 12h6"></path>
+  `,
+  shelter: `
+    <path d="M4 11.5 12 5l8 6.5"></path>
+    <path d="M6 10.5V20h12v-9.5"></path>
+    <path d="M10 20v-5h4v5"></path>
+  `,
+  shelter_map: `
+    <path d="M4 6.5 9.5 4l5 2.5L20 4v13.5L14.5 20 9.5 17.5 4 20V6.5Z"></path>
+    <path d="M9.5 4v13.5"></path>
+    <path d="M14.5 6.5V20"></path>
+  `,
+  map: `
+    <circle cx="7" cy="8" r="2.2"></circle>
+    <circle cx="17" cy="16" r="2.2"></circle>
+    <path d="M8.8 9.6 12 12.2"></path>
+    <path d="M14.2 13.9 15.2 14.8"></path>
+    <path d="M12 6.5h6"></path>
+  `,
+  crew: `
+    <circle cx="9" cy="9" r="3"></circle>
+    <circle cx="16.5" cy="10.5" r="2.5"></circle>
+    <path d="M4.5 19a4.5 4.5 0 0 1 9 0"></path>
+    <path d="M13.5 19a3.5 3.5 0 0 1 7 0"></path>
+  `,
+  radio: `
+    <path d="M6 18h12"></path>
+    <path d="M12 18V8"></path>
+    <path d="M8.5 14.5a4.5 4.5 0 0 1 0-7"></path>
+    <path d="M15.5 7.5a4.5 4.5 0 0 1 0 7"></path>
+    <path d="M6.2 17.8 7.5 11"></path>
+    <path d="M17.8 17.8 16.5 11"></path>
+  `,
+  trade: `
+    <path d="M7 7h10"></path>
+    <path d="M7 12h10"></path>
+    <path d="M7 17h10"></path>
+    <path d="M14 5l3 2-3 2"></path>
+    <path d="M10 10 7 12l3 2"></path>
+    <path d="M14 15l3 2-3 2"></path>
+  `,
+  factions: `
+    <circle cx="12" cy="5.5" r="2.2"></circle>
+    <circle cx="6.5" cy="17" r="2.2"></circle>
+    <circle cx="17.5" cy="17" r="2.2"></circle>
+    <path d="M10.7 7.3 7.8 14.9"></path>
+    <path d="M13.3 7.3 16.2 14.9"></path>
+    <path d="M8.8 17h6.4"></path>
+  `,
+  leaderboard: `
+    <path d="M8 18h8"></path>
+    <path d="M9.5 18v-3h5v3"></path>
+    <path d="M8 5h8v3a4 4 0 0 1-8 0V5Z"></path>
+    <path d="M8 7H5.5a2 2 0 0 0 2 2"></path>
+    <path d="M16 7h2.5a2 2 0 0 1-2 2"></path>
+  `,
+  log: `
+    <path d="M7 5h10"></path>
+    <path d="M7 10h10"></path>
+    <path d="M7 15h7"></path>
+    <path d="M5 5h.01"></path>
+    <path d="M5 10h.01"></path>
+    <path d="M5 15h.01"></path>
+  `,
+  warmth: `
+    <path d="M12 4c1.5 2 3.5 3.8 3.5 6.7a3.5 3.5 0 0 1-7 0C8.5 8.2 10.2 6.6 12 4Z"></path>
+    <path d="M10.5 13c.2 1 1 2 1.5 2.5.5-.5 1.3-1.5 1.5-2.5"></path>
+  `,
+  threat: `
+    <path d="M12 4 4.5 18h15L12 4Z"></path>
+    <path d="M12 9v4.5"></path>
+    <path d="M12 17h.01"></path>
+  `,
+  noise: `
+    <path d="M5 14h2l3 3V7L7 10H5v4Z"></path>
+    <path d="M14 9a4 4 0 0 1 0 6"></path>
+    <path d="M16.5 6.5a7.5 7.5 0 0 1 0 11"></path>
+  `,
+  food: `
+    <path d="M8 5v6"></path>
+    <path d="M10 5v6"></path>
+    <path d="M8 8h2"></path>
+    <path d="M14.5 5v14"></path>
+    <path d="M14.5 5c2 0 3.5 2 3.5 4.5S16.5 14 14.5 14"></path>
+  `,
+  water: `
+    <path d="M12 4c2.4 3 5 5.8 5 9a5 5 0 0 1-10 0c0-3.2 2.6-6 5-9Z"></path>
+  `,
+  scrap: `
+    <path d="M7 6h4l1.5 2.5L10 12H6.5L5 9.5 7 6Z"></path>
+    <path d="M14 11h4l1 2-1 2h-4l-1-2 1-2Z"></path>
+    <path d="M9 14l2 3h4"></path>
+  `,
+  cloth: `
+    <path d="M7 5h10l2 4-3 2v8H8v-8L5 9l2-4Z"></path>
+    <path d="M10 11h4"></path>
+  `,
+  fuel: `
+    <path d="M9 5h6v14H9z"></path>
+    <path d="M15 8h2l2 2v5a2 2 0 0 1-2 2h-2"></path>
+    <path d="M11 9h2"></path>
+  `,
+  parts: `
+    <circle cx="12" cy="12" r="2.2"></circle>
+    <path d="M12 4v3"></path>
+    <path d="M12 17v3"></path>
+    <path d="m5.6 7.1 2.1 2.1"></path>
+    <path d="m16.3 17.8 2.1 2.1"></path>
+    <path d="M4 12h3"></path>
+    <path d="M17 12h3"></path>
+    <path d="m5.6 16.9 2.1-2.1"></path>
+    <path d="m16.3 6.2 2.1-2.1"></path>
+  `,
+  wire: `
+    <path d="M7 6v6a3 3 0 0 0 6 0V8a2 2 0 0 1 4 0v10"></path>
+    <path d="M17 18h2"></path>
+  `,
+  medicine: `
+    <path d="M10 5h4v4h4v4h-4v4h-4v-4H6V9h4V5Z"></path>
+  `,
+  ammo: `
+    <path d="M9 5h6"></path>
+    <path d="M10 5v12a2 2 0 0 0 4 0V5"></path>
+    <path d="M10 9h4"></path>
+  `,
+  electronics: `
+    <rect x="7" y="7" width="10" height="10" rx="2"></rect>
+    <path d="M10 4v3"></path>
+    <path d="M14 4v3"></path>
+    <path d="M10 17v3"></path>
+    <path d="M14 17v3"></path>
+    <path d="M4 10h3"></path>
+    <path d="M17 10h3"></path>
+    <path d="M4 14h3"></path>
+    <path d="M17 14h3"></path>
+  `,
+  chemicals: `
+    <path d="M10 5v5l-4 7a2 2 0 0 0 1.7 3h8.6a2 2 0 0 0 1.7-3l-4-7V5"></path>
+    <path d="M9 5h6"></path>
+    <path d="M9 12h6"></path>
+  `,
+  morale: `
+    <path d="M12 19c-5-2.8-7-5.5-7-8.5A3.8 3.8 0 0 1 12 8a3.8 3.8 0 0 1 7 2.5c0 3-2 5.7-7 8.5Z"></path>
+  `,
+  reputation: `
+    <circle cx="12" cy="8" r="3"></circle>
+    <path d="M7 19h10"></path>
+    <path d="M9 14h6v5H9z"></path>
+  `,
+  relics: `
+    <path d="M12 4 7 9l5 11 5-11-5-5Z"></path>
+    <path d="M9 9h6"></path>
+  `,
+  search: `
+    <circle cx="11" cy="11" r="5"></circle>
+    <path d="m16 16 4 4"></path>
+  `,
+  scavenge: `
+    <path d="M6 18 18 6"></path>
+    <path d="M9 6h9v9"></path>
+    <path d="M6 9v9h9"></path>
+  `,
+  build: `
+    <path d="M12 5v14"></path>
+    <path d="M5 12h14"></path>
+    <path d="M8 8h8v8H8z"></path>
+  `,
+  route: `
+    <path d="M6 18c3-6 9-4 12-10"></path>
+    <circle cx="6" cy="18" r="2"></circle>
+    <circle cx="18" cy="8" r="2"></circle>
+  `,
+  launch: `
+    <path d="M12 4 18 10l-5 1 1 5-2 4-2-4 1-5-5-1 6-6Z"></path>
+  `,
+  gear: `
+    <path d="M8 7h8l1 4-5 8-5-8 1-4Z"></path>
+    <path d="M10 7V5h4v2"></path>
+  `,
+  use: `
+    <path d="M6 12h6"></path>
+    <path d="m10 8 4 4-4 4"></path>
+    <rect x="4" y="6" width="16" height="12" rx="2"></rect>
+  `,
+  recruit: `
+    <circle cx="10" cy="9" r="3"></circle>
+    <path d="M5.5 19a4.5 4.5 0 0 1 9 0"></path>
+    <path d="M18 8v6"></path>
+    <path d="M15 11h6"></path>
+  `,
+  sync: `
+    <path d="M7 8a6 6 0 0 1 10.4-2"></path>
+    <path d="m17 4 .4 3.8L13.6 8"></path>
+    <path d="M17 16A6 6 0 0 1 6.6 18"></path>
+    <path d="m7 20-.4-3.8L10.4 16"></path>
+  `,
+  upload: `
+    <path d="M12 16V6"></path>
+    <path d="m8 10 4-4 4 4"></path>
+    <path d="M6 18h12"></path>
+  `,
+  username: `
+    <circle cx="12" cy="8.5" r="3"></circle>
+    <path d="M6 19a6 6 0 0 1 12 0"></path>
+  `,
+  save_file: `
+    <path d="M7 4h8l3 3v13H7z"></path>
+    <path d="M15 4v5h5"></path>
+    <path d="M10 13h4"></path>
+    <path d="M10 17h4"></path>
+  `,
+  copy: `
+    <rect x="9" y="9" width="9" height="11" rx="2"></rect>
+    <path d="M6 15H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"></path>
+  `,
+  load_file: `
+    <path d="M7 4h8l3 3v13H7z"></path>
+    <path d="M15 4v5h5"></path>
+    <path d="M12 18v-8"></path>
+    <path d="m8 14 4 4 4-4"></path>
+  `,
+  code: `
+    <path d="m8 8-4 4 4 4"></path>
+    <path d="m16 8 4 4-4 4"></path>
+    <path d="m13 5-2 14"></path>
+  `,
+  barricade: `
+    <path d="M6 18h12"></path>
+    <path d="M8 18 6.5 8h3L11 18"></path>
+    <path d="M16 18l1.5-10h-3L13 18"></path>
+    <path d="M7 12h10"></path>
+  `,
+  night: `
+    <path d="M15.5 4.5a7 7 0 1 0 4 10.5 6 6 0 0 1-4-10.5Z"></path>
+    <path d="M9 5.5h.01"></path>
+  `,
+  heal: `
+    <path d="M12 6v12"></path>
+    <path d="M6 12h12"></path>
+    <circle cx="12" cy="12" r="7"></circle>
+  `,
+  retreat: `
+    <path d="M18 12H7"></path>
+    <path d="m11 8-4 4 4 4"></path>
+  `,
+  combat: `
+    <path d="M7 7l10 10"></path>
+    <path d="M17 7 7 17"></path>
+  `,
+  generic: `
+    <circle cx="12" cy="12" r="5"></circle>
+  `,
+};
+
+function iconMarkup(name = "generic") {
+  const body = ICONS[name] || ICONS.generic;
+  return `<svg class="ui-icon-svg" ${ATTRS} aria-hidden="true">${body}</svg>`;
+}
+
+
 // render/primitives.js
 function byId(id) {
   return document.getElementById(id);
 }
 
-function tokenFromLabel(label) {
-  const words = String(label || "")
-    .replace(/[^a-z0-9 ]/gi, " ")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  if (!words.length) {
-    return "DO";
-  }
-
-  if (words.length === 1) {
-    return words[0].slice(0, 2).toUpperCase();
-  }
-
-  return `${words[0][0]}${words[1][0]}`.toUpperCase();
-}
-
 function actionToken(action, label) {
   const tokens = {
-    "search-rubble": "SR",
-    "search-source": "SV",
-    "buy-upgrade": "MK",
-    "burn-warmth": "HT",
-    "forage-food": "FD",
-    "drink-water": "WT",
-    "eat-ration": "FD",
-    "patch-barricade": "BR",
-    "craft-ammo": "AM",
-    "set-night-plan": "NT",
-    "prepare-zone": "RT",
-    "set-approach": "AP",
-    "launch-prepared": "GO",
-    "equip-item": "EQ",
-    "use-item": "US",
-    "adjust-role": "CR",
-    "recruit": "+1",
-    "scan-radio": "RX",
-    "refresh-trader": "TR",
-    "buy-offer": "$$",
-    "choose-faction": "FX",
-    "refresh-leaderboard": "LB",
-    "submit-leaderboard": "UP",
-    "set-callsign": "ID",
-    "download-save-file": "SV",
-    "copy-save-code": "CP",
-    "trigger-save-import": "IN",
-    "import-save-code": "CD",
-    "combat-attack": "AT",
-    "combat-heal": "MD",
-    "combat-retreat": "EX",
+    "search-rubble": "search",
+    "search-source": "scavenge",
+    "buy-upgrade": "build",
+    "burn-warmth": "warmth",
+    "forage-food": "food",
+    "drink-water": "water",
+    "eat-ration": "food",
+    "patch-barricade": "barricade",
+    "craft-ammo": "ammo",
+    "set-night-plan": "night",
+    "prepare-zone": "map",
+    "set-approach": "route",
+    "launch-prepared": "launch",
+    "equip-item": "gear",
+    "use-item": "use",
+    "adjust-role": "crew",
+    "recruit": "recruit",
+    "scan-radio": "radio",
+    "refresh-trader": "trade",
+    "buy-offer": "trade",
+    "choose-faction": "factions",
+    "refresh-leaderboard": "sync",
+    "submit-leaderboard": "upload",
+    "set-callsign": "username",
+    "download-save-file": "save_file",
+    "copy-save-code": "copy",
+    "trigger-save-import": "load_file",
+    "import-save-code": "code",
+    "combat-attack": "combat",
+    "combat-heal": "heal",
+    "combat-retreat": "retreat",
   };
 
-  return tokens[action] || tokenFromLabel(label);
+  return tokens[action] || "generic";
 }
 
 function actionButton({ action, label, meta = "", disabled = false, variant = "", data = {}, icon = "" }) {
@@ -6172,7 +6433,7 @@ function actionButton({ action, label, meta = "", disabled = false, variant = ""
       data-action="${action}"${dataAttrs}
       ${disabled ? "disabled" : ""}
     >
-      <span class="action-icon" aria-hidden="true">${badge}</span>
+      <span class="action-icon" aria-hidden="true">${iconMarkup(badge)}</span>
       <span class="action-copy">
         <span class="action-label">${label}</span>
         ${meta ? `<span class="action-meta">${meta}</span>` : ""}
@@ -6229,21 +6490,21 @@ function renderSplitPane(mainCards, sideCards, className = "") {
 
 
 // render/shell.js
-const RESOURCE_TOKENS = {
-  scrap: "SC",
-  food: "FD",
-  water: "WT",
-  cloth: "CL",
-  fuel: "FL",
-  parts: "PT",
-  wire: "WR",
-  medicine: "MD",
-  ammo: "AM",
-  electronics: "EL",
-  chemicals: "CH",
-  morale: "MO",
-  reputation: "RP",
-  relics: "RL",
+const RESOURCE_ICONS = {
+  scrap: "scrap",
+  food: "food",
+  water: "water",
+  cloth: "cloth",
+  fuel: "fuel",
+  parts: "parts",
+  wire: "wire",
+  medicine: "medicine",
+  ammo: "ammo",
+  electronics: "electronics",
+  chemicals: "chemicals",
+  morale: "morale",
+  reputation: "reputation",
+  relics: "relics",
 };
 
 function meterClass(percent) {
@@ -6271,7 +6532,7 @@ function renderResourceBar(state) {
     .map((resourceId) => `
       <div class="resource-pill tier-${RESOURCE_DEFS[resourceId].tier}">
         <div class="resource-pill-key">
-          <span class="resource-token tier-${RESOURCE_DEFS[resourceId].tier}">${RESOURCE_TOKENS[resourceId] || RESOURCE_DEFS[resourceId].label.slice(0, 2).toUpperCase()}</span>
+          <span class="resource-token tier-${RESOURCE_DEFS[resourceId].tier}" aria-hidden="true">${iconMarkup(RESOURCE_ICONS[resourceId] || "generic")}</span>
           <span>${RESOURCE_DEFS[resourceId].label}</span>
         </div>
         <strong>${state.resources[resourceId]}</strong>
@@ -6292,7 +6553,7 @@ function renderSummaryStrip(state, derived) {
   byId("summary-strip").innerHTML = pills
     .map((pill) => `
       <div class="summary-pill">
-        <span class="summary-badge" aria-hidden="true">${pill.icon || pill.label.slice(0, 2).toUpperCase()}</span>
+        <span class="summary-badge" aria-hidden="true">${iconMarkup(pill.icon || "generic")}</span>
         <div class="summary-pill-top">
           <span>${pill.label}</span>
           <strong>${pill.value}</strong>
@@ -6317,7 +6578,7 @@ function renderTabBar(state, tabs) {
           data-action="set-tab"
           data-tab="${tab.id}"
         >
-          <span class="tab-icon" aria-hidden="true">${tab.icon || tab.label.slice(0, 2).toUpperCase()}</span>
+          <span class="tab-icon" aria-hidden="true">${iconMarkup(tab.icon || "generic")}</span>
           <span class="tab-copy">
             <strong>${tab.label}</strong>
           </span>
@@ -6415,7 +6676,7 @@ function renderCommandDesk(state, derived, availableSources, availableUpgrades) 
             <span class="note-label">Current directive</span>
             <h4>${model.directive.title}</h4>
           </div>
-          <span class="command-badge">GO</span>
+          <span class="command-badge" aria-hidden="true">${iconMarkup("launch")}</span>
         </div>
         <div class="chip-row">${tagList([model.directive.detail, `${availableSources.length} lanes`, `${availableUpgrades.length} builds`])}</div>
         <div class="command-action">${highlightAction}</div>
@@ -6436,7 +6697,7 @@ function renderCommandDesk(state, derived, availableSources, availableUpgrades) 
             <span class="note-label">Route board</span>
             <h4>${model.routeTitle}</h4>
           </div>
-          <span class="command-badge">RT</span>
+          <span class="command-badge" aria-hidden="true">${iconMarkup("map")}</span>
         </div>
         <div class="chip-row">${tagList(model.routeDetail.split(" / "))}</div>
       </div>
@@ -7133,7 +7394,7 @@ function tabStageMeta(state, derived) {
     case "craft":
       return {
         label: "Build queue",
-        icon: "MK",
+        icon: "craft",
         title: "Convert salvage into systems",
         cues: ["install ready", "track blockers"],
         stats: [
@@ -7146,7 +7407,7 @@ function tabStageMeta(state, derived) {
     case "inventory":
       return {
         label: "Stores",
-        icon: "KT",
+        icon: "inventory",
         title: "Everything you can still carry",
         cues: ["gear", "supplies", "odd salvage"],
         stats: [
@@ -7159,7 +7420,7 @@ function tabStageMeta(state, derived) {
     case "shelter":
       return {
         label: "Survival board",
-        icon: "HT",
+        icon: "shelter",
         title: "Hold the room through another night",
         cues: ["warmth", "defense", "pressure"],
         stats: [
@@ -7172,7 +7433,7 @@ function tabStageMeta(state, derived) {
     case "shelter_map":
       return {
         label: "Compound view",
-        icon: "MP",
+        icon: "shelter_map",
         title: "Read the outpost like a living machine",
         cues: ["footprint", "damage", "expansion"],
         stats: [
@@ -7185,7 +7446,7 @@ function tabStageMeta(state, derived) {
     case "map":
       return {
         label: "Route board",
-        icon: "RT",
+        icon: "map",
         title: "Stage the next push before you leave",
         cues: ["travel", "risk", "cost"],
         stats: [
@@ -7198,7 +7459,7 @@ function tabStageMeta(state, derived) {
     case "survivors":
       return {
         label: "Crew line",
-        icon: "CR",
+        icon: "crew",
         title: "Every body in the shelter changes the equation",
         cues: ["staff", "idle hands", "pressure"],
         stats: [
@@ -7211,7 +7472,7 @@ function tabStageMeta(state, derived) {
     case "radio":
       return {
         label: "Signal board",
-        icon: "RX",
+        icon: "radio",
         title: "The static is no longer background noise",
         cues: ["scan", "trace", "decode"],
         stats: [
@@ -7224,7 +7485,7 @@ function tabStageMeta(state, derived) {
     case "trade":
       return {
         label: "Market",
-        icon: "TR",
+        icon: "trade",
         title: "What the wasteland will still trade for",
         cues: ["trade", "restock", "flip shortages"],
         stats: [
@@ -7237,7 +7498,7 @@ function tabStageMeta(state, derived) {
     case "factions":
       return {
         label: "Alignment",
-        icon: "FX",
+        icon: "factions",
         title: "Choose who gets to shape the signal",
         cues: ["choose", "lock in", "keep leverage"],
         stats: [
@@ -7250,7 +7511,7 @@ function tabStageMeta(state, derived) {
     case "log":
       return {
         label: "Archive",
-        icon: "LG",
+        icon: "log",
         title: "Track what the static has already taken",
         cues: ["history", "pulse", "recent"],
         stats: [
@@ -7265,7 +7526,7 @@ function tabStageMeta(state, derived) {
       const leaderboardSnapshot = getLeaderboardSnapshot(state);
       return {
         label: "Hosted board",
-        icon: "LB",
+        icon: "leaderboard",
         title: "Track the strongest runs online",
         cues: ["rank", "submit", "sync"],
         stats: [
@@ -7281,7 +7542,7 @@ function tabStageMeta(state, derived) {
     default:
       return {
         label: "Control layer",
-        icon: "OV",
+        icon: "overview",
         title: "Everything important in one scan",
         cues: ["pressure", "next move", "growth"],
         stats: [
@@ -7301,7 +7562,7 @@ function renderTabStage(state, derived, bodyMarkup) {
       <section class="stage-banner">
         <div class="stage-copy">
           <div class="stage-titleline">
-            <span class="stage-icon" aria-hidden="true">${meta.icon || meta.label.slice(0, 2).toUpperCase()}</span>
+            <span class="stage-icon" aria-hidden="true">${iconMarkup(meta.icon || "generic")}</span>
             <div>
               <span class="note-label">${meta.label}</span>
               <h2>${meta.title}</h2>
@@ -7360,7 +7621,7 @@ function renderOverviewActions(state) {
       meta: "10 scrap",
       disabled: state.resources.scrap < 10,
       variant: "compact utility-trigger",
-      icon: "HT",
+      icon: "warmth",
     }));
   }
 
@@ -7370,7 +7631,7 @@ function renderOverviewActions(state) {
       label: "Food search",
       meta: "safe pull",
       variant: "compact utility-trigger",
-      icon: "FD",
+      icon: "food",
     }));
   }
 
@@ -7434,7 +7695,7 @@ function renderUpgradeCard(state, upgrade) {
         meta: ready ? "Permanent unlock" : "Need more salvage",
         disabled: !ready,
         data: { upgrade: upgrade.id },
-        icon: "MK",
+        icon: "build",
       })}
     </div>
   `;
@@ -7692,7 +7953,7 @@ function renderNightPlanner(state) {
     disabled: state.night.plan === plan.id,
     data: { plan: plan.id },
     variant: `compact ${state.night.plan === plan.id ? "primary" : ""}`,
-    icon: "NT",
+    icon: "night",
   }));
 
   return `
@@ -7769,7 +8030,7 @@ function renderExpeditionPlanner(state) {
                 disabled: state.expedition.approach === approach.id,
                 data: { approach: approach.id },
                 variant: "compact",
-                icon: "AP",
+                icon: "route",
               })}
             </div>
           `;
@@ -7781,7 +8042,7 @@ function renderExpeditionPlanner(state) {
         meta: preview.canLaunch ? "prepared route" : `need ${formatCost(preview.cost)}`,
         disabled: !preview.canLaunch || Boolean(state.combat),
         variant: "primary",
-        icon: "GO",
+        icon: "launch",
       })}
     </div>
   `;
@@ -7794,21 +8055,21 @@ function renderShelterTab(state, derived) {
       label: "Eat ration",
       meta: "1 food",
       disabled: state.resources.food < 1,
-      icon: "FD",
+      icon: "food",
     }),
     actionButton({
       action: "drink-water",
       label: "Drink water",
       meta: "1 water",
       disabled: state.resources.water < 1,
-      icon: "WT",
+      icon: "water",
     }),
     actionButton({
       action: "patch-barricade",
       label: "Patch barricade",
       meta: "6 scrap",
       disabled: state.resources.scrap < 6,
-      icon: "BR",
+      icon: "barricade",
     }),
   ];
 
@@ -7818,7 +8079,7 @@ function renderShelterTab(state, derived) {
       label: "Press ammo",
       meta: "5 rounds",
       disabled: state.resources.parts < 1 || state.resources.scrap < 1 || state.resources.chemicals < 1,
-      icon: "AM",
+      icon: "ammo",
     }));
   }
 
@@ -7945,7 +8206,7 @@ function renderMapTab(state) {
             meta: state.expedition.selectedZone === zone.id ? "staged" : "stage route",
             disabled: Boolean(state.combat),
             data: { zone: zone.id },
-            icon: "RT",
+            icon: "map",
           })}
         `,
       })).join("") : surfaceCard({
@@ -7995,7 +8256,7 @@ function renderLeaderboardPanel(state) {
           label: usernameReady ? "Edit username" : "Set username",
           meta: usernameReady ? remote.profile.codename : "3-24 characters",
           variant: "compact",
-          icon: "ID",
+          icon: "username",
         })}
         ${actionButton({
           action: "refresh-leaderboard",
@@ -8003,7 +8264,7 @@ function renderLeaderboardPanel(state) {
           meta: remote.enabled ? "pull ranks" : "backend off",
           variant: "compact",
           disabled: !remote.enabled,
-          icon: "LB",
+          icon: "sync",
         })}
         ${actionButton({
           action: "submit-leaderboard",
@@ -8011,7 +8272,7 @@ function renderLeaderboardPanel(state) {
           meta: remote.enabled ? (usernameReady ? "upload best" : "set username") : "backend off",
           variant: "primary compact",
           disabled: !remote.enabled || !usernameReady || remote.submitStatus === "submitting",
-          icon: "UP",
+          icon: "upload",
         })}
       </div>
       <div class="list-block leaderboard-status">
@@ -8091,28 +8352,28 @@ function renderSaveTransferPanel() {
           label: "Download save file",
           meta: "json backup",
           variant: "compact",
-          icon: "SV",
+          icon: "save_file",
         })}
         ${actionButton({
           action: "copy-save-code",
           label: "Copy save code",
           meta: "portable text code",
           variant: "compact",
-          icon: "CP",
+          icon: "copy",
         })}
         ${actionButton({
           action: "trigger-save-import",
           label: "Import save file",
           meta: "load json backup",
           variant: "compact",
-          icon: "IN",
+          icon: "load_file",
         })}
         ${actionButton({
           action: "import-save-code",
           label: "Paste save code",
           meta: "restore from text",
           variant: "compact",
-          icon: "CD",
+          icon: "code",
         })}
       </div>
     </div>
@@ -8162,7 +8423,7 @@ function renderSurvivorTab(state, derived) {
               label: "Recruit survivor",
               meta: "18 scrap / 3 food",
               disabled: state.survivors.total >= derived.survivorCap || !canAfford(state, { scrap: 18, food: 3 }),
-              icon: "+1",
+              icon: "recruit",
             })}
           </div>
         `,
@@ -8245,7 +8506,7 @@ function renderRadioTab(state) {
               label: "Sweep band",
               meta: "1 fuel / 1 parts",
               disabled: state.resources.fuel < 1 || state.resources.parts < 1,
-              icon: "RX",
+              icon: "radio",
             })}
           </div>
         `,
@@ -8284,7 +8545,7 @@ function renderTradeTab(state) {
                 meta: "Take the deal",
                 disabled: !canAfford(state, offer.cost),
                 data: { offer: offer.id },
-                icon: "TR",
+                icon: "trade",
               })}
             </div>
           `).join("")}</div>`
@@ -8307,7 +8568,7 @@ function renderTradeTab(state) {
               action: "refresh-trader",
               label: "Refresh offers",
               meta: "new wall",
-              icon: "TR",
+              icon: "sync",
             })}
           </div>
         `,
@@ -8333,7 +8594,7 @@ function renderFactionTab(state) {
               meta: "locks choice",
               disabled: Boolean(state.faction.aligned),
               data: { faction: faction.id },
-              icon: "FX",
+              icon: "factions",
             })}
           `,
         })).join("")}

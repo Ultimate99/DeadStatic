@@ -51,7 +51,7 @@ function renderLeaderboardPanel(state) {
           label: usernameReady ? "Edit username" : "Set username",
           meta: usernameReady ? remote.profile.codename : "3-24 characters",
           variant: "compact",
-          icon: "ID",
+          icon: "username",
         })}
         ${actionButton({
           action: "refresh-leaderboard",
@@ -59,7 +59,7 @@ function renderLeaderboardPanel(state) {
           meta: remote.enabled ? "pull ranks" : "backend off",
           variant: "compact",
           disabled: !remote.enabled,
-          icon: "LB",
+          icon: "sync",
         })}
         ${actionButton({
           action: "submit-leaderboard",
@@ -67,7 +67,7 @@ function renderLeaderboardPanel(state) {
           meta: remote.enabled ? (usernameReady ? "upload best" : "set username") : "backend off",
           variant: "primary compact",
           disabled: !remote.enabled || !usernameReady || remote.submitStatus === "submitting",
-          icon: "UP",
+          icon: "upload",
         })}
       </div>
       <div class="list-block leaderboard-status">
@@ -147,28 +147,28 @@ function renderSaveTransferPanel() {
           label: "Download save file",
           meta: "json backup",
           variant: "compact",
-          icon: "SV",
+          icon: "save_file",
         })}
         ${actionButton({
           action: "copy-save-code",
           label: "Copy save code",
           meta: "portable text code",
           variant: "compact",
-          icon: "CP",
+          icon: "copy",
         })}
         ${actionButton({
           action: "trigger-save-import",
           label: "Import save file",
           meta: "load json backup",
           variant: "compact",
-          icon: "IN",
+          icon: "load_file",
         })}
         ${actionButton({
           action: "import-save-code",
           label: "Paste save code",
           meta: "restore from text",
           variant: "compact",
-          icon: "CD",
+          icon: "code",
         })}
       </div>
     </div>
@@ -218,7 +218,7 @@ export function renderSurvivorTab(state, derived) {
               label: "Recruit survivor",
               meta: "18 scrap / 3 food",
               disabled: state.survivors.total >= derived.survivorCap || !canAfford(state, { scrap: 18, food: 3 }),
-              icon: "+1",
+              icon: "recruit",
             })}
           </div>
         `,
@@ -301,7 +301,7 @@ export function renderRadioTab(state) {
               label: "Sweep band",
               meta: "1 fuel / 1 parts",
               disabled: state.resources.fuel < 1 || state.resources.parts < 1,
-              icon: "RX",
+              icon: "radio",
             })}
           </div>
         `,
@@ -340,7 +340,7 @@ export function renderTradeTab(state) {
                 meta: "Take the deal",
                 disabled: !canAfford(state, offer.cost),
                 data: { offer: offer.id },
-                icon: "TR",
+                icon: "trade",
               })}
             </div>
           `).join("")}</div>`
@@ -363,7 +363,7 @@ export function renderTradeTab(state) {
               action: "refresh-trader",
               label: "Refresh offers",
               meta: "new wall",
-              icon: "TR",
+              icon: "sync",
             })}
           </div>
         `,
@@ -389,7 +389,7 @@ export function renderFactionTab(state) {
               meta: "locks choice",
               disabled: Boolean(state.faction.aligned),
               data: { faction: faction.id },
-              icon: "FX",
+              icon: "factions",
             })}
           `,
         })).join("")}

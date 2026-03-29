@@ -12,18 +12,18 @@ import { countLogCategories } from "./log.js";
 import { listRequirementGaps, stateMeetsRequirements } from "./requirements.js";
 
 export const TAB_DEFS = [
-  { id: "overview", label: "Overview", hint: "control", icon: "OV", count: (state) => state.stats.searches || null },
-  { id: "craft", label: "Craft", hint: "build queue", icon: "MK", unlock: "upgrades", count: (state) => getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id)).length || null },
-  { id: "inventory", label: "Inventory", hint: "gear hold", icon: "KT", unlock: "inventory" },
-  { id: "shelter", label: "Shelter", hint: "survival", icon: "HT", unlock: "shelter" },
-  { id: "shelter_map", label: "Shelter Map", hint: "compound", icon: "MP", unlock: "shelter" },
-  { id: "map", label: "Map", hint: "routes", icon: "RT", unlock: "map", count: (state) => state.unlockedZones.length || null },
-  { id: "survivors", label: "Crew", hint: "assignments", icon: "CR", unlock: "survivors", count: (state) => state.survivors.total || null },
-  { id: "radio", label: "Radio", hint: "signals", icon: "RX", unlock: "radio", count: (state) => state.story.radioProgress || null },
-  { id: "trade", label: "Trade", hint: "market", icon: "TR", unlock: "trader", count: (state) => state.trader.offers.length || null },
-  { id: "factions", label: "Factions", hint: "alignment", icon: "FX", unlock: "factions" },
-  { id: "leaderboard", label: "Leaderboard", hint: "hosted", icon: "LB" },
-  { id: "log", label: "Log", hint: "history", icon: "LG" },
+  { id: "overview", label: "Overview", hint: "control", icon: "overview", count: (state) => state.stats.searches || null },
+  { id: "craft", label: "Craft", hint: "build queue", icon: "craft", unlock: "upgrades", count: (state) => getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id)).length || null },
+  { id: "inventory", label: "Inventory", hint: "gear hold", icon: "inventory", unlock: "inventory" },
+  { id: "shelter", label: "Shelter", hint: "survival", icon: "shelter", unlock: "shelter" },
+  { id: "shelter_map", label: "Shelter Map", hint: "compound", icon: "shelter_map", unlock: "shelter" },
+  { id: "map", label: "Map", hint: "routes", icon: "map", unlock: "map", count: (state) => state.unlockedZones.length || null },
+  { id: "survivors", label: "Crew", hint: "assignments", icon: "crew", unlock: "survivors", count: (state) => state.survivors.total || null },
+  { id: "radio", label: "Radio", hint: "signals", icon: "radio", unlock: "radio", count: (state) => state.story.radioProgress || null },
+  { id: "trade", label: "Trade", hint: "market", icon: "trade", unlock: "trader", count: (state) => state.trader.offers.length || null },
+  { id: "factions", label: "Factions", hint: "alignment", icon: "factions", unlock: "factions" },
+  { id: "leaderboard", label: "Leaderboard", hint: "hosted", icon: "leaderboard" },
+  { id: "log", label: "Log", hint: "history", icon: "log" },
 ];
 
 export const DEFAULT_LOG_CATEGORIES = ["loot", "build", "night", "expedition", "radio", "combat", "trade", "notable"];
@@ -84,22 +84,22 @@ export function getSubtitle(state) {
 
 export function getSummaryPills(state, derived) {
   const pills = [
-    { label: "Warmth", value: state.shelter.warmth.toFixed(1), icon: "HT" },
-    { label: "Threat", value: state.shelter.threat.toFixed(1), icon: "TH" },
-    { label: "Noise", value: state.shelter.noise.toFixed(1), icon: "NZ" },
+    { label: "Warmth", value: state.shelter.warmth.toFixed(1), icon: "warmth" },
+    { label: "Threat", value: state.shelter.threat.toFixed(1), icon: "threat" },
+    { label: "Noise", value: state.shelter.noise.toFixed(1), icon: "noise" },
   ];
 
   if (state.discoveredResources.includes("food")) {
-    pills.push({ label: "Hunger", value: `${state.clocks.hunger}/6h`, icon: "FD" });
+    pills.push({ label: "Hunger", value: `${state.clocks.hunger}/6h`, icon: "food" });
   }
   if (state.discoveredResources.includes("water")) {
-    pills.push({ label: "Thirst", value: `${state.clocks.thirst}/4h`, icon: "WT" });
+    pills.push({ label: "Thirst", value: `${state.clocks.thirst}/4h`, icon: "water" });
   }
   if (state.unlockedSections.includes("survivors")) {
-    pills.push({ label: "Crew", value: `${state.survivors.total}/${derived.survivorCap}`, icon: "CR" });
+    pills.push({ label: "Crew", value: `${state.survivors.total}/${derived.survivorCap}`, icon: "crew" });
   }
   if (state.unlockedSections.includes("radio")) {
-    pills.push({ label: "Signal", value: `${state.story.radioProgress}`, icon: "RX" });
+    pills.push({ label: "Signal", value: `${state.story.radioProgress}`, icon: "radio" });
   }
 
   return pills;

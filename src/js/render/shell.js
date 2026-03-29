@@ -1,23 +1,24 @@
 import { RESOURCE_DEFS, RESOURCE_ORDER } from "../data.js";
 import { getVisibleResourceIds } from "../selectors/resources.js";
 import { TAB_DEFS, getSubtitle, getSummaryPills, getVisibleTabs } from "../selectors/ui.js";
+import { iconMarkup } from "./icons.js";
 import { byId } from "./primitives.js";
 
-const RESOURCE_TOKENS = {
-  scrap: "SC",
-  food: "FD",
-  water: "WT",
-  cloth: "CL",
-  fuel: "FL",
-  parts: "PT",
-  wire: "WR",
-  medicine: "MD",
-  ammo: "AM",
-  electronics: "EL",
-  chemicals: "CH",
-  morale: "MO",
-  reputation: "RP",
-  relics: "RL",
+const RESOURCE_ICONS = {
+  scrap: "scrap",
+  food: "food",
+  water: "water",
+  cloth: "cloth",
+  fuel: "fuel",
+  parts: "parts",
+  wire: "wire",
+  medicine: "medicine",
+  ammo: "ammo",
+  electronics: "electronics",
+  chemicals: "chemicals",
+  morale: "morale",
+  reputation: "reputation",
+  relics: "relics",
 };
 
 function meterClass(percent) {
@@ -47,7 +48,7 @@ export function renderResourceBar(state) {
     .map((resourceId) => `
       <div class="resource-pill tier-${RESOURCE_DEFS[resourceId].tier}">
         <div class="resource-pill-key">
-          <span class="resource-token tier-${RESOURCE_DEFS[resourceId].tier}">${RESOURCE_TOKENS[resourceId] || RESOURCE_DEFS[resourceId].label.slice(0, 2).toUpperCase()}</span>
+          <span class="resource-token tier-${RESOURCE_DEFS[resourceId].tier}" aria-hidden="true">${iconMarkup(RESOURCE_ICONS[resourceId] || "generic")}</span>
           <span>${RESOURCE_DEFS[resourceId].label}</span>
         </div>
         <strong>${state.resources[resourceId]}</strong>
@@ -68,7 +69,7 @@ export function renderSummaryStrip(state, derived) {
   byId("summary-strip").innerHTML = pills
     .map((pill) => `
       <div class="summary-pill">
-        <span class="summary-badge" aria-hidden="true">${pill.icon || pill.label.slice(0, 2).toUpperCase()}</span>
+        <span class="summary-badge" aria-hidden="true">${iconMarkup(pill.icon || "generic")}</span>
         <div class="summary-pill-top">
           <span>${pill.label}</span>
           <strong>${pill.value}</strong>
@@ -93,7 +94,7 @@ export function renderTabBar(state, tabs) {
           data-action="set-tab"
           data-tab="${tab.id}"
         >
-          <span class="tab-icon" aria-hidden="true">${tab.icon || tab.label.slice(0, 2).toUpperCase()}</span>
+          <span class="tab-icon" aria-hidden="true">${iconMarkup(tab.icon || "generic")}</span>
           <span class="tab-copy">
             <strong>${tab.label}</strong>
           </span>

@@ -14,6 +14,7 @@ import {
   SHELTER_MAP_ANNEXES,
   structureKey,
 } from "./shelter-map.js";
+import { iconMarkup } from "./icons.js";
 
 function tabStageMeta(state, derived) {
   const visibleUpgrades = getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id));
@@ -29,7 +30,7 @@ function tabStageMeta(state, derived) {
     case "craft":
       return {
         label: "Build queue",
-        icon: "MK",
+        icon: "craft",
         title: "Convert salvage into systems",
         cues: ["install ready", "track blockers"],
         stats: [
@@ -42,7 +43,7 @@ function tabStageMeta(state, derived) {
     case "inventory":
       return {
         label: "Stores",
-        icon: "KT",
+        icon: "inventory",
         title: "Everything you can still carry",
         cues: ["gear", "supplies", "odd salvage"],
         stats: [
@@ -55,7 +56,7 @@ function tabStageMeta(state, derived) {
     case "shelter":
       return {
         label: "Survival board",
-        icon: "HT",
+        icon: "shelter",
         title: "Hold the room through another night",
         cues: ["warmth", "defense", "pressure"],
         stats: [
@@ -68,7 +69,7 @@ function tabStageMeta(state, derived) {
     case "shelter_map":
       return {
         label: "Compound view",
-        icon: "MP",
+        icon: "shelter_map",
         title: "Read the outpost like a living machine",
         cues: ["footprint", "damage", "expansion"],
         stats: [
@@ -81,7 +82,7 @@ function tabStageMeta(state, derived) {
     case "map":
       return {
         label: "Route board",
-        icon: "RT",
+        icon: "map",
         title: "Stage the next push before you leave",
         cues: ["travel", "risk", "cost"],
         stats: [
@@ -94,7 +95,7 @@ function tabStageMeta(state, derived) {
     case "survivors":
       return {
         label: "Crew line",
-        icon: "CR",
+        icon: "crew",
         title: "Every body in the shelter changes the equation",
         cues: ["staff", "idle hands", "pressure"],
         stats: [
@@ -107,7 +108,7 @@ function tabStageMeta(state, derived) {
     case "radio":
       return {
         label: "Signal board",
-        icon: "RX",
+        icon: "radio",
         title: "The static is no longer background noise",
         cues: ["scan", "trace", "decode"],
         stats: [
@@ -120,7 +121,7 @@ function tabStageMeta(state, derived) {
     case "trade":
       return {
         label: "Market",
-        icon: "TR",
+        icon: "trade",
         title: "What the wasteland will still trade for",
         cues: ["trade", "restock", "flip shortages"],
         stats: [
@@ -133,7 +134,7 @@ function tabStageMeta(state, derived) {
     case "factions":
       return {
         label: "Alignment",
-        icon: "FX",
+        icon: "factions",
         title: "Choose who gets to shape the signal",
         cues: ["choose", "lock in", "keep leverage"],
         stats: [
@@ -146,7 +147,7 @@ function tabStageMeta(state, derived) {
     case "log":
       return {
         label: "Archive",
-        icon: "LG",
+        icon: "log",
         title: "Track what the static has already taken",
         cues: ["history", "pulse", "recent"],
         stats: [
@@ -161,7 +162,7 @@ function tabStageMeta(state, derived) {
       const leaderboardSnapshot = getLeaderboardSnapshot(state);
       return {
         label: "Hosted board",
-        icon: "LB",
+        icon: "leaderboard",
         title: "Track the strongest runs online",
         cues: ["rank", "submit", "sync"],
         stats: [
@@ -177,7 +178,7 @@ function tabStageMeta(state, derived) {
     default:
       return {
         label: "Control layer",
-        icon: "OV",
+        icon: "overview",
         title: "Everything important in one scan",
         cues: ["pressure", "next move", "growth"],
         stats: [
@@ -197,7 +198,7 @@ export function renderTabStage(state, derived, bodyMarkup) {
       <section class="stage-banner">
         <div class="stage-copy">
           <div class="stage-titleline">
-            <span class="stage-icon" aria-hidden="true">${meta.icon || meta.label.slice(0, 2).toUpperCase()}</span>
+            <span class="stage-icon" aria-hidden="true">${iconMarkup(meta.icon || "generic")}</span>
             <div>
               <span class="note-label">${meta.label}</span>
               <h2>${meta.title}</h2>

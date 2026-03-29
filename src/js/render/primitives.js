@@ -1,63 +1,46 @@
 import { ITEMS, RESOURCE_DEFS } from "../data.js";
+import { iconMarkup } from "./icons.js";
 
 export function byId(id) {
   return document.getElementById(id);
 }
 
-function tokenFromLabel(label) {
-  const words = String(label || "")
-    .replace(/[^a-z0-9 ]/gi, " ")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  if (!words.length) {
-    return "DO";
-  }
-
-  if (words.length === 1) {
-    return words[0].slice(0, 2).toUpperCase();
-  }
-
-  return `${words[0][0]}${words[1][0]}`.toUpperCase();
-}
-
 function actionToken(action, label) {
   const tokens = {
-    "search-rubble": "SR",
-    "search-source": "SV",
-    "buy-upgrade": "MK",
-    "burn-warmth": "HT",
-    "forage-food": "FD",
-    "drink-water": "WT",
-    "eat-ration": "FD",
-    "patch-barricade": "BR",
-    "craft-ammo": "AM",
-    "set-night-plan": "NT",
-    "prepare-zone": "RT",
-    "set-approach": "AP",
-    "launch-prepared": "GO",
-    "equip-item": "EQ",
-    "use-item": "US",
-    "adjust-role": "CR",
-    "recruit": "+1",
-    "scan-radio": "RX",
-    "refresh-trader": "TR",
-    "buy-offer": "$$",
-    "choose-faction": "FX",
-    "refresh-leaderboard": "LB",
-    "submit-leaderboard": "UP",
-    "set-callsign": "ID",
-    "download-save-file": "SV",
-    "copy-save-code": "CP",
-    "trigger-save-import": "IN",
-    "import-save-code": "CD",
-    "combat-attack": "AT",
-    "combat-heal": "MD",
-    "combat-retreat": "EX",
+    "search-rubble": "search",
+    "search-source": "scavenge",
+    "buy-upgrade": "build",
+    "burn-warmth": "warmth",
+    "forage-food": "food",
+    "drink-water": "water",
+    "eat-ration": "food",
+    "patch-barricade": "barricade",
+    "craft-ammo": "ammo",
+    "set-night-plan": "night",
+    "prepare-zone": "map",
+    "set-approach": "route",
+    "launch-prepared": "launch",
+    "equip-item": "gear",
+    "use-item": "use",
+    "adjust-role": "crew",
+    "recruit": "recruit",
+    "scan-radio": "radio",
+    "refresh-trader": "trade",
+    "buy-offer": "trade",
+    "choose-faction": "factions",
+    "refresh-leaderboard": "sync",
+    "submit-leaderboard": "upload",
+    "set-callsign": "username",
+    "download-save-file": "save_file",
+    "copy-save-code": "copy",
+    "trigger-save-import": "load_file",
+    "import-save-code": "code",
+    "combat-attack": "combat",
+    "combat-heal": "heal",
+    "combat-retreat": "retreat",
   };
 
-  return tokens[action] || tokenFromLabel(label);
+  return tokens[action] || "generic";
 }
 
 export function actionButton({ action, label, meta = "", disabled = false, variant = "", data = {}, icon = "" }) {
@@ -74,7 +57,7 @@ export function actionButton({ action, label, meta = "", disabled = false, varia
       data-action="${action}"${dataAttrs}
       ${disabled ? "disabled" : ""}
     >
-      <span class="action-icon" aria-hidden="true">${badge}</span>
+      <span class="action-icon" aria-hidden="true">${iconMarkup(badge)}</span>
       <span class="action-copy">
         <span class="action-label">${label}</span>
         ${meta ? `<span class="action-meta">${meta}</span>` : ""}

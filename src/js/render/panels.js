@@ -11,6 +11,7 @@ import {
   getSourceUnlockDescription,
   getSourceVisibleEntries,
 } from "../selectors/ui.js";
+import { iconMarkup } from "./icons.js";
 import { actionButton, tagList } from "./primitives.js";
 
 export function sourceRarityCeiling(state, sourceId) {
@@ -98,7 +99,7 @@ export function renderCommandDesk(state, derived, availableSources, availableUpg
             <span class="note-label">Current directive</span>
             <h4>${model.directive.title}</h4>
           </div>
-          <span class="command-badge">GO</span>
+          <span class="command-badge" aria-hidden="true">${iconMarkup("launch")}</span>
         </div>
         <div class="chip-row">${tagList([model.directive.detail, `${availableSources.length} lanes`, `${availableUpgrades.length} builds`])}</div>
         <div class="command-action">${highlightAction}</div>
@@ -119,7 +120,7 @@ export function renderCommandDesk(state, derived, availableSources, availableUpg
             <span class="note-label">Route board</span>
             <h4>${model.routeTitle}</h4>
           </div>
-          <span class="command-badge">RT</span>
+          <span class="command-badge" aria-hidden="true">${iconMarkup("map")}</span>
         </div>
         <div class="chip-row">${tagList(model.routeDetail.split(" / "))}</div>
       </div>

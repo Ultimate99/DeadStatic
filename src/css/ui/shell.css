@@ -14,6 +14,13 @@
   --shadow: rgba(0, 0, 0, 0.28);
 }
 
+.ui-icon-svg {
+  display: block;
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
 body {
   letter-spacing: 0.012em;
   background:
@@ -315,6 +322,14 @@ h2 {
 .tab-button > span:first-child {
   font-size: 0.7rem;
   letter-spacing: 0.1em;
+}
+
+.resource-token .ui-icon-svg,
+.summary-badge .ui-icon-svg,
+.tab-icon .ui-icon-svg,
+.action-icon .ui-icon-svg {
+  width: 14px;
+  height: 14px;
 }
 
 .tab-button.is-active {
@@ -796,7 +811,7 @@ button:hover:not(:disabled) {
 
 .tab-button {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
   align-items: center;
   width: 100%;
   min-height: 50px;

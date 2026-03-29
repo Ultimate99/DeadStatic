@@ -35,6 +35,7 @@ export function registerRenderTests(run) {
     assert.match(html, /tabs-layout/);
     assert.match(harness.elements.get("tab-bar").innerHTML, /Overview/);
     assert.match(harness.elements.get("tab-bar").innerHTML, /Leaderboard/);
+    assert.match(harness.elements.get("tab-bar").innerHTML, /ui-icon-svg/);
     assert.match(harness.elements.get("tab-bar").innerHTML, /Log/);
     assert.match(harness.elements.get("tab-content").innerHTML, /Operations desk/);
     assert.match(harness.elements.get("tab-content").innerHTML, /Current directive/);

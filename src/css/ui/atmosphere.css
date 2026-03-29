@@ -76,6 +76,11 @@
   text-transform: uppercase;
 }
 
+.stage-icon .ui-icon-svg {
+  width: 18px;
+  height: 18px;
+}
+
 .stage-copy h2 {
   font-size: 1rem;
   letter-spacing: 0.16em;
@@ -127,6 +132,11 @@
   font-size: 0.58rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+.command-badge .ui-icon-svg {
+  width: 14px;
+  height: 14px;
 }
 
 .tab-stage-radio .stage-banner {
