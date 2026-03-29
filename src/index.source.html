@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#090b0b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Dead Static</title>
+  <link rel="stylesheet" href="./css/ui.css">
+</head>
+<body>
+  <div class="screen-noise" aria-hidden="true"></div>
+  <div class="app-shell">
+    <header class="masthead">
+      <div class="brand-block">
+        <div class="brand-copy">
+          <p class="eyebrow">incremental survival / radio horror</p>
+          <h1>DEAD STATIC</h1>
+          <p id="world-subtitle" class="subtitle">The streets went quiet. The wires did not.</p>
+        </div>
+      </div>
+      <div class="utility-block">
+        <div class="utility-row">
+          <span id="day-clock" class="clock">Day 1 / 07:00</span>
+          <span id="autosave-status" class="save-status">autosave armed</span>
+        </div>
+        <div id="resource-bar" class="resource-bar"></div>
+        <div class="utility-row utility-row-end utility-actions">
+          <button type="button" data-action="save-game">Save</button>
+          <button type="button" data-action="reset-game" class="danger">Reset</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="hero-strip status-shell">
+        <div class="hero-panel status-panel">
+          <div class="panel-head">
+            <div>
+              <p class="section-label">Shelter line</p>
+              <h2>Status</h2>
+            </div>
+            <span id="condition-readout" class="tag">Condition 78</span>
+          </div>
+          <div id="condition-bar" class="meter"></div>
+          <div id="summary-strip" class="summary-strip"></div>
+        </div>
+        <div id="combat-banner" class="combat-banner is-hidden"></div>
+      </section>
+
+      <section class="tabs-shell">
+        <div class="tabs-layout">
+          <aside class="tab-rail">
+            <div class="tab-rail-head">
+              <p class="section-label">Command deck</p>
+              <h2>Sections</h2>
+            </div>
+            <nav id="tab-bar" class="tab-bar" aria-label="Game sections"></nav>
+          </aside>
+          <div id="tab-content" class="tab-content"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="./runtime-config.js"></script>
+  <script defer src="./js/game.js"></script>
+</body>
+</html>

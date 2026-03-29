@@ -1,0 +1,33 @@
+export const RESOURCE_ORDER = [
+  "scrap",
+  "food",
+  "water",
+  "cloth",
+  "fuel",
+  "parts",
+  "wire",
+  "medicine",
+  "ammo",
+  "electronics",
+  "chemicals",
+  "morale",
+  "reputation",
+  "relics",
+];
+
+export const RESOURCE_DEFS = {
+  scrap: { label: "Scrap", tier: "core" },
+  food: { label: "Food", tier: "core" },
+  water: { label: "Water", tier: "core" },
+  cloth: { label: "Cloth", tier: "common" },
+  fuel: { label: "Fuel", tier: "uncommon" },
+  parts: { label: "Parts", tier: "uncommon" },
+  wire: { label: "Wire", tier: "uncommon" },
+  medicine: { label: "Medicine", tier: "rare" },
+  ammo: { label: "Ammo", tier: "rare" },
+  electronics: { label: "Electronics", tier: "rare" },
+  chemicals: { label: "Chemicals", tier: "rare" },
+  morale: { label: "Morale", tier: "social" },
+  reputation: { label: "Reputation", tier: "social" },
+  relics: { label: "Relics", tier: "mythic" },
+};

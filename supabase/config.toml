@@ -1,0 +1,5 @@
+[functions.leaderboard-list]
+verify_jwt = false
+
+[functions.leaderboard-submit]
+verify_jwt = false
