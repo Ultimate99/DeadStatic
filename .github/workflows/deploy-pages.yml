@@ -29,6 +29,8 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Build and verify Dead Static
         run: node scripts/build/build-all.mjs
