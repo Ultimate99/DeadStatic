@@ -6,7 +6,6 @@ import {
   getVisibleUpgrades,
   hasMaterials,
 } from "../engine.js";
-import { getLeaderboardSnapshot, getLeaderboardState } from "../services/leaderboard.js";
 import {
   getBuiltShelterStructures,
   getOutpostStage,
@@ -14,7 +13,7 @@ import {
   SHELTER_MAP_ANNEXES,
   structureKey,
 } from "./shelter-map.js";
-import { iconMarkup } from "./icons.js";
+import { renderTutorialBanner } from "./shared.js";
 
 function tabStageMeta(state, derived) {
   const visibleUpgrades = getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id));
@@ -30,9 +29,8 @@ function tabStageMeta(state, derived) {
     case "craft":
       return {
         label: "Build queue",
-        icon: "craft",
         title: "Convert salvage into systems",
-        cues: ["install ready", "track blockers"],
+        detail: "Ready systems first. Blocked ones define the next hunt.",
         stats: [
           ["Ready", readyUpgrades.length],
           ["Blocked", Math.max(0, visibleUpgrades.length - readyUpgrades.length)],
@@ -43,9 +41,8 @@ function tabStageMeta(state, derived) {
     case "inventory":
       return {
         label: "Stores",
-        icon: "inventory",
         title: "Everything you can still carry",
-        cues: ["gear", "supplies", "odd salvage"],
+        detail: "Loadout, kit, and strange salvage in one clean read.",
         stats: [
           ["Weapon", state.equipped.weapon ? "set" : "none"],
           ["Armor", state.equipped.armor ? "set" : "none"],
@@ -56,9 +53,8 @@ function tabStageMeta(state, derived) {
     case "shelter":
       return {
         label: "Survival board",
-        icon: "shelter",
         title: "Hold the room through another night",
-        cues: ["warmth", "defense", "pressure"],
+        detail: "Warmth, threat, noise, and food decide whether the room holds.",
         stats: [
           ["Warmth", state.shelter.warmth.toFixed(1)],
           ["Threat", state.shelter.threat.toFixed(1)],
@@ -69,9 +65,8 @@ function tabStageMeta(state, derived) {
     case "shelter_map":
       return {
         label: "Compound view",
-        icon: "shelter_map",
         title: "Read the outpost like a living machine",
-        cues: ["footprint", "damage", "expansion"],
+        detail: "Compound footprint, live systems, and damage in one board.",
         stats: [
           ["Stage", getOutpostStage(activeCount)],
           ["Built", activeCount],
@@ -82,9 +77,8 @@ function tabStageMeta(state, derived) {
     case "map":
       return {
         label: "Route board",
-        icon: "map",
         title: "Stage the next push before you leave",
-        cues: ["travel", "risk", "cost"],
+        detail: "Pick a zone, set an objective, choose a route, then pay for it.",
         stats: [
           ["Zones", state.unlockedZones.length],
           ["Prepared", preview ? preview.zone.name : "none"],
@@ -95,9 +89,8 @@ function tabStageMeta(state, derived) {
     case "survivors":
       return {
         label: "Crew line",
-        icon: "crew",
         title: "Every body in the shelter changes the equation",
-        cues: ["staff", "idle hands", "pressure"],
+        detail: "Roster, traits, and staffing pressure all matter now.",
         stats: [
           ["Total", state.survivors.total],
           ["Idle", state.survivors.idle],
@@ -108,9 +101,8 @@ function tabStageMeta(state, derived) {
     case "radio":
       return {
         label: "Signal board",
-        icon: "radio",
         title: "The static is no longer background noise",
-        cues: ["scan", "trace", "decode"],
+        detail: "Choose a signal track and force it to give up routes and truth.",
         stats: [
           ["Signal", state.story.radioProgress],
           ["Secret", state.story.secretProgress],
@@ -121,9 +113,8 @@ function tabStageMeta(state, derived) {
     case "trade":
       return {
         label: "Market",
-        icon: "trade",
         title: "What the wasteland will still trade for",
-        cues: ["trade", "restock", "flip shortages"],
+        detail: "Open a channel. Buy only what solves the next pressure point.",
         stats: [
           ["Offers", state.trader.offers.length],
           ["Scrap", state.resources.scrap],
@@ -134,9 +125,8 @@ function tabStageMeta(state, derived) {
     case "factions":
       return {
         label: "Alignment",
-        icon: "factions",
         title: "Choose who gets to shape the signal",
-        cues: ["choose", "lock in", "keep leverage"],
+        detail: "Permanent alignment. Real gains, real costs.",
         stats: [
           ["Aligned", state.faction.aligned || "none"],
           ["Rep", state.resources.reputation],
@@ -147,9 +137,8 @@ function tabStageMeta(state, derived) {
     case "log":
       return {
         label: "Archive",
-        icon: "log",
         title: "Track what the static has already taken",
-        cues: ["history", "pulse", "recent"],
+        detail: "Pulse, archive, and recent feed.",
         stats: [
           ["Entries", state.log.length],
           ["Latest", state.log[0]?.category || "general"],
@@ -157,30 +146,36 @@ function tabStageMeta(state, derived) {
           ["Radio", state.log.filter((entry) => entry.category === "radio").length],
         ],
       };
-    case "leaderboard": {
-      const leaderboardState = getLeaderboardState();
-      const leaderboardSnapshot = getLeaderboardSnapshot(state);
+    case "help":
       return {
-        label: "Hosted board",
-        icon: "leaderboard",
-        title: "Track the strongest runs online",
-        cues: ["rank", "submit", "sync"],
+        label: "Field guide",
+        title: "Learn the loop without drowning in text",
+        detail: "Use Help when you need orientation, not constant hand-holding.",
         stats: [
-          ["Score", leaderboardSnapshot.summary.score],
-          ["Ranks", leaderboardState.entries.length],
-          ["Day", state.time.day],
+          ["Guided", state.settings.tutorialHints ? "yes" : "no"],
+          ["Username", state.player.username || "unset"],
+          ["Routes", state.stats.expeditions],
           ["Signal", state.story.radioProgress],
-          ["Stage", leaderboardSnapshot.summary.stage],
         ],
       };
-    }
+    case "settings":
+      return {
+        label: "Preferences",
+        title: "Tune the run to your taste",
+        detail: "Settings control onboarding, motion, stage copy, and reset safety.",
+        stats: [
+          ["Tutorial", state.settings.tutorialHints ? "on" : "off"],
+          ["Motion", state.settings.reducedMotion ? "reduced" : "full"],
+          ["Copy", state.settings.briefStageCopy ? "brief" : "full"],
+          ["Reset", state.settings.confirmReset ? "confirm" : "instant"],
+        ],
+      };
     case "overview":
     default:
       return {
         label: "Control layer",
-        icon: "overview",
         title: "Everything important in one scan",
-        cues: ["pressure", "next move", "growth"],
+        detail: "Pressure, next action, route state, and growth in one scan.",
         stats: [
           ["Lanes", getAvailableScavengeSources(state).length],
           ["Builds", readyUpgrades.length],
@@ -197,14 +192,9 @@ export function renderTabStage(state, derived, bodyMarkup) {
     <div class="tab-stage tab-stage-${state.ui.activeTab}">
       <section class="stage-banner">
         <div class="stage-copy">
-          <div class="stage-titleline">
-            <span class="stage-icon" aria-hidden="true">${iconMarkup(meta.icon || "generic")}</span>
-            <div>
-              <span class="note-label">${meta.label}</span>
-              <h2>${meta.title}</h2>
-            </div>
-          </div>
-          ${meta.cues?.length ? `<div class="chip-row stage-cues">${meta.cues.map((cue) => `<span class="chip">${cue}</span>`).join("")}</div>` : ""}
+          <span class="note-label">${meta.label}</span>
+          <h2>${meta.title}</h2>
+          ${state.settings.briefStageCopy ? "" : `<p class="note">${meta.detail}</p>`}
         </div>
         <div class="stage-stat-strip">
           ${meta.stats.map(([label, value]) => `
@@ -215,6 +205,7 @@ export function renderTabStage(state, derived, bodyMarkup) {
           `).join("")}
         </div>
       </section>
+      ${renderTutorialBanner(state)}
       ${bodyMarkup}
     </div>
   `;

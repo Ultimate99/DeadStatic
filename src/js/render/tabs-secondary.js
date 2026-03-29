@@ -1,10 +1,17 @@
-import { SURVIVOR_ROLES } from "../data.js";
-import { ENEMIES, FACTIONS, TRADER_OFFERS } from "../content.js";
-import { canAfford, formatCost, hasItem } from "../engine.js";
-import { getLeaderboardSnapshot, getLeaderboardState } from "../services/leaderboard.js";
+import { SURVIVOR_ROLES, SURVIVOR_TRAITS } from "../data.js";
+import { ENEMIES, FACTIONS, RADIO_INVESTIGATIONS, TRADER_OFFERS } from "../content.js";
+import {
+  canAfford,
+  formatCost,
+  getAvailableRadioInvestigations,
+  getAvailableTraderChannels,
+  getTraderOfferCost,
+  hasItem,
+} from "../engine.js";
 import {
   actionButton,
   byId,
+  getTutorialStep,
   renderCrewPressure,
   renderFactionStatus,
   renderLogPulse,
@@ -16,166 +23,12 @@ import {
   renderAnomalyTrace,
 } from "./shared.js";
 
-function renderLeaderboardPanel(state) {
-  const remote = getLeaderboardState();
-  const snapshot = getLeaderboardSnapshot(state);
-  const usernameReady = remote.profile.codename && remote.profile.codename.length >= 3;
-  const statusLabel = {
-    disabled: "offline",
-    idle: "ready",
-    loading: "syncing",
-    ready: "synced",
-    error: "error",
-  }[remote.status] || remote.status;
-
-  return `
-    <div class="detail-list leaderboard-board">
-      <div class="list-block leaderboard-summary">
-        <div class="surface-head">
-          <div>
-            <span class="note-label">Current run</span>
-            <h4>${usernameReady ? remote.profile.codename : "No username"}</h4>
-          </div>
-          <span class="tag">${snapshot.summary.score}</span>
-        </div>
-        <div class="fact-grid">
-          <div class="fact"><span>Stage</span><strong>${snapshot.summary.stage}</strong></div>
-          <div class="fact"><span>Nights</span><strong>${snapshot.summary.nightsSurvived}</strong></div>
-          <div class="fact"><span>Zones</span><strong>${snapshot.summary.zonesVisited}</strong></div>
-          <div class="fact"><span>Signal</span><strong>${snapshot.summary.radioProgress}</strong></div>
-        </div>
-      </div>
-      <div class="action-stack leaderboard-actions">
-        ${actionButton({
-          action: "set-callsign",
-          label: usernameReady ? "Edit username" : "Set username",
-          meta: usernameReady ? remote.profile.codename : "3-24 characters",
-          variant: "compact",
-          icon: "username",
-        })}
-        ${actionButton({
-          action: "refresh-leaderboard",
-          label: "Refresh board",
-          meta: remote.enabled ? "pull ranks" : "backend off",
-          variant: "compact",
-          disabled: !remote.enabled,
-          icon: "sync",
-        })}
-        ${actionButton({
-          action: "submit-leaderboard",
-          label: "Submit run",
-          meta: remote.enabled ? (usernameReady ? "upload best" : "set username") : "backend off",
-          variant: "primary compact",
-          disabled: !remote.enabled || !usernameReady || remote.submitStatus === "submitting",
-          icon: "upload",
-        })}
-      </div>
-      <div class="list-block leaderboard-status">
-        <div class="surface-head">
-          <h4>Board status</h4>
-          <span class="tag">${statusLabel}</span>
-        </div>
-        <p class="note">${remote.message || (remote.lastUpdated ? `Last sync ${remote.lastUpdated}` : "Hosted board idle.")}</p>
-      </div>
-      ${remote.entries.length ? `
-        <div class="detail-list leaderboard-list">
-          ${remote.entries.map((entry) => `
-            <div class="list-block leaderboard-row ${entry.playerId === remote.profile.playerId ? "is-self" : ""}">
-              <div class="surface-head">
-                <div class="leaderboard-rankline">
-                  <span class="leaderboard-rank">#${entry.rank}</span>
-                  <h4>${entry.playerName}</h4>
-                </div>
-                <span class="tag">${entry.score}</span>
-              </div>
-              <div class="chip-row">${tagList([
-                entry.stage,
-                `${entry.nights} nights`,
-                `${entry.zones} zones`,
-                `${entry.radio} signal`,
-                entry.playerId === remote.profile.playerId ? "you" : null,
-              ].filter(Boolean))}</div>
-            </div>
-          `).join("")}
-        </div>
-      ` : `<p class="empty-state">${remote.enabled ? "No hosted runs yet. Submit the first one." : "Leaderboard is disabled until the hosted backend is configured."}</p>`}
-    </div>
-  `;
-}
-
-export function renderLeaderboardTab(state) {
-  return renderSplitPane(
-    [
-      surfaceCard({
-        title: "Global leaderboard",
-        meta: getLeaderboardState().entries.length ? `${getLeaderboardState().entries.length} ranked` : "hosted",
-        body: renderLeaderboardPanel(state),
-      }),
-    ],
-    [
-      surfaceCard({
-        title: "Save transfer",
-        meta: "phone + desktop",
-        body: renderSaveTransferPanel(),
-      }),
-      surfaceCard({
-        title: "Recent feed",
-        meta: `${Math.min(8, state.log.length)} latest`,
-        body: renderMiniLog(state.log, 8),
-      }),
-    ],
-    "tab-columns-log"
-  );
-}
-
-function renderSaveTransferPanel() {
-  return `
-    <div class="detail-list transfer-board">
-      <div class="list-block transfer-copy">
-        <div class="surface-head">
-          <div>
-            <span class="note-label">Cross-device save</span>
-            <h4>Move your run</h4>
-          </div>
-          <span class="tag">local</span>
-        </div>
-        <div class="chip-row">${tagList(["file backup", "share code", "phone -> desktop"])}</div>
-      </div>
-      <div class="action-stack transfer-actions">
-        ${actionButton({
-          action: "download-save-file",
-          label: "Download save file",
-          meta: "json backup",
-          variant: "compact",
-          icon: "save_file",
-        })}
-        ${actionButton({
-          action: "copy-save-code",
-          label: "Copy save code",
-          meta: "portable text code",
-          variant: "compact",
-          icon: "copy",
-        })}
-        ${actionButton({
-          action: "trigger-save-import",
-          label: "Import save file",
-          meta: "load json backup",
-          variant: "compact",
-          icon: "load_file",
-        })}
-        ${actionButton({
-          action: "import-save-code",
-          label: "Paste save code",
-          meta: "restore from text",
-          variant: "compact",
-          icon: "code",
-        })}
-      </div>
-    </div>
-  `;
-}
-
 export function renderSurvivorTab(state, derived) {
+  const roster = [...state.survivors.roster].sort((left, right) => {
+    const leftRole = left.role === "idle" ? "zz-idle" : left.role;
+    const rightRole = right.role === "idle" ? "zz-idle" : right.role;
+    return `${leftRole}-${left.name}`.localeCompare(`${rightRole}-${right.name}`);
+  });
   return renderSplitPane(
     [
       surfaceCard({
@@ -189,7 +42,7 @@ export function renderSurvivorTab(state, derived) {
                   <h4>${role.label}</h4>
                   <span class="tag">${state.survivors.assigned[roleId]}</span>
                 </div>
-                <div class="chip-row">${tagList([role.description])}</div>
+                <p class="note">${role.description}</p>
                 <div class="action-row">
                   <button type="button" class="mini-button" data-action="adjust-role" data-role="${roleId}" data-delta="-1" ${state.survivors.assigned[roleId] < 1 ? "disabled" : ""}>-</button>
                   <button type="button" class="mini-button" data-action="adjust-role" data-role="${roleId}" data-delta="1" ${state.survivors.idle < 1 ? "disabled" : ""}>+</button>
@@ -218,7 +71,6 @@ export function renderSurvivorTab(state, derived) {
               label: "Recruit survivor",
               meta: "18 scrap / 3 food",
               disabled: state.survivors.total >= derived.survivorCap || !canAfford(state, { scrap: 18, food: 3 }),
-              icon: "recruit",
             })}
           </div>
         `,
@@ -228,41 +80,78 @@ export function renderSurvivorTab(state, derived) {
         meta: `${state.survivors.idle} idle`,
         body: renderCrewPressure(state),
       }),
+      surfaceCard({
+        title: "Roster traits",
+        meta: `${roster.length} people`,
+        body: roster.length
+          ? `
+            <div class="detail-list">
+              ${roster.map((survivor) => `
+                <div class="list-block compact-block">
+                  <div class="surface-head">
+                    <h4>${survivor.name}</h4>
+                    <span class="tag">${survivor.role === "idle" ? "idle" : SURVIVOR_ROLES[survivor.role]?.label || survivor.role}</span>
+                  </div>
+                  <div class="chip-row">${tagList([
+                    SURVIVOR_TRAITS[survivor.traitId]?.label || survivor.traitId,
+                    SURVIVOR_TRAITS[survivor.traitId]?.summary || "trait",
+                  ])}</div>
+                </div>
+              `).join("")}
+            </div>
+          `
+          : `<p class="empty-state">No roster yet.</p>`,
+      }),
     ],
     "tab-columns-crew"
   );
 }
 
 export function renderRadioTab(state) {
+  const availableInvestigations = getAvailableRadioInvestigations(state);
   const notes = [];
-  if (state.story.radioProgress === 0) {
-    notes.push("The band is mostly ghost noise. Keep feeding the rig.");
-  }
-  if (state.story.radioProgress >= 2) {
-    notes.push("Underground routes and hospital traffic start surfacing in fragments.");
-  }
-  if (state.story.radioProgress >= 4) {
-    notes.push("The signal stops feeling archival and starts feeling active.");
-  }
-  if (state.flags.bunkerRouteKnown) {
-    notes.push("A bunker route now sits behind the static, waiting for proof and nerve.");
-  }
-  if (state.flags.worldReveal) {
-    notes.push("You know the name behind the pattern now. Dead Static was built, not born.");
-  }
+  const lastSweep = state.radio.lastSweep;
+  if (state.story.radioProgress === 0) notes.push("Band mostly dead.");
+  if (state.story.radioProgress >= 2) notes.push("Routes and hospitals are surfacing.");
+  if (state.story.radioProgress >= 4) notes.push("Signal feels active, not archival.");
+  if (state.flags.bunkerRouteKnown) notes.push("Bunker route confirmed.");
+  if (state.flags.worldReveal) notes.push("Dead Static was built.");
 
   return renderSplitPane(
     [
       surfaceCard({
-        title: "Transmission notes",
-        meta: `${notes.length} threads`,
-        body: notes.length
-          ? `<div class="detail-list">${notes.map((note, index) => `<div class="list-block signal-note-card"><div class="surface-head"><h4>Trace ${String(index + 1).padStart(2, "0")}</h4><span class="tag">rx</span></div><div class="chip-row">${tagList([note])}</div></div>`).join("")}</div>`
+        title: "Investigations",
+        meta: `${availableInvestigations.length} tracks`,
+        body: availableInvestigations.length
+          ? `
+            <div class="detail-list">
+              ${availableInvestigations.map((investigation) => `
+                <div class="list-block compact-block ${state.radio.investigation === investigation.id ? "is-selected-plan" : ""}">
+                  <div class="surface-head">
+                    <h4>${investigation.label}</h4>
+                    <span class="tag">${state.radio.traces[investigation.id] || 0}</span>
+                  </div>
+                  <div class="chip-row">${tagList([
+                    investigation.short,
+                    ...investigation.milestones.map((milestone) => state.radio.resolved.includes(milestone.id) ? `locked ${milestone.at}` : `at ${milestone.at}`),
+                  ])}</div>
+                  ${actionButton({
+                    action: "set-radio-investigation",
+                    label: investigation.label,
+                    meta: "receiver target",
+                    disabled: state.radio.investigation === investigation.id,
+                    data: { investigation: investigation.id },
+                    variant: "compact",
+                  })}
+                </div>
+              `).join("")}
+            </div>
+          `
           : `<p class="empty-state">Nothing legible yet.</p>`,
       }),
       surfaceCard({
         title: "Signal chain",
-        meta: `${notes.length} clues`,
+        meta: `${notes.length} live`,
         body: `
           <div class="detail-list">
             <div class="list-block">
@@ -270,14 +159,14 @@ export function renderRadioTab(state) {
                 <h4>Band state</h4>
                 <span class="tag">${state.flags.worldReveal ? "open" : "partial"}</span>
               </div>
-              <div class="chip-row">${tagList([state.story.radioProgress > 0 ? "structured noise" : "mostly hiss"])}</div>
+              <p class="note">${notes.join(" ") || "No stable threads yet."}</p>
             </div>
             <div class="list-block">
               <div class="surface-head">
                 <h4>Route hooks</h4>
                 <span class="tag">${state.flags.bunkerRouteKnown ? "marked" : "hidden"}</span>
               </div>
-              <div class="chip-row">${tagList([state.flags.bunkerRouteKnown ? "bunker line marked" : "scan deeper"])}</div>
+              <p class="note">${state.flags.bunkerRouteKnown ? "Bunker route threaded." : "Keep scanning sublevel and anomaly traces."}</p>
             </div>
           </div>
         `,
@@ -295,13 +184,17 @@ export function renderRadioTab(state) {
             <div class="fact"><span>Scans</span><strong>${state.stats.radioScans}</strong></div>
             <div class="fact"><span>Reveal</span><strong>${state.flags.worldReveal ? "partial" : "unknown"}</strong></div>
           </div>
+          ${lastSweep ? `<div class="chip-row">${tagList([
+            RADIO_INVESTIGATIONS.find((investigation) => investigation.id === lastSweep.investigationId)?.label || lastSweep.investigationId,
+            `trace +${lastSweep.gain}`,
+            lastSweep.stamp,
+          ])}</div>` : ""}
           <div class="spacer-top">
             ${actionButton({
               action: "scan-radio",
               label: "Sweep band",
               meta: "1 fuel / 1 parts",
               disabled: state.resources.fuel < 1 || state.resources.parts < 1,
-              icon: "radio",
             })}
           </div>
         `,
@@ -317,6 +210,7 @@ export function renderRadioTab(state) {
 }
 
 export function renderTradeTab(state) {
+  const channels = getAvailableTraderChannels(state);
   const offers = state.trader.offers
     .map((offerId) => TRADER_OFFERS.find((offer) => offer.id === offerId))
     .filter(Boolean);
@@ -325,46 +219,50 @@ export function renderTradeTab(state) {
     [
       surfaceCard({
         title: "Offer wall",
-        meta: offers.length ? "trade window" : "quiet",
+        meta: state.trader.channel || "quiet",
         body: offers.length
           ? `<div class="offer-grid">${offers.map((offer) => `
             <div class="list-block trade-offer-card">
               <div class="surface-head">
                 <h4>${offer.name}</h4>
-                <span class="tag">${formatCost(offer.cost)}</span>
+                <span class="tag">${formatCost(getTraderOfferCost(state, offer))}</span>
               </div>
-              <div class="chip-row">${tagList([offer.description])}</div>
+              <p class="note">${offer.description}</p>
               ${actionButton({
                 action: "buy-offer",
                 label: "Trade",
                 meta: "Take the deal",
-                disabled: !canAfford(state, offer.cost),
+                disabled: !canAfford(state, getTraderOfferCost(state, offer)),
                 data: { offer: offer.id },
-                icon: "trade",
               })}
             </div>
           `).join("")}</div>`
-          : `<p class="empty-state">No one is haggling with you right now.</p>`,
+          : `<p class="empty-state">Open a channel to pull current stock.</p>`,
       }),
     ],
     [
       surfaceCard({
-        title: "Market board",
-        meta: `${offers.length} live`,
+        title: "Channels",
+        meta: `${channels.length} live`,
         body: `
-          <div class="fact-grid">
-            <div class="fact"><span>Scrap</span><strong>${state.resources.scrap}</strong></div>
-            <div class="fact"><span>Reputation</span><strong>${state.resources.reputation}</strong></div>
-            <div class="fact"><span>Fuel</span><strong>${state.resources.fuel}</strong></div>
-            <div class="fact"><span>Medicine</span><strong>${state.resources.medicine}</strong></div>
-          </div>
-          <div class="spacer-top">
-            ${actionButton({
-              action: "refresh-trader",
-              label: "Refresh offers",
-              meta: "new wall",
-              icon: "sync",
-            })}
+          <div class="detail-list">
+            ${channels.map((channel) => `
+              <div class="list-block compact-block ${state.trader.channel === channel.id ? "is-selected-plan" : ""}">
+                <div class="surface-head">
+                  <h4>${channel.name}</h4>
+                  <span class="tag">${channel.tag}</span>
+                </div>
+                <p class="note">${channel.description}</p>
+                ${actionButton({
+                  action: "request-trader-channel",
+                  label: channel.name,
+                  meta: "open channel",
+                  disabled: state.trader.channel === channel.id && offers.length > 0,
+                  data: { channel: channel.id },
+                  variant: "compact",
+                })}
+              </div>
+            `).join("")}
           </div>
         `,
       }),
@@ -382,14 +280,15 @@ export function renderFactionTab(state) {
           meta: state.faction.aligned === faction.id ? "aligned" : "available",
           className: "faction-card",
           body: `
-            <div class="chip-row">${tagList([faction.description, ...faction.bonuses])}</div>
+            <p class="note">${faction.description}</p>
+            <div class="chip-row">${tagList(faction.bonuses)}</div>
+            ${faction.costs?.length ? `<div class="chip-row">${tagList(faction.costs)}</div>` : ""}
             ${actionButton({
               action: "choose-faction",
               label: state.faction.aligned === faction.id ? "Aligned" : `Align with ${faction.name}`,
-              meta: "locks choice",
+              meta: "Permanent choice",
               disabled: Boolean(state.faction.aligned),
               data: { faction: faction.id },
-              icon: "factions",
             })}
           `,
         })).join("")}
@@ -440,6 +339,202 @@ export function renderLogTab(state) {
   );
 }
 
+export function renderHelpTab(state) {
+  const tutorialStep = getTutorialStep(state);
+  const earlyLoop = [
+    "Search rubble until warmth is unlocked.",
+    "Build Shelter Stash before spreading into too many systems.",
+    "Secure food before chasing bigger routes.",
+    "Use Map for one route at a time, not every route at once.",
+  ];
+  const combatGuide = [
+    "Attack when the enemy intent looks weak or you can finish it.",
+    "Brace against heavy intents to reduce the next hit.",
+    "Bandage only when the trade is worth the item.",
+    "Retreat is for bad fights, not default fights.",
+  ];
+  const signalGuide = [
+    "Pick one investigation and repeat it.",
+    "Radio milestones are directional now, not blind RNG.",
+    "Trade fixes shortages. Open a channel with a purpose.",
+    "Factions give power and problems. Choose late, not fast.",
+  ];
+
+  return renderSplitPane(
+    [
+      surfaceCard({
+        title: "First 10 minutes",
+        meta: tutorialStep ? "guided" : "stable",
+        body: `
+          <div class="detail-list">
+            ${tutorialStep ? `
+              <div class="list-block compact-block">
+                <div class="surface-head">
+                  <h4>Current tutorial step</h4>
+                  <span class="tag">${tutorialStep.id}</span>
+                </div>
+                <p class="note">${tutorialStep.summary}</p>
+                <div class="chip-row">${tagList(tutorialStep.chips)}</div>
+              </div>
+            ` : ""}
+            <div class="list-block compact-block">
+              <div class="chip-row">${tagList(earlyLoop)}</div>
+            </div>
+          </div>
+        `,
+      }),
+      surfaceCard({
+        title: "Core loop",
+        meta: "survive -> build -> choose",
+        body: `
+          <div class="detail-list">
+            <div class="list-block compact-block"><p class="note"><strong>Survive today:</strong> condition, warmth, food, water, threat, and noise.</p></div>
+            <div class="list-block compact-block"><p class="note"><strong>Build stability:</strong> upgrades and shelter systems turn panic into options.</p></div>
+            <div class="list-block compact-block"><p class="note"><strong>Choose direction:</strong> routes, radio tracks, trade channels, crew, and factions shape the run.</p></div>
+          </div>
+        `,
+      }),
+      surfaceCard({
+        title: "Systems after the early game",
+        meta: "what matters later",
+        body: `
+          <div class="detail-list">
+            <div class="list-block compact-block"><div class="chip-row">${tagList(signalGuide)}</div></div>
+          </div>
+        `,
+      }),
+    ],
+    [
+      surfaceCard({
+        title: "Combat quick guide",
+        meta: "fight clean",
+        body: `<div class="detail-list"><div class="list-block compact-block"><div class="chip-row">${tagList(combatGuide)}</div></div></div>`,
+      }),
+      surfaceCard({
+        title: "What each tab is for",
+        meta: "read once",
+        body: `
+          <div class="detail-list">
+            <div class="list-block compact-block"><p class="note"><strong>Overview:</strong> next best action and current pressure.</p></div>
+            <div class="list-block compact-block"><p class="note"><strong>Craft:</strong> install systems and read what to scavenge next.</p></div>
+            <div class="list-block compact-block"><p class="note"><strong>Map:</strong> choose zone, objective, and approach.</p></div>
+            <div class="list-block compact-block"><p class="note"><strong>Radio / Trade / Factions:</strong> direction-setting systems, not early obligations.</p></div>
+          </div>
+        `,
+      }),
+    ],
+    "tab-columns-help"
+  );
+}
+
+export function renderSettingsTab(state) {
+  const toggles = [
+    {
+      key: "tutorialHints",
+      title: "Tutorial hints",
+      note: "Shows the single-step onboarding guide.",
+    },
+    {
+      key: "briefStageCopy",
+      title: "Compact stage copy",
+      note: "Hides the longer description under each tab banner.",
+    },
+    {
+      key: "reducedMotion",
+      title: "Reduced motion",
+      note: "Cuts animation and transition noise.",
+    },
+    {
+      key: "confirmReset",
+      title: "Confirm reset",
+      note: "Ask before wiping the current run.",
+    },
+  ];
+
+  return renderSplitPane(
+    [
+      surfaceCard({
+        title: "Profile",
+        meta: state.player.username || "unset",
+        body: `
+          <div class="detail-list">
+            <div class="list-block compact-block">
+              <div class="surface-head">
+                <h4>Username</h4>
+                <span class="tag">${state.player.username || "not set"}</span>
+              </div>
+              <p class="note">Set once for this save. The tutorial asks for it first.</p>
+              ${actionButton({
+                action: "set-username",
+                label: state.player.username ? "Change Username" : "Set Username",
+                meta: "profile",
+                variant: "primary compact",
+              })}
+            </div>
+          </div>
+        `,
+      }),
+      surfaceCard({
+        title: "Interface",
+        meta: "live toggles",
+        body: `
+          <div class="detail-list">
+            ${toggles.map((toggle) => `
+              <div class="list-block compact-block setting-row">
+                <div class="surface-head">
+                  <h4>${toggle.title}</h4>
+                  <span class="tag">${state.settings[toggle.key] ? "on" : "off"}</span>
+                </div>
+                <p class="note">${toggle.note}</p>
+                ${actionButton({
+                  action: "toggle-setting",
+                  label: state.settings[toggle.key] ? "Turn off" : "Turn on",
+                  meta: toggle.title,
+                  data: { setting: toggle.key },
+                  variant: "compact",
+                })}
+              </div>
+            `).join("")}
+          </div>
+        `,
+      }),
+    ],
+    [
+      surfaceCard({
+        title: "Current save",
+        meta: `Day ${state.time.day}`,
+        body: `
+          <div class="fact-grid">
+            <div class="fact"><span>Searches</span><strong>${state.stats.searches}</strong></div>
+            <div class="fact"><span>Expeditions</span><strong>${state.stats.expeditions}</strong></div>
+            <div class="fact"><span>Scans</span><strong>${state.stats.radioScans}</strong></div>
+            <div class="fact"><span>Crew</span><strong>${state.survivors.total}</strong></div>
+          </div>
+        `,
+      }),
+      surfaceCard({
+        title: "Tutorial state",
+        meta: state.settings.tutorialHints ? "active" : "skipped",
+        body: `
+          <div class="detail-list">
+            <div class="list-block compact-block">
+              <p class="note">${state.settings.tutorialHints ? "Tutorial guidance is active." : "Tutorial guidance is skipped. Re-enable it any time."}</p>
+              ${!state.settings.tutorialHints ? actionButton({
+                action: "toggle-setting",
+                label: "Re-enable tutorial",
+                meta: "guided onboarding",
+                data: { setting: "tutorialHints" },
+                variant: "compact",
+              }) : ""}
+            </div>
+          </div>
+        `,
+      }),
+    ],
+    "tab-columns-settings"
+  );
+}
+
 export function renderCombatBanner(state) {
   const banner = byId("combat-banner");
   if (!state.combat) {
@@ -459,12 +554,25 @@ export function renderCombatBanner(state) {
           <span class="tag danger">${state.combat.enemyHp} hp</span>
         </div>
         <p class="note">${enemy.description}</p>
+        <div class="chip-row">${tagList([
+          `intent ${state.combat.intent}`,
+          `turn ${state.combat.turn}`,
+          state.combat.grappled ? "grappled" : "mobile",
+          enemy.behavior?.summary || "hostile",
+        ])}</div>
         <div class="action-row">
           ${actionButton({
             action: "combat-attack",
             label: "Attack",
             meta: "Commit",
             variant: "primary compact",
+          })}
+          ${actionButton({
+            action: "combat-brace",
+            label: "Brace",
+            meta: "Cut the next hit",
+            disabled: state.combat.brace > 0,
+            variant: "compact",
           })}
           ${actionButton({
             action: "combat-heal",

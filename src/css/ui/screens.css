@@ -91,14 +91,6 @@ body::after {
   border-radius: 16px;
 }
 
-.source-card .chip-row,
-.upgrade-card .chip-row,
-.trade-offer-card .chip-row,
-.faction-card .chip-row,
-.signal-note-card .chip-row {
-  gap: 6px;
-}
-
 .source-card::before,
 .ghost-card::before,
 .district-card::before {
@@ -158,12 +150,6 @@ body::after {
 
 .queue-header {
   background: rgba(11, 13, 13, 0.62);
-}
-
-.signal-note-card {
-  background:
-    linear-gradient(145deg, rgba(154, 125, 227, 0.08), transparent 55%),
-    rgba(12, 15, 15, 0.82);
 }
 
 .district-grid {
@@ -453,58 +439,49 @@ body::after {
     rgba(12, 15, 15, 0.8);
 }
 
-.leaderboard-board,
-.leaderboard-list,
-.transfer-board {
+.tutorial-strip {
   display: grid;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid rgba(241, 203, 135, 0.16);
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg, rgba(206, 172, 114, 0.08), transparent 52%),
+    rgba(12, 15, 15, 0.84);
 }
 
-.leaderboard-actions,
-.transfer-actions {
+.tutorial-copy {
+  display: grid;
   gap: 6px;
 }
 
-.leaderboard-actions .action-button,
-.transfer-actions .action-button {
-  border-radius: 12px;
+.tutorial-actions {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+  min-width: 190px;
 }
 
-.leaderboard-summary,
-.leaderboard-status,
-.leaderboard-row {
-  border-radius: 14px;
-}
-
-.leaderboard-rankline {
-  display: flex;
-  align-items: center;
+.setting-row {
   gap: 8px;
-  min-width: 0;
 }
 
-.leaderboard-rank {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 34px;
-  min-height: 24px;
-  padding: 2px 6px;
-  border: 1px solid rgba(210, 197, 166, 0.1);
-  border-radius: 999px;
-  color: var(--accent-strong);
-  font-size: 0.64rem;
+.tab-columns-help .tab-main-column,
+.tab-columns-settings .tab-main-column,
+.tab-columns-help .tab-side-column,
+.tab-columns-settings .tab-side-column {
+  gap: 8px;
 }
 
-.leaderboard-row.is-self {
-  border-color: rgba(241, 203, 135, 0.18);
-  background:
-    linear-gradient(145deg, rgba(211, 165, 106, 0.08), transparent 52%),
-    rgba(15, 18, 18, 0.8);
-}
-
-.transfer-copy {
-  border-radius: 14px;
+body[data-motion="reduced"] .map-structure,
+body[data-motion="reduced"] .signal-bar,
+body[data-motion="reduced"] .trace-node,
+body[data-motion="reduced"] .action-button,
+body[data-motion="reduced"] .tab-button {
+  transition: none !important;
+  animation: none !important;
 }
 
 @media (max-width: 720px) {
@@ -514,10 +491,13 @@ body::after {
     grid-template-columns: 1fr;
   }
 
-  .leaderboard-rankline {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 4px;
+  .tutorial-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .tutorial-actions {
+    min-width: 0;
+    justify-items: stretch;
   }
 }
 

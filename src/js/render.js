@@ -20,9 +20,10 @@ import {
 import {
   renderCombatBanner,
   renderFactionTab,
-  renderLeaderboardTab,
+  renderHelpTab,
   renderLogTab,
   renderRadioTab,
+  renderSettingsTab,
   renderSurvivorTab,
   renderTradeTab,
 } from "./render/tabs-secondary.js";
@@ -47,10 +48,12 @@ function renderTabContent(state, derived) {
       return renderTradeTab(state);
     case "factions":
       return renderFactionTab(state);
-    case "leaderboard":
-      return renderLeaderboardTab(state);
     case "log":
       return renderLogTab(state);
+    case "help":
+      return renderHelpTab(state);
+    case "settings":
+      return renderSettingsTab(state);
     case "overview":
     default:
       return renderOverviewTab(state, derived);
@@ -71,5 +74,7 @@ export function renderGame(state) {
   renderTabBar(state, tabs);
   tabContent.dataset.tab = state.ui.activeTab;
   document.body.dataset.activeTab = state.ui.activeTab;
+  document.body.dataset.motion = state.settings.reducedMotion ? "reduced" : "full";
+  document.body.dataset.copy = state.settings.briefStageCopy ? "brief" : "full";
   tabContent.innerHTML = renderTabStage(state, derived, renderTabContent(state, derived));
 }
