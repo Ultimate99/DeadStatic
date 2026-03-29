@@ -5,6 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type Summary = {
   day: number;
@@ -122,7 +123,7 @@ Deno.serve(async (request) => {
   const score = calculateScore(summary);
   const stage = classifyProgress(summary);
 
-  if (!/^[a-z0-9-]{8,}$/i.test(playerId)) {
+  if (!UUID_PATTERN.test(playerId)) {
     return json({ error: "Invalid player id." }, { status: 400 });
   }
 

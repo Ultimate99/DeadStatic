@@ -1,4 +1,5 @@
 import { registerContentTests } from "./cases/content.test.mjs";
+import { registerLeaderboardTests } from "./cases/leaderboard.test.mjs";
 import { registerRenderTests } from "./cases/render.test.mjs";
 import { registerScavengeTests } from "./cases/scavenge.test.mjs";
 import { registerSystemsTests } from "./cases/systems.test.mjs";
@@ -10,6 +11,7 @@ function run(name, fn) {
 }
 
 registerContentTests(run);
+registerLeaderboardTests(run);
 registerScavengeTests(run);
 registerSystemsTests(run);
 registerRenderTests(run);
