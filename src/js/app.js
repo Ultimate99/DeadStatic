@@ -39,6 +39,26 @@ evaluateProgression(state);
 
 const saveStatus = document.getElementById("autosave-status");
 
+function isMobileViewport() {
+  return typeof window !== "undefined" && Number(window.innerWidth || 0) <= 720;
+}
+
+function normalizeMobileTabTarget(tabId) {
+  if (!isMobileViewport()) {
+    return { tabId, shelterMode: null };
+  }
+
+  if (tabId === "shelter_map") {
+    return { tabId: "shelter", shelterMode: "map" };
+  }
+
+  if (tabId === "shelter") {
+    return { tabId: "shelter", shelterMode: "ops" };
+  }
+
+  return { tabId, shelterMode: null };
+}
+
 function setSaveStatus(text) {
   saveStatus.textContent = text;
 }
@@ -76,6 +96,11 @@ function handleAction(action, button) {
     case "inspect-structure":
       if (state.ui.inspectedStructure !== button.dataset.structure) {
         state.ui.inspectedStructure = button.dataset.structure;
+        changed = true;
+      }
+      if (isMobileViewport()) {
+        state.ui.mobileInspectorStructure = button.dataset.structure;
+        state.ui.mobileShelterMode = "map";
         changed = true;
       }
       break;
@@ -152,13 +177,82 @@ function handleAction(action, button) {
       changed = retreatCombat(state);
       break;
     case "set-tab":
-      if (state.ui.activeTab !== button.dataset.tab) {
-        state.ui.activeTab = button.dataset.tab;
+      {
+        const nextTarget = normalizeMobileTabTarget(button.dataset.tab);
+        const nextTab = nextTarget.tabId;
+        const nextShelterMode = nextTarget.shelterMode;
+
+        state.ui.mobileMoreOpen = false;
+        state.ui.mobileResourceDrawerOpen = false;
+        if (nextTab !== "shelter") {
+          state.ui.mobileInspectorStructure = null;
+        }
+        if (nextShelterMode) {
+          state.ui.mobileShelterMode = nextShelterMode;
+        }
+
+        if (state.ui.activeTab !== nextTab) {
+          state.ui.activeTab = nextTab;
+          saveState(state);
+          setSaveStatus("view saved");
+          rerender();
+          return;
+        }
+
+        if (nextShelterMode && state.ui.mobileShelterMode !== nextShelterMode) {
+          state.ui.mobileShelterMode = nextShelterMode;
+          saveState(state);
+          setSaveStatus("view saved");
+          rerender();
+          return;
+        }
+
         saveState(state);
         setSaveStatus("view saved");
         rerender();
+        return;
       }
-      return;
+    case "toggle-mobile-more":
+      state.ui.mobileMoreOpen = !state.ui.mobileMoreOpen;
+      if (state.ui.mobileMoreOpen) {
+        state.ui.mobileResourceDrawerOpen = false;
+      }
+      changed = true;
+      break;
+    case "close-mobile-more":
+      if (state.ui.mobileMoreOpen) {
+        state.ui.mobileMoreOpen = false;
+        changed = true;
+      }
+      break;
+    case "toggle-mobile-resource-drawer":
+      state.ui.mobileResourceDrawerOpen = !state.ui.mobileResourceDrawerOpen;
+      if (state.ui.mobileResourceDrawerOpen) {
+        state.ui.mobileMoreOpen = false;
+      }
+      changed = true;
+      break;
+    case "close-mobile-resource-drawer":
+      if (state.ui.mobileResourceDrawerOpen) {
+        state.ui.mobileResourceDrawerOpen = false;
+        changed = true;
+      }
+      break;
+    case "set-mobile-shelter-mode":
+      if (button.dataset.mode && state.ui.mobileShelterMode !== button.dataset.mode) {
+        state.ui.mobileShelterMode = button.dataset.mode;
+        if (button.dataset.mode === "ops") {
+          state.ui.mobileInspectorStructure = null;
+        }
+        changed = true;
+      }
+      break;
+    case "close-mobile-inspector":
+      if (state.ui.mobileInspectorStructure) {
+        state.ui.mobileInspectorStructure = null;
+        changed = true;
+      }
+      break;
     case "toggle-setting":
       if (Object.prototype.hasOwnProperty.call(state.settings, button.dataset.setting)) {
         state.settings[button.dataset.setting] = !state.settings[button.dataset.setting];
@@ -216,6 +310,12 @@ document.body.addEventListener("click", (event) => {
 
 rerender();
 setSaveStatus("autosave armed");
+
+if (typeof window.addEventListener === "function") {
+  window.addEventListener("resize", () => {
+    rerender();
+  });
+}
 
 window.setInterval(() => {
   if (processRealtimeTick(state, 1)) {

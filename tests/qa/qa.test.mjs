@@ -98,6 +98,9 @@ function createBundleHarness(randomValues, options = {}) {
     "day-clock",
     "world-subtitle",
     "resource-bar",
+    "mobile-survival-strip",
+    "mobile-sheet-layer",
+    "mobile-bottom-nav",
     "condition-readout",
     "condition-bar",
     "summary-strip",
@@ -114,6 +117,7 @@ function createBundleHarness(randomValues, options = {}) {
 
   const document = {
     body,
+    documentElement: { clientWidth: options.innerWidth || 1280 },
     getElementById(id) {
       if (!elements.has(id)) {
         elements.set(id, new MockElement(id));
@@ -152,9 +156,11 @@ function createBundleHarness(randomValues, options = {}) {
   const window = {
     document,
     localStorage,
+    innerWidth: options.innerWidth || 1280,
     setInterval() {
       return 1;
     },
+    addEventListener() {},
     confirm() {
       return true;
     },
@@ -274,6 +280,10 @@ run("save migration fills new night, expedition, and inspector defaults", () => 
     assert.equal(state.expedition.approach, "standard");
     assert.equal(state.ui.inspectedStructure, "shelter_core");
     assert.equal(state.ui.notableFind, null);
+    assert.equal(state.ui.mobileMoreOpen, false);
+    assert.equal(state.ui.mobileResourceDrawerOpen, false);
+    assert.equal(state.ui.mobileShelterMode, "ops");
+    assert.equal(state.ui.mobileInspectorStructure, null);
     assert.deepEqual(state.shelter.damage, {});
     assert.equal(state.settings.tutorialHints, true);
     assert.equal(state.player.username, "");
@@ -577,6 +587,84 @@ run("help and settings tabs render onboarding support surfaces", () => {
   assert.match(settingsMarkup, /Username/);
   assert.match(settingsMarkup, /Tutorial hints/);
   assert.match(settingsMarkup, /Compact stage copy/);
+});
+
+run("mobile shell renders bottom nav, compact tutorial, and sticky survival strip", () => {
+  const bundle = readFileSync(path.join(projectRoot, "dist", "js", "game.js"), "utf8");
+  const state = createInitialState();
+  state.stats.searches = 4;
+  state.flags.burnUnlocked = true;
+  state.resources.scrap = 18;
+  state.resources.cloth = 2;
+  state.resources.wire = 1;
+  state.discoveredResources = ["scrap", "cloth", "wire", "food", "water"];
+  state.unlockedSections = ["upgrades", "shelter", "map", "survivors", "radio", "trader", "factions"];
+  state.unlockedZones = ["ruined_street"];
+
+  const harness = createBundleHarness(SEARCH_PATTERN, { initialSave: state, innerWidth: 390 });
+  vm.runInNewContext(bundle, harness.context, { filename: "game.js" });
+
+  const mobileNav = harness.elements.get("mobile-bottom-nav").innerHTML;
+  const mobileStrip = harness.elements.get("mobile-survival-strip").innerHTML;
+  const tabMarkup = harness.elements.get("tab-content").innerHTML;
+
+  assert.match(mobileNav, /Overview/);
+  assert.match(mobileNav, /Craft/);
+  assert.match(mobileNav, /Shelter/);
+  assert.match(mobileNav, /Map/);
+  assert.match(mobileNav, /More/);
+  assert.doesNotMatch(mobileNav, /Shelter Map/);
+  assert.match(mobileStrip, /Condition/);
+  assert.match(mobileStrip, /More/);
+  assert.match(tabMarkup, /tutorial-strip-mobile/);
+  assert.match(tabMarkup, /Skip/);
+  assert.match(tabMarkup, /mobile-stage-info/);
+});
+
+run("mobile more sheet exposes secondary screens without shelter map", () => {
+  const bundle = readFileSync(path.join(projectRoot, "dist", "js", "game.js"), "utf8");
+  const state = createInitialState();
+  state.unlockedSections = ["upgrades", "inventory", "shelter", "map", "survivors", "radio", "trader", "factions"];
+  state.ui.mobileMoreOpen = true;
+
+  const harness = createBundleHarness(SEARCH_PATTERN, { initialSave: state, innerWidth: 390 });
+  vm.runInNewContext(bundle, harness.context, { filename: "game.js" });
+
+  const sheetMarkup = harness.elements.get("mobile-sheet-layer").innerHTML;
+  assert.match(sheetMarkup, /Inventory/);
+  assert.match(sheetMarkup, /Crew/);
+  assert.match(sheetMarkup, /Radio/);
+  assert.match(sheetMarkup, /Trade/);
+  assert.match(sheetMarkup, /Factions/);
+  assert.match(sheetMarkup, /Log/);
+  assert.match(sheetMarkup, /Help/);
+  assert.match(sheetMarkup, /Settings/);
+  assert.doesNotMatch(sheetMarkup, /Shelter Map/);
+});
+
+run("mobile shelter view folds shelter map into segmented ops and map modes", () => {
+  const bundle = readFileSync(path.join(projectRoot, "dist", "js", "game.js"), "utf8");
+  const state = createInitialState();
+  state.upgrades = ["shelter_stash", "campfire", "basic_barricade", "watch_post"];
+  state.unlockedSections = ["shelter"];
+  state.ui.activeTab = "shelter_map";
+  state.ui.mobileShelterMode = "map";
+  state.ui.mobileInspectorStructure = "campfire";
+  state.shelter.damage = { campfire: 2 };
+  state.resources.scrap = 20;
+
+  const harness = createBundleHarness(SEARCH_PATTERN, { initialSave: state, innerWidth: 390 });
+  vm.runInNewContext(bundle, harness.context, { filename: "game.js" });
+
+  const tabMarkup = harness.elements.get("tab-content").innerHTML;
+  assert.match(tabMarkup, /mobile-segmented-control/);
+  assert.match(tabMarkup, /Ops/);
+  assert.match(tabMarkup, /Map/);
+  assert.match(tabMarkup, /Shelter map/);
+  assert.match(tabMarkup, /Tap a structure/);
+  assert.match(tabMarkup, /mobile-structure-sheet/);
+  assert.match(tabMarkup, /Campfire/);
+  assert.equal(harness.elements.get("tab-content").dataset.tab, "shelter");
 });
 
 let failures = 0;

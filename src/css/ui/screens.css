@@ -501,3 +501,160 @@ body[data-motion="reduced"] .tab-button {
   }
 }
 
+.tab-mobile-flow {
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-accordion {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(210, 197, 166, 0.08);
+  border-radius: 14px;
+  background: rgba(11, 14, 14, 0.72);
+}
+
+.mobile-accordion summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--text);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.mobile-accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.mobile-accordion-body {
+  display: grid;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.tutorial-strip-mobile {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px;
+}
+
+.tutorial-strip-mobile .tutorial-copy p {
+  display: none;
+}
+
+.tutorial-strip-mobile .tutorial-actions {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  min-width: 0;
+}
+
+.mobile-segmented-control {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid rgba(210, 197, 166, 0.08);
+  border-radius: 14px;
+  background: rgba(10, 13, 13, 0.82);
+}
+
+.mobile-segment {
+  min-height: 44px;
+  border-radius: 12px;
+  background: rgba(15, 18, 18, 0.84);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.mobile-segment.is-active {
+  border-color: rgba(241, 203, 135, 0.22);
+  color: var(--text);
+  background:
+    linear-gradient(180deg, rgba(211, 165, 106, 0.1), transparent 70%),
+    rgba(16, 19, 19, 0.94);
+}
+
+.mobile-map-note {
+  margin-top: 8px;
+}
+
+.mobile-inspector-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 32;
+}
+
+.mobile-structure-sheet {
+  z-index: 33;
+}
+
+body[data-mobile="true"] .tab-grid,
+body[data-mobile="true"] .tab-inline-grid,
+body[data-mobile="true"] .fact-grid,
+body[data-mobile="true"] .overview-utility-row {
+  grid-template-columns: 1fr;
+}
+
+body[data-mobile="true"] .surface-head {
+  gap: 8px;
+}
+
+body[data-mobile="true"] .surface-head h3,
+body[data-mobile="true"] .surface-head h4 {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+}
+
+body[data-mobile="true"] .action-meta,
+body[data-mobile="true"] .note {
+  line-height: 1.45;
+}
+
+body[data-mobile="true"] .command-card,
+body[data-mobile="true"] .source-card,
+body[data-mobile="true"] .list-block,
+body[data-mobile="true"] .fact,
+body[data-mobile="true"] .district-card,
+body[data-mobile="true"] .compound-feed-block {
+  border-radius: 12px;
+}
+
+body[data-mobile="true"] .command-desk,
+body[data-mobile="true"] .lane-metrics,
+body[data-mobile="true"] .approach-grid,
+body[data-mobile="true"] .objective-grid,
+body[data-mobile="true"] .detail-list,
+body[data-mobile="true"] .action-stack {
+  gap: 8px;
+}
+
+body[data-mobile="true"] .fact-grid {
+  gap: 6px;
+}
+
+body[data-mobile="true"] .log-pulse-row,
+body[data-mobile="true"] .crew-band-card {
+  min-height: 0;
+}
+
+@media (max-width: 720px) {
+  body[data-mobile="true"] .tab-mobile-flow .surface-card {
+    padding: 10px;
+  }
+
+  body[data-mobile="true"] .tab-mobile-flow .surface-body {
+    gap: 8px;
+  }
+
+  body[data-mobile="true"] .fact-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+

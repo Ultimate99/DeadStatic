@@ -186,18 +186,26 @@ function tabStageMeta(state, derived) {
   }
 }
 
-export function renderTabStage(state, derived, bodyMarkup) {
+export function renderTabStage(state, derived, bodyMarkup, isMobile = false) {
   const meta = tabStageMeta(state, derived);
+  const visibleStats = isMobile ? meta.stats.slice(0, 2) : meta.stats;
   return `
     <div class="tab-stage tab-stage-${state.ui.activeTab}">
-      <section class="stage-banner">
+      <section class="stage-banner ${isMobile ? "stage-banner-mobile" : ""}">
         <div class="stage-copy">
           <span class="note-label">${meta.label}</span>
           <h2>${meta.title}</h2>
-          ${state.settings.briefStageCopy ? "" : `<p class="note">${meta.detail}</p>`}
+          ${isMobile
+            ? `
+              <details class="mobile-stage-info">
+                <summary>Info</summary>
+                <p class="note">${meta.detail}</p>
+              </details>
+            `
+            : state.settings.briefStageCopy ? "" : `<p class="note">${meta.detail}</p>`}
         </div>
         <div class="stage-stat-strip">
-          ${meta.stats.map(([label, value]) => `
+          ${visibleStats.map(([label, value]) => `
             <div class="stage-stat">
               <span>${label}</span>
               <strong>${value}</strong>

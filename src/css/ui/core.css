@@ -14,6 +14,10 @@
   --danger: #ce7263;
   --shadow: rgba(0, 0, 0, 0.42);
   --mono: "Cascadia Code", "JetBrains Mono", "IBM Plex Mono", monospace;
+  --mobile-topbar-height: 60px;
+  --mobile-survival-height: 88px;
+  --mobile-nav-height: 74px;
+  --mobile-gutter: 10px;
 }
 
 * {

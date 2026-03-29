@@ -41,6 +41,7 @@ import {
   getBuiltShelterStructures,
   getOutpostStage,
   getShelterMapPerimeter,
+  renderShelterMapMobilePanel,
   structureByKey,
 } from "./shelter-map.js";
 
@@ -158,7 +159,7 @@ function renderUpgradeCard(state, upgrade) {
   `;
 }
 
-export function renderOverviewTab(state, derived) {
+export function renderOverviewTab(state, derived, _isMobile = false) {
   const availableUpgrades = getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id));
   const availableSources = getAvailableScavengeSources(state);
   const lockedSources = SCAVENGE_SOURCES.filter((source) => !availableSources.some((entry) => entry.id === source.id)).slice(0, 3);
@@ -246,7 +247,7 @@ export function renderOverviewTab(state, derived) {
   return `<div class="tab-grid tab-grid-overview">${sections.join("")}</div>`;
 }
 
-export function renderCraftTab(state) {
+export function renderCraftTab(state, isMobile = false) {
   const visibleUpgrades = getVisibleUpgrades(state);
   const available = visibleUpgrades.filter((upgrade) => !state.upgrades.includes(upgrade.id));
   const ready = available.filter((upgrade) => canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials));
@@ -254,6 +255,52 @@ export function renderCraftTab(state) {
   const built = state.upgrades
     .map((upgradeId) => visibleUpgrades.find((upgrade) => upgrade.id === upgradeId))
     .filter(Boolean);
+
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-craft">
+        ${surfaceCard({
+          title: "Ready now",
+          meta: `${ready.length} ready`,
+          body: ready.length
+            ? `<div class="detail-list">${ready.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>`
+            : `<p class="empty-state">Nothing is funded yet. Push scavenging first.</p>`,
+        })}
+        ${surfaceCard({
+          title: "Need salvage",
+          meta: `${blocked.length} queued`,
+          body: blocked.length
+            ? `
+              <details class="mobile-accordion" open>
+                <summary>Open blocked builds</summary>
+                <div class="detail-list">${blocked.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>
+              </details>
+            `
+            : `<p class="empty-state">No blocked builds are waiting.</p>`,
+        })}
+        ${surfaceCard({
+          title: "Systems online",
+          meta: `${built.length} total`,
+          body: built.length
+            ? `
+              <details class="mobile-accordion">
+                <summary>Show installed systems</summary>
+                <div class="detail-list">${built.map((upgrade) => `
+                  <div class="list-block compact-block">
+                    <div class="surface-head">
+                      <h4>${upgrade.name}</h4>
+                      <span class="tag">live</span>
+                    </div>
+                    <div class="chip-row">${tagList([upgrade.verb || "build", "installed"])}</div>
+                  </div>
+                `).join("")}</div>
+              </details>
+            `
+            : `<p class="empty-state">No installed systems yet.</p>`,
+        })}
+      </div>
+    `;
+  }
 
   return `
     <div class="tab-grid">
@@ -314,7 +361,7 @@ export function renderCraftTab(state) {
   `;
 }
 
-export function renderInventoryTab(state, derived) {
+export function renderInventoryTab(state, derived, _isMobile = false) {
   const items = Object.entries(state.inventory)
     .filter(([itemId, amount]) => amount > 0 && ITEMS[itemId])
     .sort((left, right) => {
@@ -531,7 +578,7 @@ export function renderExpeditionPlanner(state) {
   `;
 }
 
-export function renderShelterTab(state, derived) {
+export function renderShelterTab(state, derived, isMobile = false) {
   const actions = [
     actionButton({
       action: "eat-ration",
@@ -580,8 +627,11 @@ export function renderShelterTab(state, derived) {
   const liveAnnexes = SHELTER_MAP_ANNEXES
     .filter((entry) => state.upgrades.includes(entry.upgrade))
     .map((entry) => entry.label);
+  const mapGuidance = isMobile
+    ? "Use the Map mode above for structure checks and repairs."
+    : "Use <strong>Shelter Map</strong> for damage and structure checks.";
 
-  return `
+  const opsMarkup = `
     <div class="tab-grid tab-grid-tight">
       ${surfaceCard({
         title: "Shelter state",
@@ -653,16 +703,46 @@ export function renderShelterTab(state, derived) {
               <p class="note">Warmth falls. Threat rises. Noise paints a target on the fence.</p>
             </div>
             <div class="list-block compact-block">
-              <p class="note">Use <strong>Shelter Map</strong> for damage and structure checks.</p>
+              <p class="note">${mapGuidance}</p>
             </div>
           </div>
         `,
       })}
     </div>
   `;
+
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-shelter">
+        <div class="mobile-segmented-control">
+          <button
+            type="button"
+            class="mobile-segment ${state.ui.mobileShelterMode !== "map" ? "is-active" : ""}"
+            data-action="set-mobile-shelter-mode"
+            data-mode="ops"
+          >
+            Ops
+          </button>
+          <button
+            type="button"
+            class="mobile-segment ${state.ui.mobileShelterMode === "map" ? "is-active" : ""}"
+            data-action="set-mobile-shelter-mode"
+            data-mode="map"
+          >
+            Map
+          </button>
+        </div>
+        ${state.ui.mobileShelterMode === "map"
+          ? renderShelterMapMobilePanel(state)
+          : opsMarkup}
+      </div>
+    `;
+  }
+
+  return opsMarkup;
 }
 
-export function renderMapTab(state) {
+export function renderMapTab(state, _isMobile = false) {
   const zones = ZONES.filter((zone) => state.unlockedZones.includes(zone.id));
   return `
     <div class="tab-grid">

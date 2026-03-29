@@ -37,8 +37,15 @@ export const TAB_DEFS = [
   { id: "settings", label: "Settings", hint: "options" },
 ];
 
+export const MOBILE_PRIMARY_TABS = ["overview", "craft", "shelter", "map"];
+export const MOBILE_MORE_TABS = ["inventory", "survivors", "radio", "trade", "factions", "log", "help", "settings"];
+
 export function byId(id) {
   return document.getElementById(id);
+}
+
+export function isMobileViewport() {
+  return typeof window !== "undefined" && Number(window.innerWidth || 0) <= 720;
 }
 
 function meterClass(percent) {
@@ -167,12 +174,25 @@ export function describeSourceUnlock(state, source) {
   return notes.join(" / ") || "ready";
 }
 
-function getVisibleTabs(state) {
-  return TAB_DEFS.filter((tab) => !tab.unlock || state.unlockedSections.includes(tab.unlock));
+function countMarkup(tab, state) {
+  const count = typeof tab.count === "function" ? tab.count(state) : null;
+  return count ? `<span class="tab-count">${count}</span>` : "";
 }
 
-export function ensureActiveTab(state) {
-  const tabs = getVisibleTabs(state);
+export function getVisibleTabs(state, isMobile = false) {
+  return TAB_DEFS
+    .filter((tab) => !tab.unlock || state.unlockedSections.includes(tab.unlock))
+    .filter((tab) => !isMobile || tab.id !== "shelter_map");
+}
+
+export function ensureActiveTab(state, isMobile = false) {
+  const tabs = getVisibleTabs(state, isMobile);
+
+  if (isMobile && state.ui.activeTab === "shelter_map") {
+    state.ui.activeTab = "shelter";
+    state.ui.mobileShelterMode = "map";
+  }
+
   if (!tabs.some((tab) => tab.id === state.ui.activeTab)) {
     state.ui.activeTab = tabs[0]?.id || "overview";
   }
@@ -191,22 +211,61 @@ export function surfaceCard({ title, meta = "", body = "", className = "" }) {
   `;
 }
 
-export function renderResourceBar(state) {
-  const resourceIds = [...state.discoveredResources]
+function sortedDiscoveredResources(state) {
+  return [...state.discoveredResources]
     .filter((resourceId) => RESOURCE_ORDER.includes(resourceId))
     .sort((left, right) => RESOURCE_ORDER.indexOf(left) - RESOURCE_ORDER.indexOf(right));
+}
 
-  byId("resource-bar").innerHTML = resourceIds
-    .map((resourceId) => `
-      <div class="resource-pill tier-${RESOURCE_DEFS[resourceId].tier}">
-        <div class="resource-pill-key">
-          <i class="tier-dot tier-${RESOURCE_DEFS[resourceId].tier}"></i>
-          <span>${RESOURCE_DEFS[resourceId].label}</span>
-        </div>
-        <strong>${state.resources[resourceId]}</strong>
+function resourcePillMarkup(state, resourceId, compact = false) {
+  return `
+    <div class="resource-pill tier-${RESOURCE_DEFS[resourceId].tier} ${compact ? "is-compact" : ""}">
+      <div class="resource-pill-key">
+        <i class="tier-dot tier-${RESOURCE_DEFS[resourceId].tier}"></i>
+        <span>${RESOURCE_DEFS[resourceId].label}</span>
       </div>
-    `)
-    .join("");
+      <strong>${state.resources[resourceId]}</strong>
+    </div>
+  `;
+}
+
+export function renderResourceBar(state, isMobile = false) {
+  const resourceBar = byId("resource-bar");
+  const resourceIds = sortedDiscoveredResources(state);
+  resourceBar.innerHTML = isMobile ? "" : resourceIds.map((resourceId) => resourcePillMarkup(state, resourceId)).join("");
+}
+
+export function renderMobileSurvivalStrip(state, derived) {
+  const mobileStrip = byId("mobile-survival-strip");
+  const resourceIds = sortedDiscoveredResources(state);
+  const topResources = resourceIds.slice(0, 4);
+  const overflowCount = Math.max(0, resourceIds.length - topResources.length);
+  const percent = Math.round((state.condition / derived.maxCondition) * 100);
+
+  mobileStrip.innerHTML = `
+    <div class="mobile-survival-head">
+      <span class="mobile-condition-label">Condition</span>
+      <strong>${state.condition}/${derived.maxCondition}</strong>
+    </div>
+    <div class="mobile-condition-meter">
+      <div class="meter-fill ${meterClass(percent)}" style="width:${percent}%"></div>
+    </div>
+    <div class="mobile-resource-row">
+      ${topResources.map((resourceId) => resourcePillMarkup(state, resourceId, true)).join("")}
+      ${overflowCount
+        ? `
+          <button
+            type="button"
+            class="resource-pill resource-pill-overflow"
+            data-action="toggle-mobile-resource-drawer"
+          >
+            <span>More</span>
+            <strong>+${overflowCount}</strong>
+          </button>
+        `
+        : ""}
+    </div>
+  `;
 }
 
 export function renderCondition(state, derived) {
@@ -270,7 +329,6 @@ export function renderSubtitle(state) {
 export function renderTabBar(state, tabs) {
   byId("tab-bar").innerHTML = tabs
     .map((tab) => {
-      const count = typeof tab.count === "function" ? tab.count(state) : null;
       return `
         <button
           type="button"
@@ -282,11 +340,104 @@ export function renderTabBar(state, tabs) {
             <strong>${tab.label}</strong>
             <small>${tab.hint || "section"}</small>
           </span>
-          ${count ? `<span class="tab-count">${count}</span>` : ""}
+          ${countMarkup(tab, state)}
         </button>
       `;
     })
     .join("");
+}
+
+export function renderMobileBottomNav(state, tabs) {
+  const nav = byId("mobile-bottom-nav");
+  const primaryTabs = MOBILE_PRIMARY_TABS
+    .map((tabId) => tabs.find((tab) => tab.id === tabId))
+    .filter(Boolean);
+  const moreActive = !MOBILE_PRIMARY_TABS.includes(state.ui.activeTab) || state.ui.mobileMoreOpen;
+
+  nav.innerHTML = `
+    ${primaryTabs.map((tab) => `
+      <button
+        type="button"
+        class="mobile-nav-button ${state.ui.activeTab === tab.id ? "is-active" : ""}"
+        data-action="set-tab"
+        data-tab="${tab.id}"
+      >
+        <span>${tab.label}</span>
+        ${countMarkup(tab, state)}
+      </button>
+    `).join("")}
+    <button
+      type="button"
+      class="mobile-nav-button ${moreActive ? "is-active" : ""}"
+      data-action="toggle-mobile-more"
+    >
+      <span>More</span>
+      <span class="tab-count">${MOBILE_MORE_TABS.filter((tabId) => tabs.some((tab) => tab.id === tabId)).length}</span>
+    </button>
+  `;
+}
+
+export function renderMobileSheets(state, tabs) {
+  const layer = byId("mobile-sheet-layer");
+  const resourceIds = sortedDiscoveredResources(state);
+  const secondaryTabs = MOBILE_MORE_TABS
+    .map((tabId) => tabs.find((tab) => tab.id === tabId))
+    .filter(Boolean);
+
+  if (state.ui.mobileResourceDrawerOpen) {
+    layer.innerHTML = `
+      <button type="button" class="mobile-sheet-backdrop" data-action="close-mobile-resource-drawer" aria-label="Close resource drawer"></button>
+      <section class="mobile-sheet mobile-resource-drawer">
+        <div class="mobile-sheet-head">
+          <div>
+            <span class="note-label">Resources</span>
+            <h3>Field reserves</h3>
+          </div>
+          <button type="button" class="mini-button" data-action="close-mobile-resource-drawer">Close</button>
+        </div>
+        <div class="mobile-sheet-body mobile-resource-grid">
+          ${resourceIds.map((resourceId) => resourcePillMarkup(state, resourceId)).join("")}
+        </div>
+      </section>
+    `;
+    return;
+  }
+
+  if (state.ui.mobileMoreOpen) {
+    layer.innerHTML = `
+      <button type="button" class="mobile-sheet-backdrop" data-action="close-mobile-more" aria-label="Close more menu"></button>
+      <section class="mobile-sheet mobile-more-sheet">
+        <div class="mobile-sheet-head">
+          <div>
+            <span class="note-label">Sections</span>
+            <h3>More</h3>
+          </div>
+          <button type="button" class="mini-button" data-action="close-mobile-more">Close</button>
+        </div>
+        <div class="mobile-sheet-body">
+          <div class="mobile-sheet-tab-list">
+            ${secondaryTabs.map((tab) => `
+              <button
+                type="button"
+                class="mobile-sheet-tab ${state.ui.activeTab === tab.id ? "is-active" : ""}"
+                data-action="set-tab"
+                data-tab="${tab.id}"
+              >
+                <span class="mobile-sheet-tab-copy">
+                  <strong>${tab.label}</strong>
+                  <small>${tab.hint || "section"}</small>
+                </span>
+                ${countMarkup(tab, state)}
+              </button>
+            `).join("")}
+          </div>
+        </div>
+      </section>
+    `;
+    return;
+  }
+
+  layer.innerHTML = "";
 }
 
 export function renderMiniLog(logEntries, limit) {
@@ -303,6 +454,14 @@ export function renderMiniLog(logEntries, limit) {
 }
 
 export function renderSplitPane(mainCards, sideCards, className = "") {
+  if (isMobileViewport()) {
+    return `
+      <div class="tab-mobile-flow ${className}">
+        ${[...mainCards, ...sideCards].join("")}
+      </div>
+    `;
+  }
+
   return `
     <div class="tab-columns ${className}">
       <div class="tab-main-column">${mainCards.join("")}</div>
@@ -599,6 +758,22 @@ export function renderTutorialBanner(state) {
   const visibleOnThisTab = state.ui.activeTab === "overview" || step.tabs.includes(state.ui.activeTab);
   if (!visibleOnThisTab) {
     return "";
+  }
+
+  if (isMobileViewport()) {
+    return `
+      <section class="tutorial-strip tutorial-strip-mobile">
+        <div class="tutorial-copy">
+          <span class="note-label">Guide</span>
+          <h3>${step.title}</h3>
+          <div class="chip-row">${tagList(step.chips.slice(0, 2))}</div>
+        </div>
+        <div class="tutorial-actions">
+          ${actionButton(step.action)}
+          <button type="button" class="mini-button" data-action="skip-tutorial">Skip</button>
+        </div>
+      </section>
+    `;
   }
 
   return `

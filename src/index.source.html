@@ -2,30 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#090b0b">
-  <meta name="description" content="Dead Static is an incremental survival and radio-horror browser game about building an outpost, surviving the nights, and chasing impossible signals through a dead city.">
-  <meta name="application-name" content="Dead Static">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Dead Static">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="Dead Static">
-  <meta property="og:description" content="Incremental survival, radio horror, and a shelter that grows into something much stranger.">
-  <meta property="og:url" content="https://ultimate99.github.io/DeadStatic/">
-  <meta property="og:image" content="https://ultimate99.github.io/DeadStatic/assets/social-card.png">
-  <meta property="og:image:alt" content="Dead Static cover art showing a stark radio-horror shelter interface.">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Dead Static">
-  <meta name="twitter:description" content="Incremental survival, radio horror, and a shelter that keeps unfolding.">
-  <meta name="twitter:image" content="https://ultimate99.github.io/DeadStatic/assets/social-card.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dead Static</title>
-  <link rel="canonical" href="https://ultimate99.github.io/DeadStatic/">
-  <link rel="manifest" href="./site.webmanifest">
-  <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
-  <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png">
-  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
   <link rel="stylesheet" href="./css/ui.css">
 </head>
 <body>
@@ -63,6 +41,7 @@
             <span id="condition-readout" class="tag">Condition 78</span>
           </div>
           <div id="condition-bar" class="meter"></div>
+          <div id="mobile-survival-strip" class="mobile-survival-strip"></div>
           <div id="summary-strip" class="summary-strip"></div>
         </div>
         <div id="combat-banner" class="combat-banner is-hidden"></div>
@@ -82,9 +61,9 @@
       </section>
     </main>
   </div>
+  <div id="mobile-sheet-layer" class="mobile-sheet-layer"></div>
+  <nav id="mobile-bottom-nav" class="mobile-bottom-nav" aria-label="Mobile sections"></nav>
 
-  <input id="save-import-input" type="file" accept=".json,.txt,application/json,text/plain" hidden>
-  <script src="./runtime-config.js"></script>
   <script defer src="./js/game.js"></script>
 </body>
 </html>

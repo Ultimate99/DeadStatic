@@ -176,7 +176,7 @@ function structureStatusBadge(status) {
 }
 
 function inspectedStructureId(state) {
-  const selected = state.ui.inspectedStructure;
+  const selected = state.ui.mobileInspectorStructure || state.ui.inspectedStructure;
   if (selected === "shelter_core" || state.upgrades.includes(selected) || selected === SHELTER_MAP_PERIMETER.id) {
     return selected;
   }
@@ -294,15 +294,17 @@ function renderPlannedStructureCard(state, upgrade) {
   `;
 }
 
-function renderMapStructureButton(state, structure, derived) {
+function renderMapStructureButton(state, structure, derived, mobile = false) {
   const id = structureKey(structure);
   const status = structureStatus(id, state, derived);
   const tooltip = `${structure.label}: ${status.label}. ${status.telemetry[0] || structure.detail || "built"}`;
+  const selected = inspectedStructureId(state) === id;
+  const showLabel = !mobile || selected || status.damage >= 2 || ["watch_post", "radio_rig", "campfire"].includes(structure.id);
 
   return `
     <button
       type="button"
-      class="map-structure kind-${structure.kind} sprite-${structure.sprite} ${status.className} ${inspectedStructureId(state) === id ? "is-selected" : ""}"
+      class="map-structure kind-${structure.kind} sprite-${structure.sprite} ${status.className} ${selected ? "is-selected" : ""} ${mobile && !showLabel ? "is-mobile-minimal" : ""}"
       style="--x:${structure.x}; --y:${structure.y};"
       data-action="inspect-structure"
       data-structure="${id}"
@@ -316,7 +318,7 @@ function renderMapStructureButton(state, structure, derived) {
         <span class="sprite-body"></span>
         <span class="sprite-accent"></span>
       </div>
-      <span class="structure-name">${structure.short || structure.label}</span>
+      ${showLabel ? `<span class="structure-name">${structure.short || structure.label}</span>` : ""}
     </button>
   `;
 }
@@ -434,7 +436,7 @@ function renderCompoundDistricts(state, structures, perimeter) {
   `;
 }
 
-function renderShelterMapBoard(state) {
+function renderShelterMapBoard(state, mobile = false) {
   const structures = getBuiltShelterStructures(state);
   const perimeter = getShelterMapPerimeter(state);
   const activeCount = structures.length + (perimeter ? 1 : 0);
@@ -461,11 +463,11 @@ function renderShelterMapBoard(state) {
           <strong>${damageCount ? "Needs repair" : "Stable"}</strong>
         </div>
       </div>
-      <div class="shelter-map ${meshed ? "has-mesh" : ""}">
+      <div class="shelter-map ${meshed ? "has-mesh" : ""} ${mobile ? "is-mobile-board" : ""}">
         <div class="map-compound-floor"></div>
         <div class="map-path gate-lane"></div>
         ${renderShelterFence(state)}
-        ${structures.map((structure) => renderMapStructureButton(state, structure, derived)).join("")}
+        ${structures.map((structure) => renderMapStructureButton(state, structure, derived, mobile)).join("")}
         ${perimeter ? `
           <button
             type="button"
@@ -479,6 +481,86 @@ function renderShelterMapBoard(state) {
           </button>
         ` : ""}
       </div>
+    </div>
+  `;
+}
+
+function renderMobileStructureInspector(state) {
+  const derived = getDerivedState(state);
+  const structureId = inspectedStructureId(state);
+  const structure = structureByKey(structureId);
+  const status = structureStatus(structureId, state, derived);
+  const cost = getRepairCost(state, structureId);
+  const telemetry = status.telemetry.length ? status.telemetry : [structure.detail || "built"];
+
+  return `
+    <div class="mobile-inspector-sheet">
+      <button type="button" class="mobile-sheet-backdrop" data-action="close-mobile-inspector" aria-label="Close structure inspector"></button>
+      <section class="mobile-sheet mobile-structure-sheet">
+        <div class="mobile-sheet-head">
+          <div>
+            <span class="note-label">Structure</span>
+            <h3>${structure.label}</h3>
+          </div>
+          <button type="button" class="mini-button" data-action="close-mobile-inspector">Close</button>
+        </div>
+        <div class="mobile-sheet-body">
+          <div class="fact-grid">
+            <div class="fact"><span>State</span><strong>${status.label}</strong></div>
+            <div class="fact"><span>Integrity</span><strong>${Math.max(0, 3 - status.damage)}/3</strong></div>
+          </div>
+          <div class="chip-row">${tagList(telemetry)}</div>
+          ${Object.keys(cost).length
+            ? actionButton({
+              action: "repair-structure",
+              label: `Repair ${structure.label}`,
+              meta: formatCost(cost),
+              disabled: !canAfford(state, cost),
+              data: { structure: structureId },
+              variant: "primary compact",
+            })
+            : `<p class="empty-state">No repair work queued.</p>`}
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+export function renderShelterMapMobilePanel(state) {
+  const builtStructures = getBuiltShelterStructures(state);
+  const perimeter = getShelterMapPerimeter(state);
+  const visibleStructures = perimeter ? [perimeter, ...builtStructures] : builtStructures;
+  const nextBuilds = getVisibleUpgrades(state)
+    .filter((upgrade) => !state.upgrades.includes(upgrade.id) && SHELTER_MAP_STRUCTURES.some((structure) => structure.upgrade === upgrade.id))
+    .slice(0, 4);
+
+  return `
+    <div class="shelter-mobile-map-view">
+      ${surfaceCard({
+        title: "Shelter map",
+        meta: `${getOutpostStage(visibleStructures.length)}`,
+        className: "map-primary-card mobile-map-card",
+        body: `
+          ${renderShelterMapBoard(state, true)}
+          <p class="note mobile-map-note">Tap a structure for state, effect, and repair access.</p>
+        `,
+      })}
+      ${nextBuilds.length ? surfaceCard({
+        title: "Planned works",
+        meta: `${nextBuilds.length} open`,
+        body: `
+          <details class="mobile-accordion">
+            <summary>
+              <span>Open planned works</span>
+              <span class="tag">${nextBuilds.length}</span>
+            </summary>
+            <div class="mobile-accordion-body ghost-grid">
+              ${nextBuilds.map((upgrade) => renderPlannedStructureCard(state, upgrade)).join("")}
+            </div>
+          </details>
+        `,
+      }) : ""}
+      ${state.ui.mobileInspectorStructure ? renderMobileStructureInspector(state) : ""}
     </div>
   `;
 }

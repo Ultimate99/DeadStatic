@@ -23,7 +23,19 @@ import {
   renderAnomalyTrace,
 } from "./shared.js";
 
-export function renderSurvivorTab(state, derived) {
+function accordionSection(title, meta, body, open = false) {
+  return `
+    <details class="mobile-accordion"${open ? " open" : ""}>
+      <summary>
+        <span>${title}</span>
+        ${meta ? `<span class="tag">${meta}</span>` : ""}
+      </summary>
+      <div class="mobile-accordion-body">${body}</div>
+    </details>
+  `;
+}
+
+export function renderSurvivorTab(state, derived, _isMobile = false) {
   const roster = [...state.survivors.roster].sort((left, right) => {
     const leftRole = left.role === "idle" ? "zz-idle" : left.role;
     const rightRole = right.role === "idle" ? "zz-idle" : right.role;
@@ -107,7 +119,7 @@ export function renderSurvivorTab(state, derived) {
   );
 }
 
-export function renderRadioTab(state) {
+export function renderRadioTab(state, isMobile = false) {
   const availableInvestigations = getAvailableRadioInvestigations(state);
   const notes = [];
   const lastSweep = state.radio.lastSweep;
@@ -116,6 +128,64 @@ export function renderRadioTab(state) {
   if (state.story.radioProgress >= 4) notes.push("Signal feels active, not archival.");
   if (state.flags.bunkerRouteKnown) notes.push("Bunker route confirmed.");
   if (state.flags.worldReveal) notes.push("Dead Static was built.");
+
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-radio">
+        ${surfaceCard({
+          title: "Receiver board",
+          meta: `signal ${state.story.radioProgress}`,
+          body: `
+            ${renderSignalSpectrum(state)}
+            <div class="fact-grid">
+              <div class="fact"><span>Signal</span><strong>${state.story.radioProgress}</strong></div>
+              <div class="fact"><span>Secret</span><strong>${state.story.secretProgress}</strong></div>
+              <div class="fact"><span>Scans</span><strong>${state.stats.radioScans}</strong></div>
+              <div class="fact"><span>Reveal</span><strong>${state.flags.worldReveal ? "partial" : "unknown"}</strong></div>
+            </div>
+            ${actionButton({
+              action: "scan-radio",
+              label: "Sweep band",
+              meta: "1 fuel / 1 parts",
+              disabled: state.resources.fuel < 1 || state.resources.parts < 1,
+              variant: "primary",
+            })}
+          `,
+        })}
+        ${surfaceCard({
+          title: "Investigations",
+          meta: `${availableInvestigations.length} tracks`,
+          body: availableInvestigations.length
+            ? `<div class="detail-list">${availableInvestigations.map((investigation) => `
+                <div class="list-block compact-block ${state.radio.investigation === investigation.id ? "is-selected-plan" : ""}">
+                  <div class="surface-head">
+                    <h4>${investigation.label}</h4>
+                    <span class="tag">${state.radio.traces[investigation.id] || 0}</span>
+                  </div>
+                  <div class="chip-row">${tagList([investigation.short, `milestones ${investigation.milestones.length}`])}</div>
+                  ${actionButton({
+                    action: "set-radio-investigation",
+                    label: investigation.label,
+                    meta: "focus track",
+                    disabled: state.radio.investigation === investigation.id,
+                    data: { investigation: investigation.id },
+                    variant: "compact",
+                  })}
+                </div>
+              `).join("")}</div>`
+            : `<p class="empty-state">Nothing legible yet.</p>`,
+        })}
+        ${accordionSection("Signal chain", `${notes.length} live`, `
+          <div class="detail-list">
+            <div class="list-block compact-block">
+              <div class="chip-row">${tagList(notes.length ? notes : ["No stable threads yet."])}</div>
+            </div>
+          </div>
+        `, true)}
+        ${accordionSection("Anomaly trace", state.flags.worldReveal ? "exposed" : "partial", renderAnomalyTrace(state))}
+      </div>
+    `;
+  }
 
   return renderSplitPane(
     [
@@ -209,7 +279,7 @@ export function renderRadioTab(state) {
   );
 }
 
-export function renderTradeTab(state) {
+export function renderTradeTab(state, _isMobile = false) {
   const channels = getAvailableTraderChannels(state);
   const offers = state.trader.offers
     .map((offerId) => TRADER_OFFERS.find((offer) => offer.id === offerId))
@@ -271,7 +341,7 @@ export function renderTradeTab(state) {
   );
 }
 
-export function renderFactionTab(state) {
+export function renderFactionTab(state, _isMobile = false) {
   return renderSplitPane(
     [
       `<div class="tab-inline-grid faction-grid">
@@ -305,7 +375,32 @@ export function renderFactionTab(state) {
   );
 }
 
-export function renderLogTab(state) {
+export function renderLogTab(state, isMobile = false) {
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-log">
+        ${surfaceCard({
+          title: "Archive",
+          meta: `${state.log.length} entries`,
+          body: `
+            ${accordionSection("Recent feed", `${Math.min(10, state.log.length)} latest`, renderMiniLog(state.log, 10), true)}
+            ${accordionSection("Event pulse", `${state.log.length} entries`, renderLogPulse(state))}
+            ${accordionSection("Full archive", `${state.log.length} total`, `
+              <div class="full-log">
+                ${state.log.map((entry) => `
+                  <div class="mini-log-line log-${entry.category || "general"}">
+                    <span>${entry.stamp}</span>
+                    <p>${entry.text}</p>
+                  </div>
+                `).join("")}
+              </div>
+            `)}
+          `,
+        })}
+      </div>
+    `;
+  }
+
   return renderSplitPane(
     [
       surfaceCard({
@@ -339,7 +434,7 @@ export function renderLogTab(state) {
   );
 }
 
-export function renderHelpTab(state) {
+export function renderHelpTab(state, isMobile = false) {
   const tutorialStep = getTutorialStep(state);
   const earlyLoop = [
     "Search rubble until warmth is unlocked.",
@@ -359,6 +454,38 @@ export function renderHelpTab(state) {
     "Trade fixes shortages. Open a channel with a purpose.",
     "Factions give power and problems. Choose late, not fast.",
   ];
+
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-help">
+        ${surfaceCard({
+          title: "Field guide",
+          meta: tutorialStep ? "guided" : "stable",
+          body: `
+            ${accordionSection("First 10 minutes", tutorialStep ? "guided" : "stable", `
+              ${tutorialStep ? `
+                <div class="list-block compact-block">
+                  <div class="surface-head">
+                    <h4>${tutorialStep.title}</h4>
+                    <span class="tag">${tutorialStep.id}</span>
+                  </div>
+                  <div class="chip-row">${tagList(tutorialStep.chips)}</div>
+                </div>
+              ` : ""}
+              <div class="list-block compact-block"><div class="chip-row">${tagList(earlyLoop)}</div></div>
+            `, true)}
+            ${accordionSection("Core loop", "survive -> build -> choose", `
+              <div class="detail-list">
+                <div class="list-block compact-block"><div class="chip-row">${tagList(["survive today", "build stability", "choose direction"])}</div></div>
+              </div>
+            `)}
+            ${accordionSection("Combat", "fight clean", `<div class="list-block compact-block"><div class="chip-row">${tagList(combatGuide)}</div></div>`)}
+            ${accordionSection("Mid-game systems", "what matters later", `<div class="list-block compact-block"><div class="chip-row">${tagList(signalGuide)}</div></div>`)}
+          `,
+        })}
+      </div>
+    `;
+  }
 
   return renderSplitPane(
     [
@@ -427,7 +554,7 @@ export function renderHelpTab(state) {
   );
 }
 
-export function renderSettingsTab(state) {
+export function renderSettingsTab(state, isMobile = false) {
   const toggles = [
     {
       key: "tutorialHints",
@@ -450,6 +577,72 @@ export function renderSettingsTab(state) {
       note: "Ask before wiping the current run.",
     },
   ];
+
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-settings">
+        ${surfaceCard({
+          title: "Settings",
+          meta: "mobile controls",
+          body: `
+            ${accordionSection("Profile", state.player.username || "unset", `
+              <div class="detail-list">
+                <div class="list-block compact-block">
+                  <div class="surface-head">
+                    <h4>Username</h4>
+                    <span class="tag">${state.player.username || "not set"}</span>
+                  </div>
+                  ${actionButton({
+                    action: "set-username",
+                    label: state.player.username ? "Change Username" : "Set Username",
+                    meta: "profile",
+                    variant: "primary compact",
+                  })}
+                </div>
+              </div>
+            `, true)}
+            ${accordionSection("Interface", "toggles", `
+              <div class="detail-list">
+                ${toggles.map((toggle) => `
+                  <div class="list-block compact-block setting-row">
+                    <div class="surface-head">
+                      <h4>${toggle.title}</h4>
+                      <span class="tag">${state.settings[toggle.key] ? "on" : "off"}</span>
+                    </div>
+                    ${actionButton({
+                      action: "toggle-setting",
+                      label: state.settings[toggle.key] ? "Turn off" : "Turn on",
+                      meta: toggle.title,
+                      data: { setting: toggle.key },
+                      variant: "compact",
+                    })}
+                  </div>
+                `).join("")}
+              </div>
+            `)}
+            ${accordionSection("Run controls", `Day ${state.time.day}`, `
+              <div class="detail-list">
+                <div class="action-stack">
+                  ${actionButton({
+                    action: "save-game",
+                    label: "Save run",
+                    meta: "local storage",
+                    variant: "compact",
+                  })}
+                  ${actionButton({
+                    action: "reset-game",
+                    label: "Reset run",
+                    meta: state.settings.confirmReset ? "with confirmation" : "instant wipe",
+                    variant: "compact danger",
+                  })}
+                </div>
+              </div>
+            `)}
+          `,
+        })}
+      </div>
+    `;
+  }
 
   return renderSplitPane(
     [
@@ -509,6 +702,26 @@ export function renderSettingsTab(state) {
             <div class="fact"><span>Expeditions</span><strong>${state.stats.expeditions}</strong></div>
             <div class="fact"><span>Scans</span><strong>${state.stats.radioScans}</strong></div>
             <div class="fact"><span>Crew</span><strong>${state.survivors.total}</strong></div>
+          </div>
+        `,
+      }),
+      surfaceCard({
+        title: "Run controls",
+        meta: "manual actions",
+        body: `
+          <div class="action-stack">
+            ${actionButton({
+              action: "save-game",
+              label: "Save run",
+              meta: "local storage",
+              variant: "compact",
+            })}
+            ${actionButton({
+              action: "reset-game",
+              label: "Reset run",
+              meta: state.settings.confirmReset ? "with confirmation" : "instant wipe",
+              variant: "compact danger",
+            })}
           </div>
         `,
       }),

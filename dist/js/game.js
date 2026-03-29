@@ -4299,8 +4299,15 @@ const TAB_DEFS = [
   { id: "settings", label: "Settings", hint: "options" },
 ];
 
+const MOBILE_PRIMARY_TABS = ["overview", "craft", "shelter", "map"];
+const MOBILE_MORE_TABS = ["inventory", "survivors", "radio", "trade", "factions", "log", "help", "settings"];
+
 function byId(id) {
   return document.getElementById(id);
+}
+
+function isMobileViewport() {
+  return typeof window !== "undefined" && Number(window.innerWidth || 0) <= 720;
 }
 
 function meterClass(percent) {
@@ -4429,12 +4436,25 @@ function describeSourceUnlock(state, source) {
   return notes.join(" / ") || "ready";
 }
 
-function getVisibleTabs(state) {
-  return TAB_DEFS.filter((tab) => !tab.unlock || state.unlockedSections.includes(tab.unlock));
+function countMarkup(tab, state) {
+  const count = typeof tab.count === "function" ? tab.count(state) : null;
+  return count ? `<span class="tab-count">${count}</span>` : "";
 }
 
-function ensureActiveTab(state) {
-  const tabs = getVisibleTabs(state);
+function getVisibleTabs(state, isMobile = false) {
+  return TAB_DEFS
+    .filter((tab) => !tab.unlock || state.unlockedSections.includes(tab.unlock))
+    .filter((tab) => !isMobile || tab.id !== "shelter_map");
+}
+
+function ensureActiveTab(state, isMobile = false) {
+  const tabs = getVisibleTabs(state, isMobile);
+
+  if (isMobile && state.ui.activeTab === "shelter_map") {
+    state.ui.activeTab = "shelter";
+    state.ui.mobileShelterMode = "map";
+  }
+
   if (!tabs.some((tab) => tab.id === state.ui.activeTab)) {
     state.ui.activeTab = tabs[0]?.id || "overview";
   }
@@ -4453,22 +4473,61 @@ function surfaceCard({ title, meta = "", body = "", className = "" }) {
   `;
 }
 
-function renderResourceBar(state) {
-  const resourceIds = [...state.discoveredResources]
+function sortedDiscoveredResources(state) {
+  return [...state.discoveredResources]
     .filter((resourceId) => RESOURCE_ORDER.includes(resourceId))
     .sort((left, right) => RESOURCE_ORDER.indexOf(left) - RESOURCE_ORDER.indexOf(right));
+}
 
-  byId("resource-bar").innerHTML = resourceIds
-    .map((resourceId) => `
-      <div class="resource-pill tier-${RESOURCE_DEFS[resourceId].tier}">
-        <div class="resource-pill-key">
-          <i class="tier-dot tier-${RESOURCE_DEFS[resourceId].tier}"></i>
-          <span>${RESOURCE_DEFS[resourceId].label}</span>
-        </div>
-        <strong>${state.resources[resourceId]}</strong>
+function resourcePillMarkup(state, resourceId, compact = false) {
+  return `
+    <div class="resource-pill tier-${RESOURCE_DEFS[resourceId].tier} ${compact ? "is-compact" : ""}">
+      <div class="resource-pill-key">
+        <i class="tier-dot tier-${RESOURCE_DEFS[resourceId].tier}"></i>
+        <span>${RESOURCE_DEFS[resourceId].label}</span>
       </div>
-    `)
-    .join("");
+      <strong>${state.resources[resourceId]}</strong>
+    </div>
+  `;
+}
+
+function renderResourceBar(state, isMobile = false) {
+  const resourceBar = byId("resource-bar");
+  const resourceIds = sortedDiscoveredResources(state);
+  resourceBar.innerHTML = isMobile ? "" : resourceIds.map((resourceId) => resourcePillMarkup(state, resourceId)).join("");
+}
+
+function renderMobileSurvivalStrip(state, derived) {
+  const mobileStrip = byId("mobile-survival-strip");
+  const resourceIds = sortedDiscoveredResources(state);
+  const topResources = resourceIds.slice(0, 4);
+  const overflowCount = Math.max(0, resourceIds.length - topResources.length);
+  const percent = Math.round((state.condition / derived.maxCondition) * 100);
+
+  mobileStrip.innerHTML = `
+    <div class="mobile-survival-head">
+      <span class="mobile-condition-label">Condition</span>
+      <strong>${state.condition}/${derived.maxCondition}</strong>
+    </div>
+    <div class="mobile-condition-meter">
+      <div class="meter-fill ${meterClass(percent)}" style="width:${percent}%"></div>
+    </div>
+    <div class="mobile-resource-row">
+      ${topResources.map((resourceId) => resourcePillMarkup(state, resourceId, true)).join("")}
+      ${overflowCount
+        ? `
+          <button
+            type="button"
+            class="resource-pill resource-pill-overflow"
+            data-action="toggle-mobile-resource-drawer"
+          >
+            <span>More</span>
+            <strong>+${overflowCount}</strong>
+          </button>
+        `
+        : ""}
+    </div>
+  `;
 }
 
 function renderCondition(state, derived) {
@@ -4532,7 +4591,6 @@ function renderSubtitle(state) {
 function renderTabBar(state, tabs) {
   byId("tab-bar").innerHTML = tabs
     .map((tab) => {
-      const count = typeof tab.count === "function" ? tab.count(state) : null;
       return `
         <button
           type="button"
@@ -4544,11 +4602,104 @@ function renderTabBar(state, tabs) {
             <strong>${tab.label}</strong>
             <small>${tab.hint || "section"}</small>
           </span>
-          ${count ? `<span class="tab-count">${count}</span>` : ""}
+          ${countMarkup(tab, state)}
         </button>
       `;
     })
     .join("");
+}
+
+function renderMobileBottomNav(state, tabs) {
+  const nav = byId("mobile-bottom-nav");
+  const primaryTabs = MOBILE_PRIMARY_TABS
+    .map((tabId) => tabs.find((tab) => tab.id === tabId))
+    .filter(Boolean);
+  const moreActive = !MOBILE_PRIMARY_TABS.includes(state.ui.activeTab) || state.ui.mobileMoreOpen;
+
+  nav.innerHTML = `
+    ${primaryTabs.map((tab) => `
+      <button
+        type="button"
+        class="mobile-nav-button ${state.ui.activeTab === tab.id ? "is-active" : ""}"
+        data-action="set-tab"
+        data-tab="${tab.id}"
+      >
+        <span>${tab.label}</span>
+        ${countMarkup(tab, state)}
+      </button>
+    `).join("")}
+    <button
+      type="button"
+      class="mobile-nav-button ${moreActive ? "is-active" : ""}"
+      data-action="toggle-mobile-more"
+    >
+      <span>More</span>
+      <span class="tab-count">${MOBILE_MORE_TABS.filter((tabId) => tabs.some((tab) => tab.id === tabId)).length}</span>
+    </button>
+  `;
+}
+
+function renderMobileSheets(state, tabs) {
+  const layer = byId("mobile-sheet-layer");
+  const resourceIds = sortedDiscoveredResources(state);
+  const secondaryTabs = MOBILE_MORE_TABS
+    .map((tabId) => tabs.find((tab) => tab.id === tabId))
+    .filter(Boolean);
+
+  if (state.ui.mobileResourceDrawerOpen) {
+    layer.innerHTML = `
+      <button type="button" class="mobile-sheet-backdrop" data-action="close-mobile-resource-drawer" aria-label="Close resource drawer"></button>
+      <section class="mobile-sheet mobile-resource-drawer">
+        <div class="mobile-sheet-head">
+          <div>
+            <span class="note-label">Resources</span>
+            <h3>Field reserves</h3>
+          </div>
+          <button type="button" class="mini-button" data-action="close-mobile-resource-drawer">Close</button>
+        </div>
+        <div class="mobile-sheet-body mobile-resource-grid">
+          ${resourceIds.map((resourceId) => resourcePillMarkup(state, resourceId)).join("")}
+        </div>
+      </section>
+    `;
+    return;
+  }
+
+  if (state.ui.mobileMoreOpen) {
+    layer.innerHTML = `
+      <button type="button" class="mobile-sheet-backdrop" data-action="close-mobile-more" aria-label="Close more menu"></button>
+      <section class="mobile-sheet mobile-more-sheet">
+        <div class="mobile-sheet-head">
+          <div>
+            <span class="note-label">Sections</span>
+            <h3>More</h3>
+          </div>
+          <button type="button" class="mini-button" data-action="close-mobile-more">Close</button>
+        </div>
+        <div class="mobile-sheet-body">
+          <div class="mobile-sheet-tab-list">
+            ${secondaryTabs.map((tab) => `
+              <button
+                type="button"
+                class="mobile-sheet-tab ${state.ui.activeTab === tab.id ? "is-active" : ""}"
+                data-action="set-tab"
+                data-tab="${tab.id}"
+              >
+                <span class="mobile-sheet-tab-copy">
+                  <strong>${tab.label}</strong>
+                  <small>${tab.hint || "section"}</small>
+                </span>
+                ${countMarkup(tab, state)}
+              </button>
+            `).join("")}
+          </div>
+        </div>
+      </section>
+    `;
+    return;
+  }
+
+  layer.innerHTML = "";
 }
 
 function renderMiniLog(logEntries, limit) {
@@ -4565,6 +4716,14 @@ function renderMiniLog(logEntries, limit) {
 }
 
 function renderSplitPane(mainCards, sideCards, className = "") {
+  if (isMobileViewport()) {
+    return `
+      <div class="tab-mobile-flow ${className}">
+        ${[...mainCards, ...sideCards].join("")}
+      </div>
+    `;
+  }
+
   return `
     <div class="tab-columns ${className}">
       <div class="tab-main-column">${mainCards.join("")}</div>
@@ -4861,6 +5020,22 @@ function renderTutorialBanner(state) {
   const visibleOnThisTab = state.ui.activeTab === "overview" || step.tabs.includes(state.ui.activeTab);
   if (!visibleOnThisTab) {
     return "";
+  }
+
+  if (isMobileViewport()) {
+    return `
+      <section class="tutorial-strip tutorial-strip-mobile">
+        <div class="tutorial-copy">
+          <span class="note-label">Guide</span>
+          <h3>${step.title}</h3>
+          <div class="chip-row">${tagList(step.chips.slice(0, 2))}</div>
+        </div>
+        <div class="tutorial-actions">
+          ${actionButton(step.action)}
+          <button type="button" class="mini-button" data-action="skip-tutorial">Skip</button>
+        </div>
+      </section>
+    `;
   }
 
   return `
@@ -5254,7 +5429,7 @@ function structureStatusBadge(status) {
 }
 
 function inspectedStructureId(state) {
-  const selected = state.ui.inspectedStructure;
+  const selected = state.ui.mobileInspectorStructure || state.ui.inspectedStructure;
   if (selected === "shelter_core" || state.upgrades.includes(selected) || selected === SHELTER_MAP_PERIMETER.id) {
     return selected;
   }
@@ -5372,15 +5547,17 @@ function renderPlannedStructureCard(state, upgrade) {
   `;
 }
 
-function renderMapStructureButton(state, structure, derived) {
+function renderMapStructureButton(state, structure, derived, mobile = false) {
   const id = structureKey(structure);
   const status = structureStatus(id, state, derived);
   const tooltip = `${structure.label}: ${status.label}. ${status.telemetry[0] || structure.detail || "built"}`;
+  const selected = inspectedStructureId(state) === id;
+  const showLabel = !mobile || selected || status.damage >= 2 || ["watch_post", "radio_rig", "campfire"].includes(structure.id);
 
   return `
     <button
       type="button"
-      class="map-structure kind-${structure.kind} sprite-${structure.sprite} ${status.className} ${inspectedStructureId(state) === id ? "is-selected" : ""}"
+      class="map-structure kind-${structure.kind} sprite-${structure.sprite} ${status.className} ${selected ? "is-selected" : ""} ${mobile && !showLabel ? "is-mobile-minimal" : ""}"
       style="--x:${structure.x}; --y:${structure.y};"
       data-action="inspect-structure"
       data-structure="${id}"
@@ -5394,7 +5571,7 @@ function renderMapStructureButton(state, structure, derived) {
         <span class="sprite-body"></span>
         <span class="sprite-accent"></span>
       </div>
-      <span class="structure-name">${structure.short || structure.label}</span>
+      ${showLabel ? `<span class="structure-name">${structure.short || structure.label}</span>` : ""}
     </button>
   `;
 }
@@ -5512,7 +5689,7 @@ function renderCompoundDistricts(state, structures, perimeter) {
   `;
 }
 
-function renderShelterMapBoard(state) {
+function renderShelterMapBoard(state, mobile = false) {
   const structures = getBuiltShelterStructures(state);
   const perimeter = getShelterMapPerimeter(state);
   const activeCount = structures.length + (perimeter ? 1 : 0);
@@ -5539,11 +5716,11 @@ function renderShelterMapBoard(state) {
           <strong>${damageCount ? "Needs repair" : "Stable"}</strong>
         </div>
       </div>
-      <div class="shelter-map ${meshed ? "has-mesh" : ""}">
+      <div class="shelter-map ${meshed ? "has-mesh" : ""} ${mobile ? "is-mobile-board" : ""}">
         <div class="map-compound-floor"></div>
         <div class="map-path gate-lane"></div>
         ${renderShelterFence(state)}
-        ${structures.map((structure) => renderMapStructureButton(state, structure, derived)).join("")}
+        ${structures.map((structure) => renderMapStructureButton(state, structure, derived, mobile)).join("")}
         ${perimeter ? `
           <button
             type="button"
@@ -5557,6 +5734,86 @@ function renderShelterMapBoard(state) {
           </button>
         ` : ""}
       </div>
+    </div>
+  `;
+}
+
+function renderMobileStructureInspector(state) {
+  const derived = getDerivedState(state);
+  const structureId = inspectedStructureId(state);
+  const structure = structureByKey(structureId);
+  const status = structureStatus(structureId, state, derived);
+  const cost = getRepairCost(state, structureId);
+  const telemetry = status.telemetry.length ? status.telemetry : [structure.detail || "built"];
+
+  return `
+    <div class="mobile-inspector-sheet">
+      <button type="button" class="mobile-sheet-backdrop" data-action="close-mobile-inspector" aria-label="Close structure inspector"></button>
+      <section class="mobile-sheet mobile-structure-sheet">
+        <div class="mobile-sheet-head">
+          <div>
+            <span class="note-label">Structure</span>
+            <h3>${structure.label}</h3>
+          </div>
+          <button type="button" class="mini-button" data-action="close-mobile-inspector">Close</button>
+        </div>
+        <div class="mobile-sheet-body">
+          <div class="fact-grid">
+            <div class="fact"><span>State</span><strong>${status.label}</strong></div>
+            <div class="fact"><span>Integrity</span><strong>${Math.max(0, 3 - status.damage)}/3</strong></div>
+          </div>
+          <div class="chip-row">${tagList(telemetry)}</div>
+          ${Object.keys(cost).length
+            ? actionButton({
+              action: "repair-structure",
+              label: `Repair ${structure.label}`,
+              meta: formatCost(cost),
+              disabled: !canAfford(state, cost),
+              data: { structure: structureId },
+              variant: "primary compact",
+            })
+            : `<p class="empty-state">No repair work queued.</p>`}
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function renderShelterMapMobilePanel(state) {
+  const builtStructures = getBuiltShelterStructures(state);
+  const perimeter = getShelterMapPerimeter(state);
+  const visibleStructures = perimeter ? [perimeter, ...builtStructures] : builtStructures;
+  const nextBuilds = getVisibleUpgrades(state)
+    .filter((upgrade) => !state.upgrades.includes(upgrade.id) && SHELTER_MAP_STRUCTURES.some((structure) => structure.upgrade === upgrade.id))
+    .slice(0, 4);
+
+  return `
+    <div class="shelter-mobile-map-view">
+      ${surfaceCard({
+        title: "Shelter map",
+        meta: `${getOutpostStage(visibleStructures.length)}`,
+        className: "map-primary-card mobile-map-card",
+        body: `
+          ${renderShelterMapBoard(state, true)}
+          <p class="note mobile-map-note">Tap a structure for state, effect, and repair access.</p>
+        `,
+      })}
+      ${nextBuilds.length ? surfaceCard({
+        title: "Planned works",
+        meta: `${nextBuilds.length} open`,
+        body: `
+          <details class="mobile-accordion">
+            <summary>
+              <span>Open planned works</span>
+              <span class="tag">${nextBuilds.length}</span>
+            </summary>
+            <div class="mobile-accordion-body ghost-grid">
+              ${nextBuilds.map((upgrade) => renderPlannedStructureCard(state, upgrade)).join("")}
+            </div>
+          </details>
+        `,
+      }) : ""}
+      ${state.ui.mobileInspectorStructure ? renderMobileStructureInspector(state) : ""}
     </div>
   `;
 }
@@ -5821,18 +6078,26 @@ function tabStageMeta(state, derived) {
   }
 }
 
-function renderTabStage(state, derived, bodyMarkup) {
+function renderTabStage(state, derived, bodyMarkup, isMobile = false) {
   const meta = tabStageMeta(state, derived);
+  const visibleStats = isMobile ? meta.stats.slice(0, 2) : meta.stats;
   return `
     <div class="tab-stage tab-stage-${state.ui.activeTab}">
-      <section class="stage-banner">
+      <section class="stage-banner ${isMobile ? "stage-banner-mobile" : ""}">
         <div class="stage-copy">
           <span class="note-label">${meta.label}</span>
           <h2>${meta.title}</h2>
-          ${state.settings.briefStageCopy ? "" : `<p class="note">${meta.detail}</p>`}
+          ${isMobile
+            ? `
+              <details class="mobile-stage-info">
+                <summary>Info</summary>
+                <p class="note">${meta.detail}</p>
+              </details>
+            `
+            : state.settings.briefStageCopy ? "" : `<p class="note">${meta.detail}</p>`}
         </div>
         <div class="stage-stat-strip">
-          ${meta.stats.map(([label, value]) => `
+          ${visibleStats.map(([label, value]) => `
             <div class="stage-stat">
               <span>${label}</span>
               <strong>${value}</strong>
@@ -5962,7 +6227,7 @@ function renderUpgradeCard(state, upgrade) {
   `;
 }
 
-function renderOverviewTab(state, derived) {
+function renderOverviewTab(state, derived, _isMobile = false) {
   const availableUpgrades = getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id));
   const availableSources = getAvailableScavengeSources(state);
   const lockedSources = SCAVENGE_SOURCES.filter((source) => !availableSources.some((entry) => entry.id === source.id)).slice(0, 3);
@@ -6050,7 +6315,7 @@ function renderOverviewTab(state, derived) {
   return `<div class="tab-grid tab-grid-overview">${sections.join("")}</div>`;
 }
 
-function renderCraftTab(state) {
+function renderCraftTab(state, isMobile = false) {
   const visibleUpgrades = getVisibleUpgrades(state);
   const available = visibleUpgrades.filter((upgrade) => !state.upgrades.includes(upgrade.id));
   const ready = available.filter((upgrade) => canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials));
@@ -6058,6 +6323,52 @@ function renderCraftTab(state) {
   const built = state.upgrades
     .map((upgradeId) => visibleUpgrades.find((upgrade) => upgrade.id === upgradeId))
     .filter(Boolean);
+
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-craft">
+        ${surfaceCard({
+          title: "Ready now",
+          meta: `${ready.length} ready`,
+          body: ready.length
+            ? `<div class="detail-list">${ready.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>`
+            : `<p class="empty-state">Nothing is funded yet. Push scavenging first.</p>`,
+        })}
+        ${surfaceCard({
+          title: "Need salvage",
+          meta: `${blocked.length} queued`,
+          body: blocked.length
+            ? `
+              <details class="mobile-accordion" open>
+                <summary>Open blocked builds</summary>
+                <div class="detail-list">${blocked.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>
+              </details>
+            `
+            : `<p class="empty-state">No blocked builds are waiting.</p>`,
+        })}
+        ${surfaceCard({
+          title: "Systems online",
+          meta: `${built.length} total`,
+          body: built.length
+            ? `
+              <details class="mobile-accordion">
+                <summary>Show installed systems</summary>
+                <div class="detail-list">${built.map((upgrade) => `
+                  <div class="list-block compact-block">
+                    <div class="surface-head">
+                      <h4>${upgrade.name}</h4>
+                      <span class="tag">live</span>
+                    </div>
+                    <div class="chip-row">${tagList([upgrade.verb || "build", "installed"])}</div>
+                  </div>
+                `).join("")}</div>
+              </details>
+            `
+            : `<p class="empty-state">No installed systems yet.</p>`,
+        })}
+      </div>
+    `;
+  }
 
   return `
     <div class="tab-grid">
@@ -6118,7 +6429,7 @@ function renderCraftTab(state) {
   `;
 }
 
-function renderInventoryTab(state, derived) {
+function renderInventoryTab(state, derived, _isMobile = false) {
   const items = Object.entries(state.inventory)
     .filter(([itemId, amount]) => amount > 0 && ITEMS[itemId])
     .sort((left, right) => {
@@ -6335,7 +6646,7 @@ function renderExpeditionPlanner(state) {
   `;
 }
 
-function renderShelterTab(state, derived) {
+function renderShelterTab(state, derived, isMobile = false) {
   const actions = [
     actionButton({
       action: "eat-ration",
@@ -6384,8 +6695,11 @@ function renderShelterTab(state, derived) {
   const liveAnnexes = SHELTER_MAP_ANNEXES
     .filter((entry) => state.upgrades.includes(entry.upgrade))
     .map((entry) => entry.label);
+  const mapGuidance = isMobile
+    ? "Use the Map mode above for structure checks and repairs."
+    : "Use <strong>Shelter Map</strong> for damage and structure checks.";
 
-  return `
+  const opsMarkup = `
     <div class="tab-grid tab-grid-tight">
       ${surfaceCard({
         title: "Shelter state",
@@ -6457,16 +6771,46 @@ function renderShelterTab(state, derived) {
               <p class="note">Warmth falls. Threat rises. Noise paints a target on the fence.</p>
             </div>
             <div class="list-block compact-block">
-              <p class="note">Use <strong>Shelter Map</strong> for damage and structure checks.</p>
+              <p class="note">${mapGuidance}</p>
             </div>
           </div>
         `,
       })}
     </div>
   `;
+
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-shelter">
+        <div class="mobile-segmented-control">
+          <button
+            type="button"
+            class="mobile-segment ${state.ui.mobileShelterMode !== "map" ? "is-active" : ""}"
+            data-action="set-mobile-shelter-mode"
+            data-mode="ops"
+          >
+            Ops
+          </button>
+          <button
+            type="button"
+            class="mobile-segment ${state.ui.mobileShelterMode === "map" ? "is-active" : ""}"
+            data-action="set-mobile-shelter-mode"
+            data-mode="map"
+          >
+            Map
+          </button>
+        </div>
+        ${state.ui.mobileShelterMode === "map"
+          ? renderShelterMapMobilePanel(state)
+          : opsMarkup}
+      </div>
+    `;
+  }
+
+  return opsMarkup;
 }
 
-function renderMapTab(state) {
+function renderMapTab(state, _isMobile = false) {
   const zones = ZONES.filter((zone) => state.unlockedZones.includes(zone.id));
   return `
     <div class="tab-grid">
@@ -6518,7 +6862,19 @@ function renderMapTab(state) {
 
 
 // render/tabs-secondary.js
-function renderSurvivorTab(state, derived) {
+function accordionSection(title, meta, body, open = false) {
+  return `
+    <details class="mobile-accordion"${open ? " open" : ""}>
+      <summary>
+        <span>${title}</span>
+        ${meta ? `<span class="tag">${meta}</span>` : ""}
+      </summary>
+      <div class="mobile-accordion-body">${body}</div>
+    </details>
+  `;
+}
+
+function renderSurvivorTab(state, derived, _isMobile = false) {
   const roster = [...state.survivors.roster].sort((left, right) => {
     const leftRole = left.role === "idle" ? "zz-idle" : left.role;
     const rightRole = right.role === "idle" ? "zz-idle" : right.role;
@@ -6602,7 +6958,7 @@ function renderSurvivorTab(state, derived) {
   );
 }
 
-function renderRadioTab(state) {
+function renderRadioTab(state, isMobile = false) {
   const availableInvestigations = getAvailableRadioInvestigations(state);
   const notes = [];
   const lastSweep = state.radio.lastSweep;
@@ -6611,6 +6967,64 @@ function renderRadioTab(state) {
   if (state.story.radioProgress >= 4) notes.push("Signal feels active, not archival.");
   if (state.flags.bunkerRouteKnown) notes.push("Bunker route confirmed.");
   if (state.flags.worldReveal) notes.push("Dead Static was built.");
+
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-radio">
+        ${surfaceCard({
+          title: "Receiver board",
+          meta: `signal ${state.story.radioProgress}`,
+          body: `
+            ${renderSignalSpectrum(state)}
+            <div class="fact-grid">
+              <div class="fact"><span>Signal</span><strong>${state.story.radioProgress}</strong></div>
+              <div class="fact"><span>Secret</span><strong>${state.story.secretProgress}</strong></div>
+              <div class="fact"><span>Scans</span><strong>${state.stats.radioScans}</strong></div>
+              <div class="fact"><span>Reveal</span><strong>${state.flags.worldReveal ? "partial" : "unknown"}</strong></div>
+            </div>
+            ${actionButton({
+              action: "scan-radio",
+              label: "Sweep band",
+              meta: "1 fuel / 1 parts",
+              disabled: state.resources.fuel < 1 || state.resources.parts < 1,
+              variant: "primary",
+            })}
+          `,
+        })}
+        ${surfaceCard({
+          title: "Investigations",
+          meta: `${availableInvestigations.length} tracks`,
+          body: availableInvestigations.length
+            ? `<div class="detail-list">${availableInvestigations.map((investigation) => `
+                <div class="list-block compact-block ${state.radio.investigation === investigation.id ? "is-selected-plan" : ""}">
+                  <div class="surface-head">
+                    <h4>${investigation.label}</h4>
+                    <span class="tag">${state.radio.traces[investigation.id] || 0}</span>
+                  </div>
+                  <div class="chip-row">${tagList([investigation.short, `milestones ${investigation.milestones.length}`])}</div>
+                  ${actionButton({
+                    action: "set-radio-investigation",
+                    label: investigation.label,
+                    meta: "focus track",
+                    disabled: state.radio.investigation === investigation.id,
+                    data: { investigation: investigation.id },
+                    variant: "compact",
+                  })}
+                </div>
+              `).join("")}</div>`
+            : `<p class="empty-state">Nothing legible yet.</p>`,
+        })}
+        ${accordionSection("Signal chain", `${notes.length} live`, `
+          <div class="detail-list">
+            <div class="list-block compact-block">
+              <div class="chip-row">${tagList(notes.length ? notes : ["No stable threads yet."])}</div>
+            </div>
+          </div>
+        `, true)}
+        ${accordionSection("Anomaly trace", state.flags.worldReveal ? "exposed" : "partial", renderAnomalyTrace(state))}
+      </div>
+    `;
+  }
 
   return renderSplitPane(
     [
@@ -6704,7 +7118,7 @@ function renderRadioTab(state) {
   );
 }
 
-function renderTradeTab(state) {
+function renderTradeTab(state, _isMobile = false) {
   const channels = getAvailableTraderChannels(state);
   const offers = state.trader.offers
     .map((offerId) => TRADER_OFFERS.find((offer) => offer.id === offerId))
@@ -6766,7 +7180,7 @@ function renderTradeTab(state) {
   );
 }
 
-function renderFactionTab(state) {
+function renderFactionTab(state, _isMobile = false) {
   return renderSplitPane(
     [
       `<div class="tab-inline-grid faction-grid">
@@ -6800,7 +7214,32 @@ function renderFactionTab(state) {
   );
 }
 
-function renderLogTab(state) {
+function renderLogTab(state, isMobile = false) {
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-log">
+        ${surfaceCard({
+          title: "Archive",
+          meta: `${state.log.length} entries`,
+          body: `
+            ${accordionSection("Recent feed", `${Math.min(10, state.log.length)} latest`, renderMiniLog(state.log, 10), true)}
+            ${accordionSection("Event pulse", `${state.log.length} entries`, renderLogPulse(state))}
+            ${accordionSection("Full archive", `${state.log.length} total`, `
+              <div class="full-log">
+                ${state.log.map((entry) => `
+                  <div class="mini-log-line log-${entry.category || "general"}">
+                    <span>${entry.stamp}</span>
+                    <p>${entry.text}</p>
+                  </div>
+                `).join("")}
+              </div>
+            `)}
+          `,
+        })}
+      </div>
+    `;
+  }
+
   return renderSplitPane(
     [
       surfaceCard({
@@ -6834,7 +7273,7 @@ function renderLogTab(state) {
   );
 }
 
-function renderHelpTab(state) {
+function renderHelpTab(state, isMobile = false) {
   const tutorialStep = getTutorialStep(state);
   const earlyLoop = [
     "Search rubble until warmth is unlocked.",
@@ -6854,6 +7293,38 @@ function renderHelpTab(state) {
     "Trade fixes shortages. Open a channel with a purpose.",
     "Factions give power and problems. Choose late, not fast.",
   ];
+
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-help">
+        ${surfaceCard({
+          title: "Field guide",
+          meta: tutorialStep ? "guided" : "stable",
+          body: `
+            ${accordionSection("First 10 minutes", tutorialStep ? "guided" : "stable", `
+              ${tutorialStep ? `
+                <div class="list-block compact-block">
+                  <div class="surface-head">
+                    <h4>${tutorialStep.title}</h4>
+                    <span class="tag">${tutorialStep.id}</span>
+                  </div>
+                  <div class="chip-row">${tagList(tutorialStep.chips)}</div>
+                </div>
+              ` : ""}
+              <div class="list-block compact-block"><div class="chip-row">${tagList(earlyLoop)}</div></div>
+            `, true)}
+            ${accordionSection("Core loop", "survive -> build -> choose", `
+              <div class="detail-list">
+                <div class="list-block compact-block"><div class="chip-row">${tagList(["survive today", "build stability", "choose direction"])}</div></div>
+              </div>
+            `)}
+            ${accordionSection("Combat", "fight clean", `<div class="list-block compact-block"><div class="chip-row">${tagList(combatGuide)}</div></div>`)}
+            ${accordionSection("Mid-game systems", "what matters later", `<div class="list-block compact-block"><div class="chip-row">${tagList(signalGuide)}</div></div>`)}
+          `,
+        })}
+      </div>
+    `;
+  }
 
   return renderSplitPane(
     [
@@ -6922,7 +7393,7 @@ function renderHelpTab(state) {
   );
 }
 
-function renderSettingsTab(state) {
+function renderSettingsTab(state, isMobile = false) {
   const toggles = [
     {
       key: "tutorialHints",
@@ -6945,6 +7416,72 @@ function renderSettingsTab(state) {
       note: "Ask before wiping the current run.",
     },
   ];
+
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-settings">
+        ${surfaceCard({
+          title: "Settings",
+          meta: "mobile controls",
+          body: `
+            ${accordionSection("Profile", state.player.username || "unset", `
+              <div class="detail-list">
+                <div class="list-block compact-block">
+                  <div class="surface-head">
+                    <h4>Username</h4>
+                    <span class="tag">${state.player.username || "not set"}</span>
+                  </div>
+                  ${actionButton({
+                    action: "set-username",
+                    label: state.player.username ? "Change Username" : "Set Username",
+                    meta: "profile",
+                    variant: "primary compact",
+                  })}
+                </div>
+              </div>
+            `, true)}
+            ${accordionSection("Interface", "toggles", `
+              <div class="detail-list">
+                ${toggles.map((toggle) => `
+                  <div class="list-block compact-block setting-row">
+                    <div class="surface-head">
+                      <h4>${toggle.title}</h4>
+                      <span class="tag">${state.settings[toggle.key] ? "on" : "off"}</span>
+                    </div>
+                    ${actionButton({
+                      action: "toggle-setting",
+                      label: state.settings[toggle.key] ? "Turn off" : "Turn on",
+                      meta: toggle.title,
+                      data: { setting: toggle.key },
+                      variant: "compact",
+                    })}
+                  </div>
+                `).join("")}
+              </div>
+            `)}
+            ${accordionSection("Run controls", `Day ${state.time.day}`, `
+              <div class="detail-list">
+                <div class="action-stack">
+                  ${actionButton({
+                    action: "save-game",
+                    label: "Save run",
+                    meta: "local storage",
+                    variant: "compact",
+                  })}
+                  ${actionButton({
+                    action: "reset-game",
+                    label: "Reset run",
+                    meta: state.settings.confirmReset ? "with confirmation" : "instant wipe",
+                    variant: "compact danger",
+                  })}
+                </div>
+              </div>
+            `)}
+          `,
+        })}
+      </div>
+    `;
+  }
 
   return renderSplitPane(
     [
@@ -7004,6 +7541,26 @@ function renderSettingsTab(state) {
             <div class="fact"><span>Expeditions</span><strong>${state.stats.expeditions}</strong></div>
             <div class="fact"><span>Scans</span><strong>${state.stats.radioScans}</strong></div>
             <div class="fact"><span>Crew</span><strong>${state.survivors.total}</strong></div>
+          </div>
+        `,
+      }),
+      surfaceCard({
+        title: "Run controls",
+        meta: "manual actions",
+        body: `
+          <div class="action-stack">
+            ${actionButton({
+              action: "save-game",
+              label: "Save run",
+              meta: "local storage",
+              variant: "compact",
+            })}
+            ${actionButton({
+              action: "reset-game",
+              label: "Reset run",
+              meta: state.settings.confirmReset ? "with confirmation" : "instant wipe",
+              variant: "compact danger",
+            })}
           </div>
         `,
       }),
@@ -7091,54 +7648,66 @@ function renderCombatBanner(state) {
 
 // render.js
 function renderTabContent(state, derived) {
+  const isMobile = isMobileViewport();
   switch (state.ui.activeTab) {
     case "craft":
-      return renderCraftTab(state);
+      return renderCraftTab(state, isMobile);
     case "inventory":
-      return renderInventoryTab(state, derived);
+      return renderInventoryTab(state, derived, isMobile);
     case "shelter":
-      return renderShelterTab(state, derived);
+      return renderShelterTab(state, derived, isMobile);
     case "shelter_map":
       return renderShelterMapTab(state);
     case "map":
-      return renderMapTab(state);
+      return renderMapTab(state, isMobile);
     case "survivors":
-      return renderSurvivorTab(state, derived);
+      return renderSurvivorTab(state, derived, isMobile);
     case "radio":
-      return renderRadioTab(state);
+      return renderRadioTab(state, isMobile);
     case "trade":
-      return renderTradeTab(state);
+      return renderTradeTab(state, isMobile);
     case "factions":
-      return renderFactionTab(state);
+      return renderFactionTab(state, isMobile);
     case "log":
-      return renderLogTab(state);
+      return renderLogTab(state, isMobile);
     case "help":
-      return renderHelpTab(state);
+      return renderHelpTab(state, isMobile);
     case "settings":
-      return renderSettingsTab(state);
+      return renderSettingsTab(state, isMobile);
     case "overview":
     default:
-      return renderOverviewTab(state, derived);
+      return renderOverviewTab(state, derived, isMobile);
   }
 }
 
 function renderGame(state) {
   const derived = getDerivedState(state);
-  const tabs = ensureActiveTab(state);
+  const isMobile = isMobileViewport();
+  const tabs = ensureActiveTab(state, isMobile);
   const tabContent = byId("tab-content");
 
   byId("day-clock").textContent = `Day ${state.time.day} / ${String(state.time.hour).padStart(2, "0")}:00`;
   renderSubtitle(state);
-  renderResourceBar(state);
+  renderResourceBar(state, isMobile);
   renderCondition(state, derived);
   renderSummaryStrip(state, derived);
+  renderMobileSurvivalStrip(state, derived);
   renderCombatBanner(state);
-  renderTabBar(state, tabs);
+  renderTabBar(state, isMobile ? [] : tabs);
+  if (isMobile) {
+    renderMobileBottomNav(state, tabs);
+    renderMobileSheets(state, tabs);
+  } else {
+    byId("mobile-bottom-nav").innerHTML = "";
+    byId("mobile-sheet-layer").innerHTML = "";
+  }
   tabContent.dataset.tab = state.ui.activeTab;
+  tabContent.dataset.mobile = isMobile ? "true" : "false";
   document.body.dataset.activeTab = state.ui.activeTab;
+  document.body.dataset.mobile = isMobile ? "true" : "false";
   document.body.dataset.motion = state.settings.reducedMotion ? "reduced" : "full";
   document.body.dataset.copy = state.settings.briefStageCopy ? "brief" : "full";
-  tabContent.innerHTML = renderTabStage(state, derived, renderTabContent(state, derived));
+  tabContent.innerHTML = renderTabStage(state, derived, renderTabContent(state, derived), isMobile);
 }
 
 
@@ -7241,7 +7810,7 @@ function summarizeRoster(roster) {
 
 function createInitialState() {
   return {
-    version: 5,
+    version: 6,
     time: {
       day: 1,
       hour: 7,
@@ -7337,6 +7906,10 @@ function createInitialState() {
       activeTab: "overview",
       inspectedStructure: "shelter_core",
       notableFind: null,
+      mobileMoreOpen: false,
+      mobileResourceDrawerOpen: false,
+      mobileShelterMode: "ops",
+      mobileInspectorStructure: null,
     },
     settings: defaultSettings(),
     seenEvents: [],
@@ -7460,6 +8033,26 @@ evaluateProgression(state);
 
 const saveStatus = document.getElementById("autosave-status");
 
+function isMobileViewport() {
+  return typeof window !== "undefined" && Number(window.innerWidth || 0) <= 720;
+}
+
+function normalizeMobileTabTarget(tabId) {
+  if (!isMobileViewport()) {
+    return { tabId, shelterMode: null };
+  }
+
+  if (tabId === "shelter_map") {
+    return { tabId: "shelter", shelterMode: "map" };
+  }
+
+  if (tabId === "shelter") {
+    return { tabId: "shelter", shelterMode: "ops" };
+  }
+
+  return { tabId, shelterMode: null };
+}
+
 function setSaveStatus(text) {
   saveStatus.textContent = text;
 }
@@ -7497,6 +8090,11 @@ function handleAction(action, button) {
     case "inspect-structure":
       if (state.ui.inspectedStructure !== button.dataset.structure) {
         state.ui.inspectedStructure = button.dataset.structure;
+        changed = true;
+      }
+      if (isMobileViewport()) {
+        state.ui.mobileInspectorStructure = button.dataset.structure;
+        state.ui.mobileShelterMode = "map";
         changed = true;
       }
       break;
@@ -7573,13 +8171,82 @@ function handleAction(action, button) {
       changed = retreatCombat(state);
       break;
     case "set-tab":
-      if (state.ui.activeTab !== button.dataset.tab) {
-        state.ui.activeTab = button.dataset.tab;
+      {
+        const nextTarget = normalizeMobileTabTarget(button.dataset.tab);
+        const nextTab = nextTarget.tabId;
+        const nextShelterMode = nextTarget.shelterMode;
+
+        state.ui.mobileMoreOpen = false;
+        state.ui.mobileResourceDrawerOpen = false;
+        if (nextTab !== "shelter") {
+          state.ui.mobileInspectorStructure = null;
+        }
+        if (nextShelterMode) {
+          state.ui.mobileShelterMode = nextShelterMode;
+        }
+
+        if (state.ui.activeTab !== nextTab) {
+          state.ui.activeTab = nextTab;
+          saveState(state);
+          setSaveStatus("view saved");
+          rerender();
+          return;
+        }
+
+        if (nextShelterMode && state.ui.mobileShelterMode !== nextShelterMode) {
+          state.ui.mobileShelterMode = nextShelterMode;
+          saveState(state);
+          setSaveStatus("view saved");
+          rerender();
+          return;
+        }
+
         saveState(state);
         setSaveStatus("view saved");
         rerender();
+        return;
       }
-      return;
+    case "toggle-mobile-more":
+      state.ui.mobileMoreOpen = !state.ui.mobileMoreOpen;
+      if (state.ui.mobileMoreOpen) {
+        state.ui.mobileResourceDrawerOpen = false;
+      }
+      changed = true;
+      break;
+    case "close-mobile-more":
+      if (state.ui.mobileMoreOpen) {
+        state.ui.mobileMoreOpen = false;
+        changed = true;
+      }
+      break;
+    case "toggle-mobile-resource-drawer":
+      state.ui.mobileResourceDrawerOpen = !state.ui.mobileResourceDrawerOpen;
+      if (state.ui.mobileResourceDrawerOpen) {
+        state.ui.mobileMoreOpen = false;
+      }
+      changed = true;
+      break;
+    case "close-mobile-resource-drawer":
+      if (state.ui.mobileResourceDrawerOpen) {
+        state.ui.mobileResourceDrawerOpen = false;
+        changed = true;
+      }
+      break;
+    case "set-mobile-shelter-mode":
+      if (button.dataset.mode && state.ui.mobileShelterMode !== button.dataset.mode) {
+        state.ui.mobileShelterMode = button.dataset.mode;
+        if (button.dataset.mode === "ops") {
+          state.ui.mobileInspectorStructure = null;
+        }
+        changed = true;
+      }
+      break;
+    case "close-mobile-inspector":
+      if (state.ui.mobileInspectorStructure) {
+        state.ui.mobileInspectorStructure = null;
+        changed = true;
+      }
+      break;
     case "toggle-setting":
       if (Object.prototype.hasOwnProperty.call(state.settings, button.dataset.setting)) {
         state.settings[button.dataset.setting] = !state.settings[button.dataset.setting];
@@ -7637,6 +8304,12 @@ document.body.addEventListener("click", (event) => {
 
 rerender();
 setSaveStatus("autosave armed");
+
+if (typeof window.addEventListener === "function") {
+  window.addEventListener("resize", () => {
+    rerender();
+  });
+}
 
 window.setInterval(() => {
   if (processRealtimeTick(state, 1)) {
