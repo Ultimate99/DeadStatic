@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -6,6 +6,41 @@ const buildDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(buildDir, "..", "..");
 const srcDir = path.join(projectRoot, "src");
 const distDir = path.join(projectRoot, "dist");
+
+async function pathExists(targetPath) {
+  try {
+    await stat(targetPath);
+    return true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+async function syncPublicDir(sourceDir, targetDir) {
+  await mkdir(targetDir, { recursive: true });
+  const entries = await readdir(sourceDir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const sourcePath = path.join(sourceDir, entry.name);
+    const targetPath = path.join(targetDir, entry.name);
+
+    if (entry.isDirectory()) {
+      await syncPublicDir(sourcePath, targetPath);
+      continue;
+    }
+
+    const sourceBuffer = await readFile(sourcePath);
+    const targetExists = await pathExists(targetPath);
+    if (targetExists) {
+      const targetBuffer = await readFile(targetPath);
+      if (Buffer.compare(sourceBuffer, targetBuffer) === 0) {
+        continue;
+      }
+    }
+
+    await copyFile(sourcePath, targetPath);
+  }
+}
 
 async function readCssWithImports(filePath, seen = new Set()) {
   const normalized = path.normalize(filePath);
@@ -32,7 +67,7 @@ async function readCssWithImports(filePath, seen = new Set()) {
 
 async function buildStandalone() {
   await mkdir(distDir, { recursive: true });
-  await cp(path.join(srcDir, "public"), distDir, { recursive: true, force: true });
+  await syncPublicDir(path.join(srcDir, "public"), distDir);
 
   const [template, css, runtimeConfig, js] = await Promise.all([
     readFile(path.join(srcDir, "index.source.html"), "utf8"),
