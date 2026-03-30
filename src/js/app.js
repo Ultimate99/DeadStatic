@@ -33,6 +33,19 @@ import {
 } from "./engine.js";
 import { renderGame } from "./render.js";
 import { clearSave, createInitialState, loadState, saveState } from "./state.js";
+import {
+  getLeaderboardState,
+  initLeaderboard,
+  promptForCallsign,
+  refreshLeaderboard,
+  setLeaderboardUsername,
+  submitLeaderboardScore,
+} from "./services/leaderboard.js";
+import {
+  copySaveCode,
+  downloadSaveFile,
+  importSaveFromCode,
+} from "./services/save-transfer.js";
 
 let state = loadState();
 evaluateProgression(state);
@@ -71,6 +84,26 @@ function persist(label) {
   saveState(state);
   setSaveStatus(label);
 }
+
+function syncUsernameWithLeaderboard({ save = false } = {}) {
+  const board = getLeaderboardState();
+  const boardUsername = board.profile.codename || "";
+
+  if (state.player.username && state.player.username !== boardUsername) {
+    setLeaderboardUsername(state.player.username, { silent: true });
+    return;
+  }
+
+  if (!state.player.username && boardUsername) {
+    state.player.username = boardUsername;
+    if (save) {
+      saveState(state);
+    }
+  }
+}
+
+initLeaderboard({ onChange: rerender });
+syncUsernameWithLeaderboard({ save: true });
 
 function handleAction(action, button) {
   let changed = false;
@@ -176,6 +209,66 @@ function handleAction(action, button) {
     case "combat-retreat":
       changed = retreatCombat(state);
       break;
+    case "set-callsign": {
+      const before = state.player.username;
+      if (!promptForCallsign()) {
+        return;
+      }
+      const nextUsername = getLeaderboardState().profile.codename || "";
+      if (nextUsername && nextUsername !== state.player.username) {
+        state.player.username = nextUsername;
+        changed = true;
+      } else if (!nextUsername && state.player.username) {
+        state.player.username = "";
+        changed = true;
+      } else {
+        setSaveStatus(before ? "username updated" : "username ready");
+        rerender();
+        return;
+      }
+      break;
+    }
+    case "refresh-leaderboard":
+      refreshLeaderboard();
+      return;
+    case "submit-leaderboard":
+      if (state.player.username) {
+        setLeaderboardUsername(state.player.username, { silent: true });
+      }
+      submitLeaderboardScore(state);
+      return;
+    case "download-save-file":
+      downloadSaveFile(state);
+      setSaveStatus("save file downloaded");
+      return;
+    case "copy-save-code":
+      copySaveCode(state)
+        .then(() => setSaveStatus("save code copied"))
+        .catch(() => setSaveStatus("could not copy save code"));
+      return;
+    case "import-save-code": {
+      const raw = typeof window.prompt === "function"
+        ? window.prompt("Paste a Dead Static save code or raw JSON save.")
+        : "";
+      if (!raw) {
+        return;
+      }
+
+      try {
+        const nextState = importSaveFromCode(raw);
+        evaluateProgression(nextState);
+        state = nextState;
+        syncUsernameWithLeaderboard();
+        persist("save imported");
+        rerender();
+      } catch (error) {
+        setSaveStatus(error.message || "import failed");
+        if (typeof window.alert === "function") {
+          window.alert(error.message || "Could not import save.");
+        }
+      }
+      return;
+    }
     case "set-tab":
       {
         const nextTarget = normalizeMobileTabTarget(button.dataset.tab);
@@ -264,13 +357,15 @@ function handleAction(action, button) {
       changed = true;
       break;
     case "set-username": {
+      const boardUsername = getLeaderboardState().profile.codename || "";
       const nextUsername = typeof window.prompt === "function"
-        ? window.prompt("Choose a username for this run.", state.player.username || "")
+        ? window.prompt("Choose a username for this run.", state.player.username || boardUsername || "")
         : null;
       if (typeof nextUsername === "string") {
         const trimmed = nextUsername.trim().slice(0, 18);
         if (trimmed && trimmed !== state.player.username) {
           state.player.username = trimmed;
+          setLeaderboardUsername(trimmed, { silent: true });
           changed = true;
         }
       }
@@ -285,6 +380,7 @@ function handleAction(action, button) {
         clearSave();
         state = createInitialState();
         evaluateProgression(state);
+        syncUsernameWithLeaderboard();
         persist("save wiped");
         rerender();
       }

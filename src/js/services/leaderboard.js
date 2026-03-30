@@ -89,7 +89,7 @@ function loadProfile() {
     const raw = JSON.parse(win.localStorage.getItem(PROFILE_KEY) || "null");
     const profile = {
       playerId: isValidPlayerId(raw?.playerId) ? raw.playerId : fallback.playerId,
-      codename: sanitizeCodename(raw?.codename || ""),
+      codename: sanitizeCodename(raw?.codename || raw?.username || ""),
     };
     win.localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
     return profile;
@@ -283,11 +283,25 @@ export function getLeaderboardState() {
 
 export function getLeaderboardSnapshot(state) {
   const summary = summarizeRun(state);
+  const playerName = sanitizeCodename(store.profile.codename || state?.player?.username || "");
   return {
     playerId: store.profile.playerId,
-    playerName: store.profile.codename,
+    playerName,
     summary,
   };
+}
+
+export function setLeaderboardUsername(value, { silent = false } = {}) {
+  store.profile.codename = sanitizeCodename(value);
+  saveProfile();
+  if (!silent) {
+    store.submitStatus = "idle";
+    store.message = store.profile.codename
+      ? `Username set to ${store.profile.codename}.`
+      : "Username cleared.";
+    notify();
+  }
+  return store.profile.codename;
 }
 
 export function promptForCallsign() {
@@ -301,8 +315,7 @@ export function promptForCallsign() {
     return false;
   }
 
-  store.profile.codename = sanitizeCodename(nextValue);
-  saveProfile();
+  setLeaderboardUsername(nextValue, { silent: true });
   store.submitStatus = "idle";
   store.message = store.profile.codename
     ? `Username set to ${store.profile.codename}.`
@@ -358,6 +371,10 @@ export async function submitLeaderboardScore(state) {
     markIdleMessage();
     notify();
     return false;
+  }
+
+  if ((!store.profile.codename || store.profile.codename.length < 3) && state?.player?.username) {
+    setLeaderboardUsername(state.player.username, { silent: true });
   }
 
   if (!store.profile.codename || store.profile.codename.length < 3) {

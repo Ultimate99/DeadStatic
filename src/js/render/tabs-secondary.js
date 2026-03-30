@@ -8,6 +8,7 @@ import {
   getTraderOfferCost,
   hasItem,
 } from "../engine.js";
+import { getLeaderboardSnapshot, getLeaderboardState } from "../services/leaderboard.js";
 import {
   actionButton,
   byId,
@@ -32,6 +33,76 @@ function accordionSection(title, meta, body, open = false) {
       </summary>
       <div class="mobile-accordion-body">${body}</div>
     </details>
+  `;
+}
+
+
+function leaderboardStatusLabel(board) {
+  if (!board.enabled) {
+    return "offline";
+  }
+  if (board.status === "loading") {
+    return "syncing";
+  }
+  if (board.status === "error") {
+    return "issue";
+  }
+  if (board.submitStatus === "submitting") {
+    return "uploading";
+  }
+  return "synced";
+}
+
+function leaderboardStatusMessage(board) {
+  if (board.message) {
+    return board.message;
+  }
+  if (!board.enabled) {
+    return "Hosted leaderboard is disabled for this build.";
+  }
+  if (!board.entries.length) {
+    return "No hosted runs yet. Submit the first one.";
+  }
+  return board.lastUpdated
+    ? `Board synced. Updated ${board.lastUpdated}.`
+    : "Board synced and waiting for the next run.";
+}
+
+function leaderboardEntriesMarkup(entries) {
+  if (!entries.length) {
+    return '<p class="empty-state">No hosted runs yet. Submit the first one.</p>';
+  }
+
+  return `
+    <div class="detail-list leaderboard-stack">
+      ${entries.map((entry) => `
+        <div class="list-block compact-block leaderboard-row">
+          <div class="surface-head">
+            <h4>#${entry.rank} ${entry.playerName}</h4>
+            <span class="tag">${entry.score}</span>
+          </div>
+          <div class="chip-row">${tagList([
+            entry.stage,
+            `nights ${entry.nights}`,
+            `zones ${entry.zones}`,
+            `signal ${entry.radio}`,
+          ])}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function leaderboardRunSummary(snapshot, username) {
+  return `
+    <div class="fact-grid">
+      <div class="fact"><span>Username</span><strong>${username || "unset"}</strong></div>
+      <div class="fact"><span>Score</span><strong>${snapshot.summary.score}</strong></div>
+      <div class="fact"><span>Stage</span><strong>${snapshot.summary.stage}</strong></div>
+      <div class="fact"><span>Nights</span><strong>${snapshot.summary.nightsSurvived}</strong></div>
+      <div class="fact"><span>Zones</span><strong>${snapshot.summary.zonesVisited}</strong></div>
+      <div class="fact"><span>Signal</span><strong>${snapshot.summary.radioProgress}</strong></div>
+    </div>
   `;
 }
 
@@ -372,6 +443,184 @@ export function renderFactionTab(state, _isMobile = false) {
       }),
     ],
     "tab-columns-factions"
+  );
+}
+
+export function renderLeaderboardTab(state, isMobile = false) {
+  const board = getLeaderboardState();
+  const snapshot = getLeaderboardSnapshot(state);
+  const username = snapshot.playerName || state.player.username || "";
+  const boardStatus = leaderboardStatusLabel(board);
+  const submitDisabled = !board.enabled || !username || username.length < 3 || board.submitStatus === "submitting";
+  const refreshDisabled = !board.enabled || board.status === "loading";
+
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-leaderboard">
+        ${surfaceCard({
+          title: "Global leaderboard",
+          meta: board.enabled ? "hosted" : "offline",
+          body: `
+            ${accordionSection("Current run", `${snapshot.summary.score}`, `
+              <div class="detail-list">
+                <div class="list-block compact-block">
+                  <div class="surface-head">
+                    <h4>${username || "Username not set"}</h4>
+                    <span class="tag">${snapshot.summary.stage}</span>
+                  </div>
+                  ${leaderboardRunSummary(snapshot, username)}
+                </div>
+                <div class="action-stack">
+                  ${actionButton({
+                    action: "set-callsign",
+                    label: username ? "Edit username" : "Set username",
+                    meta: "leaderboard profile",
+                    variant: "primary compact",
+                  })}
+                  ${actionButton({
+                    action: "submit-leaderboard",
+                    label: "Submit run",
+                    meta: "upload best score",
+                    disabled: submitDisabled,
+                    variant: "compact",
+                  })}
+                </div>
+              </div>
+            `, true)}
+            ${accordionSection("Board status", boardStatus, `
+              <div class="detail-list">
+                <div class="list-block compact-block">
+                  <div class="surface-head">
+                    <h4>Status</h4>
+                    <span class="tag">${boardStatus}</span>
+                  </div>
+                  <p class="note">${leaderboardStatusMessage(board)}</p>
+                  ${actionButton({
+                    action: "refresh-leaderboard",
+                    label: "Refresh board",
+                    meta: "pull hosted rankings",
+                    disabled: refreshDisabled,
+                    variant: "compact",
+                  })}
+                </div>
+              </div>
+            `, true)}
+            ${accordionSection("Hosted ranks", `${board.entries.length} live`, leaderboardEntriesMarkup(board.entries))}
+            ${accordionSection("Save transfer", "cross-device", `
+              <div class="action-stack">
+                ${actionButton({
+                  action: "download-save-file",
+                  label: "Download save file",
+                  meta: "json export",
+                  variant: "compact",
+                })}
+                ${actionButton({
+                  action: "copy-save-code",
+                  label: "Copy save code",
+                  meta: "portable code",
+                  variant: "compact",
+                })}
+                ${actionButton({
+                  action: "import-save-code",
+                  label: "Paste save code",
+                  meta: "import run",
+                  variant: "compact",
+                })}
+              </div>
+            `)}
+          `,
+        })}
+      </div>
+    `;
+  }
+
+  return renderSplitPane(
+    [
+      surfaceCard({
+        title: "Global leaderboard",
+        meta: board.enabled ? "hosted" : "offline",
+        body: leaderboardEntriesMarkup(board.entries),
+      }),
+    ],
+    [
+      surfaceCard({
+        title: "Current run",
+        meta: `${snapshot.summary.score}`,
+        body: `
+          <div class="detail-list">
+            <div class="list-block compact-block">
+              <div class="surface-head">
+                <h4>${username || "Username not set"}</h4>
+                <span class="tag">${snapshot.summary.stage}</span>
+              </div>
+              ${leaderboardRunSummary(snapshot, username)}
+            </div>
+          </div>
+          <div class="action-stack">
+            ${actionButton({
+              action: "set-callsign",
+              label: username ? "Edit username" : "Set username",
+              meta: "leaderboard profile",
+              variant: "primary compact",
+            })}
+            ${actionButton({
+              action: "submit-leaderboard",
+              label: "Submit run",
+              meta: "upload best score",
+              disabled: submitDisabled,
+              variant: "compact",
+            })}
+          </div>
+        `,
+      }),
+      surfaceCard({
+        title: "Board status",
+        meta: boardStatus,
+        body: `
+          <div class="detail-list">
+            <div class="list-block compact-block">
+              <p class="note">${leaderboardStatusMessage(board)}</p>
+            </div>
+          </div>
+          <div class="action-stack">
+            ${actionButton({
+              action: "refresh-leaderboard",
+              label: "Refresh board",
+              meta: "pull hosted rankings",
+              disabled: refreshDisabled,
+              variant: "compact",
+            })}
+          </div>
+        `,
+      }),
+      surfaceCard({
+        title: "Save transfer",
+        meta: "cross-device",
+        body: `
+          <div class="action-stack">
+            ${actionButton({
+              action: "download-save-file",
+              label: "Download save file",
+              meta: "json export",
+              variant: "compact",
+            })}
+            ${actionButton({
+              action: "copy-save-code",
+              label: "Copy save code",
+              meta: "portable code",
+              variant: "compact",
+            })}
+            ${actionButton({
+              action: "import-save-code",
+              label: "Paste save code",
+              meta: "import run",
+              variant: "compact",
+            })}
+          </div>
+        `,
+      }),
+    ],
+    "tab-columns-leaderboard"
   );
 }
 

@@ -25,6 +25,7 @@ import {
   renderCombatBanner,
   renderFactionTab,
   renderHelpTab,
+  renderLeaderboardTab,
   renderLogTab,
   renderRadioTab,
   renderSettingsTab,
@@ -53,6 +54,8 @@ function renderTabContent(state, derived) {
       return renderTradeTab(state, isMobile);
     case "factions":
       return renderFactionTab(state, isMobile);
+    case "leaderboard":
+      return renderLeaderboardTab(state, isMobile);
     case "log":
       return renderLogTab(state, isMobile);
     case "help":

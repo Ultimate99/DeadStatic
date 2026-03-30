@@ -32,13 +32,14 @@ export const TAB_DEFS = [
   { id: "radio", label: "Radio", hint: "signals", unlock: "radio", count: (state) => state.story.radioProgress || null },
   { id: "trade", label: "Trade", hint: "market", unlock: "trader", count: (state) => state.trader.offers.length || null },
   { id: "factions", label: "Factions", hint: "alignment", unlock: "factions" },
+  { id: "leaderboard", label: "Leaderboard", hint: "hosted" },
   { id: "log", label: "Log", hint: "history" },
   { id: "help", label: "Help", hint: "guide" },
   { id: "settings", label: "Settings", hint: "options" },
 ];
 
 export const MOBILE_PRIMARY_TABS = ["overview", "craft", "shelter", "map"];
-export const MOBILE_MORE_TABS = ["inventory", "survivors", "radio", "trade", "factions", "log", "help", "settings"];
+export const MOBILE_MORE_TABS = ["inventory", "survivors", "radio", "trade", "factions", "leaderboard", "log", "help", "settings"];
 
 export function byId(id) {
   return document.getElementById(id);

@@ -14,6 +14,7 @@ import {
   structureKey,
 } from "./shelter-map.js";
 import { renderTutorialBanner } from "./shared.js";
+import { getLeaderboardSnapshot, getLeaderboardState } from "../services/leaderboard.js";
 
 function tabStageMeta(state, derived) {
   const visibleUpgrades = getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id));
@@ -134,6 +135,21 @@ function tabStageMeta(state, derived) {
           ["Relics", state.resources.relics],
         ],
       };
+    case "leaderboard": {
+      const board = getLeaderboardState();
+      const snapshot = getLeaderboardSnapshot(state);
+      return {
+        label: "Hosted board",
+        title: "Measure this run against the wasteland",
+        detail: "Username, hosted ranks, current score, and save transfer all live here.",
+        stats: [
+          ["Score", snapshot.summary.score],
+          ["Stage", snapshot.summary.stage],
+          ["Entries", board.entries.length || "empty"],
+          ["Sync", board.enabled ? "hosted" : "offline"],
+        ],
+      };
+    }
     case "log":
       return {
         label: "Archive",
