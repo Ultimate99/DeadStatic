@@ -1080,6 +1080,9 @@ h4 {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  overflow: hidden;
 }
 
 .ops-source-head strong,
@@ -1117,7 +1120,7 @@ h4 {
 
 .inventory-sprite-top {
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .inventory-amount {
@@ -1304,6 +1307,7 @@ body[data-drag-type="backpack"] .equipment-slot-card[data-slot="backpack"] {
 
 .inventory-sprite-card {
   align-content: start;
+  grid-auto-rows: min-content;
 }
 
 .inventory-sprite-card.is-draggable {
@@ -1316,6 +1320,20 @@ body[data-drag-type="backpack"] .equipment-slot-card[data-slot="backpack"] {
 
 .inventory-sprite-card .action-button {
   width: fit-content;
+}
+
+.inventory-sprite-wrap .ui-sprite,
+.inventory-sprite-wrap .icon-sprite,
+.inventory-sprite-wrap .ui-icon-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.icon-sprite {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-strong);
 }
 
 .base-screen {
@@ -1401,6 +1419,7 @@ body[data-drag-type="backpack"] .equipment-slot-card[data-slot="backpack"] {
   grid-template-rows: repeat(8, minmax(0, 1fr));
   gap: 4px;
   z-index: 4;
+  pointer-events: none;
 }
 
 .base-preview-layer {
@@ -1498,6 +1517,7 @@ body[data-drag-type="backpack"] .equipment-slot-card[data-slot="backpack"] {
 
 .base-board.is-placement-armed .base-grid-tiles {
   z-index: 6;
+  pointer-events: auto;
 }
 
 .base-placement-preview {
