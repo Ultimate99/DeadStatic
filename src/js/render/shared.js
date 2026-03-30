@@ -16,6 +16,7 @@ import {
   formatMaterials,
   getExpeditionPreview,
   getNightForecast,
+  getShelterUpkeep,
   getVisibleUpgrades,
   hasMaterials,
   hasItem,
@@ -284,54 +285,53 @@ export function renderCondition(state, derived) {
   const percent = Math.round((state.condition / derived.maxCondition) * 100);
   const label = conditionLabel(percent);
   const readout = byId("condition-readout");
-  readout.textContent = `Condition ${state.condition}/${derived.maxCondition} · ${label}`;
+  readout.textContent = `Condition ${state.condition}/${derived.maxCondition} - ${label}`;
   readout.title = "Condition is your overall survival state. If it collapses, the run ends. Food, water, warmth, combat, and bad nights all push it.";
   byId("condition-bar").innerHTML = `<div class="meter-fill ${meterClass(percent)}" style="width:${percent}%"></div>`;
 }
 
 export function renderSummaryStrip(state, derived) {
+  const upkeep = getShelterUpkeep(state);
   const pills = [
     {
-      label: "Warmth",
-      value: state.shelter.warmth.toFixed(1),
-      note: state.shelter.warmth >= 4 ? "higher is safer at night" : "cold shelter, fix soon",
+      label: "Heat line",
+      value: `${state.shelter.warmth.toFixed(1)}/10`,
+      note: state.shelter.warmth >= 4 ? "night buffer is holding" : "cold shelter, fix soon",
       tone: state.shelter.warmth >= 4 ? "good" : state.shelter.warmth >= 2 ? "warn" : "danger",
-      tip: "Warmth slows collapse at night. Low warmth makes every dark hour worse.",
+      tip: "Heat line tracks how much warmth the shelter is holding. Low warmth makes every night and cold spell hit harder.",
     },
     {
-      label: "Threat",
-      value: state.shelter.threat.toFixed(1),
-      note: state.shelter.threat < 3 ? "keep this low" : "outside pressure building",
+      label: "Outside threat",
+      value: `${state.shelter.threat.toFixed(1)}/12`,
+      note: state.shelter.threat < 3 ? "outside pressure is light" : "outside pressure building",
       tone: state.shelter.threat < 3 ? "good" : state.shelter.threat < 6 ? "warn" : "danger",
       tip: "Threat is the outside pressure around the shelter. High threat makes infected, raids, and breaches more likely.",
     },
     {
-      label: "Noise",
-      value: state.shelter.noise.toFixed(1),
-      note: state.shelter.noise < 3 ? "quiet line" : "loud shelters draw heat",
+      label: "Noise trail",
+      value: `${state.shelter.noise.toFixed(1)}/10`,
+      note: state.shelter.noise < 3 ? "quiet shelter line" : "loud shelters draw heat",
       tone: state.shelter.noise < 3 ? "good" : state.shelter.noise < 6 ? "warn" : "danger",
       tip: "Noise is how loud your shelter and actions are. Loud runs and loud nights attract trouble.",
     },
   ];
 
   if (state.discoveredResources.includes("food")) {
-    const hoursLeft = Math.max(0, 6 - state.clocks.hunger);
     pills.push({
-      label: "Next meal",
-      value: `${hoursLeft}h`,
-      note: hoursLeft <= 1 ? "eat soon" : "meal buffer left",
-      tone: hoursLeft <= 1 ? "danger" : hoursLeft <= 2 ? "warn" : "neutral",
-      tip: "When this reaches zero, the shelter consumes food automatically. If none is available, condition drops hard.",
+      label: "Meal due",
+      value: `${upkeep.mealHoursLeft}h / ${upkeep.mealCost}`,
+      note: upkeep.mealHoursLeft <= 1 ? "stores need food now" : "next shelter meal",
+      tone: upkeep.mealHoursLeft <= 1 ? "danger" : upkeep.mealHoursLeft <= 2 ? "warn" : "neutral",
+      tip: `Every ${upkeep.mealHours}h the shelter consumes ${upkeep.mealCost} food. More crew means a larger meal bill.`,
     });
   }
   if (state.discoveredResources.includes("water")) {
-    const hoursLeft = Math.max(0, 4 - state.clocks.thirst);
     pills.push({
       label: "Water due",
-      value: `${hoursLeft}h`,
-      note: hoursLeft <= 1 ? "drink soon" : "water buffer left",
-      tone: hoursLeft <= 1 ? "danger" : hoursLeft <= 2 ? "warn" : "neutral",
-      tip: "When this hits zero, the shelter consumes water automatically. No water means faster condition loss.",
+      value: `${upkeep.waterHoursLeft}h / ${upkeep.waterCost}`,
+      note: upkeep.waterHoursLeft <= 1 ? "refill drinkable water" : "next shelter drink",
+      tone: upkeep.waterHoursLeft <= 1 ? "danger" : upkeep.waterHoursLeft <= 2 ? "warn" : "neutral",
+      tip: `Every ${upkeep.waterHours}h the shelter consumes ${upkeep.waterCost} drinkable water. Crew makes this rise fast.`,
     });
   }
   if (state.unlockedSections.includes("survivors")) {
@@ -339,7 +339,9 @@ export function renderSummaryStrip(state, derived) {
     pills.push({
       label: "Crew",
       value: `${state.survivors.total}/${derived.survivorCap}`,
-      note: freeBeds > 0 ? `${freeBeds} berth open` : "full shelter line",
+      note: state.survivors.total > 0
+        ? `${upkeep.mealCost} food + ${upkeep.waterCost} water per cycle`
+        : freeBeds > 0 ? `${freeBeds} berth open` : "full shelter line",
       tone: freeBeds > 0 ? "neutral" : "warn",
       tip: "Crew capacity controls how many survivors can stay. More hands help, but they also increase upkeep pressure.",
     });
@@ -370,13 +372,13 @@ export function renderSummaryStrip(state, derived) {
 export function renderSubtitle(state) {
   let subtitle = "The streets went quiet. The wires did not.";
   if (state.unlockedSections.includes("upgrades")) {
-    subtitle = "Rubble stops being debris the second you learn how to sort it.";
+    subtitle = "Rubble stops being debris once you can turn it into stores, timber, and heat.";
   }
   if (state.unlockedSections.includes("map")) {
-    subtitle = "The shelter holds. The city starts offering routes and hard choices.";
+    subtitle = "One room becomes a shelter. A shelter becomes a base the second routes start feeding it.";
   }
   if (state.unlockedSections.includes("radio")) {
-    subtitle = "The static stops sounding random once it realizes you are listening.";
+    subtitle = "The base starts holding long enough for the radio to become another survival problem.";
   }
   if (state.flags.worldReveal) {
     subtitle = "The outbreak had a transmission layer. You are standing inside its residue.";
@@ -566,22 +568,48 @@ function readyUpgradeCandidate(state, upgrades) {
 
 function currentDirective(state, upgrades) {
   const readyUpgrade = readyUpgradeCandidate(state, upgrades);
+  const upkeep = getShelterUpkeep(state);
+  const lowFood = state.unlockedSections.includes("shelter")
+    && state.discoveredResources.includes("food")
+    && state.resources.food < upkeep.mealCost;
+  const lowWater = state.unlockedSections.includes("shelter")
+    && state.discoveredResources.includes("water")
+    && state.resources.water < upkeep.waterCost;
+
   if (state.combat) {
     return {
       title: "Combat contact",
       detail: "Resolve the current encounter before you push any other operation.",
     };
   }
+  if (lowFood) {
+    return {
+      title: "Secure food stores",
+      detail: `The shelter needs ${upkeep.mealCost} food every ${upkeep.mealHours}h. Do not build past your pantry.`,
+    };
+  }
+  if (lowWater) {
+    return {
+      title: "Refill drinkable water",
+      detail: `The shelter needs ${upkeep.waterCost} drinkable water every ${upkeep.waterHours}h. Dehydration now hits the whole room.`,
+    };
+  }
   if (!state.flags.burnUnlocked) {
     return {
       title: "Stabilize the room",
-      detail: `${Math.max(0, 3 - state.stats.searches)} more rubble searches unlock warmth control.`,
+      detail: `${Math.max(0, 3 - state.stats.searches)} more rubble searches unlock warmth control, but every run also raises noise.`,
     };
   }
   if (readyUpgrade) {
     return {
       title: `Build ${readyUpgrade.name}`,
-      detail: "A funded upgrade is waiting. Converting salvage into systems is the fastest way forward.",
+      detail: "A funded project is waiting. Converting salvage into shelter systems is the fastest way forward.",
+    };
+  }
+  if (state.unlockedSections.includes("upgrades") && !state.upgrades.includes("basic_barricade")) {
+    return {
+      title: "Reinforce the perimeter",
+      detail: "Barricade work is the first real line between you and a bad night.",
     };
   }
   if (state.expedition.selectedZone) {
@@ -596,7 +624,7 @@ function currentDirective(state, upgrades) {
   if (state.unlockedSections.includes("radio") && state.resources.fuel > 0 && state.resources.parts > 0) {
     return {
       title: "Sweep the band",
-      detail: "The receiver has enough fuel and parts. Push signal progress while the line is viable.",
+      detail: "The receiver has fuel and parts, but signal work is secondary to holding the shelter together.",
     };
   }
   if (state.unlockedSections.includes("map") && !state.expedition.selectedZone) {
@@ -606,8 +634,8 @@ function currentDirective(state, upgrades) {
     };
   }
   return {
-    title: "Push the scavenging lanes",
-    detail: "Keep the salvage loop moving until the next system or route unlocks.",
+    title: "Loot and hold",
+    detail: "Feed the shelter, bank materials, and only then push for the next system or route.",
   };
 }
 
@@ -654,8 +682,8 @@ export function getTutorialStep(state) {
     return {
       id: "search",
       title: "Start with rubble",
-      summary: "Search rubble first. Scrap is the root resource for everything that follows.",
-      chips: ["get scrap", "unlock warmth"],
+      summary: "Search rubble first. Early runs are how you pull scrap, wood, and the first real survival materials out of the street.",
+      chips: ["get scrap", "find wood", "unlock warmth"],
       tabs: ["overview"],
       action: {
         action: "search-rubble",
@@ -670,7 +698,7 @@ export function getTutorialStep(state) {
     return {
       id: "warmth",
       title: "Unlock warmth control",
-      summary: "A few more rubble runs unlock the burn-for-warmth action. That is your first survival stabilizer.",
+      summary: "A few more rubble runs unlock the burn-for-warmth action. That is your first shelter stabilizer, but it is also loud.",
       chips: [`${Math.max(0, 3 - state.stats.searches)} searches left`, "survive today"],
       tabs: ["overview"],
       action: {
@@ -687,8 +715,8 @@ export function getTutorialStep(state) {
     return {
       id: "stash",
       title: "Build Shelter Stash first",
-      summary: "The stash is the first real pivot from raw panic into shelter management.",
-      chips: ["opens shelter loop", "better survival flow"],
+      summary: "The stash is the first real pivot from raw panic into shelter management. It means you are building a place, not just hiding in one.",
+      chips: ["opens shelter loop", "wood matters now"],
       tabs: ["overview", "craft"],
       action: state.ui.activeTab === "craft" && stashReady
         ? {
@@ -713,8 +741,8 @@ export function getTutorialStep(state) {
     return {
       id: "food_loop",
       title: "Secure food next",
-      summary: "After shelter, hunger and water become the next failure point. Build the food loop before you over-expand.",
-      chips: ["food > comfort", "stabilize before routes"],
+      summary: "After shelter, food and drinkable water become the next failure point. Secure stores before you over-expand.",
+      chips: ["food > comfort", "water is upkeep", "stabilize before routes"],
       tabs: ["overview", "craft"],
       action: state.ui.activeTab === "craft" && foodReady
         ? {
@@ -755,15 +783,15 @@ export function getTutorialStep(state) {
     return {
       id: "crew",
       title: "Recruit the first survivor",
-      summary: "Crew matters once the shelter can feed them. One survivor is enough to start learning roles.",
+      summary: "Crew matters once the shelter can feed and water them. One survivor is enough to start learning roles without wrecking your stores.",
       chips: ["roles unlock slowly", "do not overstaff early"],
       tabs: ["overview", "survivors"],
       action: {
         action: state.ui.activeTab === "survivors" ? "recruit" : "set-tab",
         label: state.ui.activeTab === "survivors" ? "Recruit survivor" : "Open Crew",
-        meta: state.ui.activeTab === "survivors" ? "18 scrap / 3 food" : "crew tab",
+        meta: state.ui.activeTab === "survivors" ? "22 scrap / 1 wood / 4 food / 2 water" : "crew tab",
         data: state.ui.activeTab === "survivors" ? {} : { tab: "survivors" },
-        disabled: state.ui.activeTab === "survivors" && !canAfford(state, { scrap: 18, food: 3 }),
+        disabled: state.ui.activeTab === "survivors" && !canAfford(state, { scrap: 22, wood: 1, food: 4, water: 2 }),
         variant: "primary compact",
       },
     };
@@ -840,6 +868,7 @@ export function renderTutorialBanner(state) {
 
 export function renderCommandDesk(state, derived, availableSources, availableUpgrades) {
   const forecast = getNightForecast(state);
+  const upkeep = getShelterUpkeep(state);
   const readyUpgrade = readyUpgradeCandidate(state, availableUpgrades);
   const directive = currentDirective(state, availableUpgrades);
   const preview = state.expedition.selectedZone
@@ -908,13 +937,13 @@ export function renderCommandDesk(state, derived, availableSources, availableUpg
             : "Routes surface later. Keep leaning on the city."}</p>
       </div>
       <div class="command-card">
-        <span class="note-label">Signal + growth</span>
-        <h4>${state.unlockedSections.includes("radio") ? `Signal ${state.story.radioProgress}` : "Receiver dark"}</h4>
+        <span class="note-label">Shelter + growth</span>
+        <h4>${state.unlockedSections.includes("radio") ? `Signal ${state.story.radioProgress} / upkeep ${upkeep.mealCost}:${upkeep.waterCost}` : `Upkeep ${upkeep.mealCost}:${upkeep.waterCost}`}</h4>
         <div class="command-stat-row">
           <div><span>Lanes</span><strong>${availableSources.length}</strong></div>
           <div><span>Builds</span><strong>${availableUpgrades.length}</strong></div>
           <div><span>Crew</span><strong>${state.survivors.total}/${derived.survivorCap}</strong></div>
-          <div><span>Morale</span><strong>${state.resources.morale}</strong></div>
+          <div><span>Stores</span><strong>${state.resources.food}/${state.resources.water}</strong></div>
         </div>
       </div>
     </div>
@@ -938,6 +967,8 @@ export function renderInventoryItemCard(itemId, amount) {
       meta: item.type,
       data: { item: itemId },
     });
+  } else if (item.type === "tool") {
+    actionMarkup = `<div class="chip-row">${tagList(["tool", "passive utility"])}</div>`;
   }
 
   return `

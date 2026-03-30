@@ -2,6 +2,7 @@ export const SAVE_KEY = "dead-static-save-v2";
 
 export const RESOURCE_ORDER = [
   "scrap",
+  "wood",
   "food",
   "water",
   "cloth",
@@ -19,8 +20,9 @@ export const RESOURCE_ORDER = [
 
 export const RESOURCE_DEFS = {
   scrap: { label: "Scrap", tier: "core" },
+  wood: { label: "Wood", tier: "core" },
   food: { label: "Food", tier: "core" },
-  water: { label: "Water", tier: "core" },
+  water: { label: "Drinkable Water", tier: "core" },
   cloth: { label: "Cloth", tier: "common" },
   fuel: { label: "Fuel", tier: "uncommon" },
   parts: { label: "Parts", tier: "uncommon" },
@@ -187,9 +189,14 @@ export const ITEMS = {
   pry_bar: {
     id: "pry_bar",
     name: "Pry Bar",
-    type: "weapon",
-    attack: 4,
-    description: "Good for doors and the things that linger behind them.",
+    type: "tool",
+    description: "Forced entry, broken lockers, and every crate that wants to stay shut.",
+  },
+  salvage_hatchet: {
+    id: "salvage_hatchet",
+    name: "Salvage Hatchet",
+    type: "tool",
+    description: "Splits timber, bites into weak boards, and keeps the fence honest.",
   },
   nail_bat: {
     id: "nail_bat",

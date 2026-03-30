@@ -3876,6 +3876,38 @@ body[data-mobile="true"] .crew-band-card {
   min-height: 0;
 }
 
+.queue-board {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.queue-column {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  min-height: 100%;
+  padding: 10px;
+  border: 1px solid rgba(205, 196, 174, 0.08);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.006), transparent 18%),
+    rgba(15, 18, 18, 0.88);
+}
+
+.queue-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.patch-note-list .list-block {
+  gap: 8px;
+}
+
+.patch-note-list .chip-row {
+  justify-content: flex-start;
+}
+
 @media (max-width: 720px) {
   body[data-mobile="true"] .tab-mobile-flow .surface-card {
     padding: 10px;
@@ -3887,6 +3919,10 @@ body[data-mobile="true"] .crew-band-card {
 
   body[data-mobile="true"] .fact-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .queue-board {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -4626,6 +4662,7 @@ const SAVE_KEY = "dead-static-save-v2";
 
 const RESOURCE_ORDER = [
   "scrap",
+  "wood",
   "food",
   "water",
   "cloth",
@@ -4643,8 +4680,9 @@ const RESOURCE_ORDER = [
 
 const RESOURCE_DEFS = {
   scrap: { label: "Scrap", tier: "core" },
+  wood: { label: "Wood", tier: "core" },
   food: { label: "Food", tier: "core" },
-  water: { label: "Water", tier: "core" },
+  water: { label: "Drinkable Water", tier: "core" },
   cloth: { label: "Cloth", tier: "common" },
   fuel: { label: "Fuel", tier: "uncommon" },
   parts: { label: "Parts", tier: "uncommon" },
@@ -4811,9 +4849,14 @@ const ITEMS = {
   pry_bar: {
     id: "pry_bar",
     name: "Pry Bar",
-    type: "weapon",
-    attack: 4,
-    description: "Good for doors and the things that linger behind them.",
+    type: "tool",
+    description: "Forced entry, broken lockers, and every crate that wants to stay shut.",
+  },
+  salvage_hatchet: {
+    id: "salvage_hatchet",
+    name: "Salvage Hatchet",
+    type: "tool",
+    description: "Splits timber, bites into weak boards, and keeps the fence honest.",
   },
   nail_bat: {
     id: "nail_bat",
@@ -4969,7 +5012,7 @@ const UPGRADES = [
     name: "Backpack",
     description: "Stitch scavenged cloth and straps into something worth carrying.",
     verb: "Rig",
-    cost: { scrap: 6, cloth: 3 },
+    cost: { scrap: 8, cloth: 3 },
     requires: { searches: 3 },
     effects: { searchScrapMin: 1, searchScrapMax: 1, searchBonusRolls: 1 },
   },
@@ -4978,7 +5021,7 @@ const UPGRADES = [
     name: "Rusty Knife",
     description: "Wrap a sharp shard, bind the handle, and call it honest work.",
     verb: "Bind",
-    cost: { scrap: 4, parts: 2, cloth: 1 },
+    cost: { scrap: 6, parts: 3, cloth: 1 },
     materials: { sharp_metal: 1 },
     requires: { searches: 4 },
     effects: {
@@ -4992,7 +5035,7 @@ const UPGRADES = [
     name: "Shelter Stash",
     description: "A corner that counts as ownership.",
     verb: "Secure",
-    cost: { scrap: 12, cloth: 2 },
+    cost: { scrap: 14, wood: 4, cloth: 2 },
     requires: { searches: 4 },
     effects: {
       unlockSections: ["shelter"],
@@ -5005,7 +5048,7 @@ const UPGRADES = [
     name: "Campfire",
     description: "A controlled glow beats a cold death.",
     verb: "Assemble",
-    cost: { scrap: 16, fuel: 2, cloth: 1 },
+    cost: { scrap: 18, wood: 3, fuel: 2, cloth: 1 },
     requires: { upgrades: ["shelter_stash"], burnUses: 1 },
     effects: {
       burnCondition: 5,
@@ -5019,7 +5062,7 @@ const UPGRADES = [
     name: "Basic Barricade",
     description: "It will not stop everything. It does not need to.",
     verb: "Brace",
-    cost: { scrap: 22, parts: 4, wire: 2 },
+    cost: { scrap: 24, wood: 5, parts: 4, wire: 2 },
     requires: { upgrades: ["shelter_stash"] },
     effects: { defense: 2, nightMitigation: 0.35, unlockSections: ["shelter"] },
   },
@@ -5027,7 +5070,7 @@ const UPGRADES = [
     id: "first_aid_rag",
     name: "First Aid Rag",
     description: "A filthy medical miracle.",
-    cost: { cloth: 1, medicine: 1 },
+    cost: { cloth: 2, medicine: 1 },
     requires: { searches: 5 },
     effects: {
       grantItems: { first_aid_rag: 1 },
@@ -5038,7 +5081,7 @@ const UPGRADES = [
     id: "food_search",
     name: "Simple Food Search",
     description: "Separate hunger from useful scrap before both kill you.",
-    cost: { scrap: 12, water: 1 },
+    cost: { scrap: 14, wood: 2, water: 1 },
     requires: { upgrades: ["shelter_stash"] },
     effects: {
       searchFoodChance: 0.08,
@@ -5049,7 +5092,7 @@ const UPGRADES = [
     id: "small_scavenge",
     name: "Small Scavenging Runs",
     description: "A cautious loop beyond line of sight.",
-    cost: { scrap: 20, food: 1, water: 1 },
+    cost: { scrap: 28, food: 2, water: 2 },
     requires: { upgrades: ["backpack", "rusty_knife"] },
     effects: {
       unlockSections: ["map"],
@@ -5061,7 +5104,7 @@ const UPGRADES = [
     id: "food_crate",
     name: "Food Storage",
     description: "Enough order to keep hunger from winning by accounting.",
-    cost: { scrap: 26, parts: 5, cloth: 2 },
+    cost: { scrap: 30, wood: 4, parts: 5, cloth: 2 },
     requires: { upgrades: ["food_search"] },
     effects: {
       forageYieldBonus: 0.14,
@@ -5072,7 +5115,7 @@ const UPGRADES = [
     id: "crafting_bench",
     name: "Crafting Bench",
     description: "The first place built for making instead of hiding.",
-    cost: { scrap: 30, parts: 7, wire: 2 },
+    cost: { scrap: 34, wood: 4, parts: 8, wire: 2 },
     requires: { upgrades: ["small_scavenge"] },
     effects: {
       searchPartChance: 0.06,
@@ -5081,10 +5124,40 @@ const UPGRADES = [
     },
   },
   {
+    id: "pry_bar_tool",
+    name: "Pry Bar",
+    description: "Leverage wins fights with crates, doors, and sealed salvage before they start.",
+    verb: "Forge",
+    cost: { scrap: 14, wood: 1, parts: 4, cloth: 1 },
+    materials: { sharp_metal: 1 },
+    requires: { upgrades: ["crafting_bench"] },
+    effects: {
+      grantItems: { pry_bar: 1 },
+      searchPartChance: 0.08,
+      salvageYieldBonus: 0.06,
+      unlockSections: ["inventory"],
+    },
+  },
+  {
+    id: "salvage_hatchet",
+    name: "Salvage Hatchet",
+    description: "A compact splitter for timber, weak boards, and ugly shelter work.",
+    verb: "Forge",
+    cost: { scrap: 16, wood: 3, parts: 3, cloth: 1 },
+    materials: { sharp_metal: 1 },
+    requires: { upgrades: ["crafting_bench"] },
+    effects: {
+      grantItems: { salvage_hatchet: 1 },
+      forageYieldBonus: 0.08,
+      nightMitigation: 0.15,
+      unlockSections: ["inventory"],
+    },
+  },
+  {
     id: "weapon_rack",
     name: "Weapon Slot",
     description: "A proper place for a proper answer.",
-    cost: { scrap: 32, parts: 6, wire: 1 },
+    cost: { scrap: 34, wood: 2, parts: 6, wire: 1 },
     requires: { upgrades: ["crafting_bench"] },
     effects: {
       weaponSlot: true,
@@ -5096,7 +5169,7 @@ const UPGRADES = [
     id: "armor_hooks",
     name: "Armor Slot",
     description: "A wall of hooks for whatever passes as protection now.",
-    cost: { scrap: 32, parts: 6, cloth: 2 },
+    cost: { scrap: 34, wood: 2, parts: 6, cloth: 2 },
     requires: { upgrades: ["crafting_bench"] },
     effects: {
       armorSlot: true,
@@ -5108,7 +5181,7 @@ const UPGRADES = [
     id: "watch_post",
     name: "Watch Post",
     description: "Higher eyes make the nights shorter.",
-    cost: { scrap: 40, parts: 8, wire: 2 },
+    cost: { scrap: 46, wood: 7, parts: 8, wire: 2 },
     requires: { upgrades: ["basic_barricade"] },
     effects: {
       defense: 3,
@@ -5121,7 +5194,7 @@ const UPGRADES = [
     id: "ammo_press",
     name: "Ammo Press",
     description: "No bullets appear on purpose by accident.",
-    cost: { scrap: 36, parts: 10, chemicals: 3 },
+    cost: { scrap: 40, wood: 2, parts: 10, chemicals: 3 },
     requires: { upgrades: ["crafting_bench"] },
     effects: {
       discoverResources: ["ammo"],
@@ -5132,7 +5205,7 @@ const UPGRADES = [
     id: "rain_collector",
     name: "Rain Collector",
     description: "A cleaner mouthful than the old pipes.",
-    cost: { scrap: 24, parts: 5, cloth: 2, wire: 2 },
+    cost: { scrap: 28, wood: 4, parts: 5, cloth: 2, wire: 2 },
     requires: { upgrades: ["shelter_stash"] },
     effects: {
       conditionRegen: 0.01,
@@ -5156,7 +5229,7 @@ const UPGRADES = [
     id: "map_board",
     name: "Map",
     description: "A wall of routes, guesses, and exits that failed.",
-    cost: { scrap: 28, parts: 5, cloth: 2 },
+    cost: { scrap: 32, wood: 3, parts: 5, cloth: 2 },
     requires: { upgrades: ["small_scavenge"] },
     effects: {
       unlockSections: ["map"],
@@ -5167,7 +5240,7 @@ const UPGRADES = [
     id: "survivor_cots",
     name: "Survivor Recruitment",
     description: "A second mattress is a public statement.",
-    cost: { scrap: 30, food: 4, water: 3, cloth: 3 },
+    cost: { scrap: 36, wood: 6, food: 4, water: 3, cloth: 4 },
     requires: { upgrades: ["food_crate"] },
     effects: {
       unlockSections: ["survivors"],
@@ -5179,7 +5252,7 @@ const UPGRADES = [
     id: "smokehouse",
     name: "Smokehouse",
     description: "A shelter that smells like tomorrow.",
-    cost: { scrap: 42, parts: 8, fuel: 4, cloth: 2 },
+    cost: { scrap: 48, wood: 8, parts: 8, fuel: 4, cloth: 2 },
     requires: { upgrades: ["food_crate"] },
     effects: {
       forageYieldBonus: 0.22,
@@ -5190,7 +5263,7 @@ const UPGRADES = [
     id: "trader_beacon",
     name: "Signal Beacon",
     description: "A disciplined tower mark that sharpens the shelter line instead of advertising a market.",
-    cost: { scrap: 34, parts: 8, wire: 3, fuel: 4 },
+    cost: { scrap: 40, wood: 3, parts: 8, wire: 3, fuel: 4 },
     requires: { upgrades: ["radio_rig"] },
     effects: {
       signalGain: 0.18,
@@ -5225,12 +5298,12 @@ const UPGRADES = [
     id: "auto_scavenger",
     name: "Auto Scavenger",
     description: "A dumb rig that can still find bright metal.",
-    cost: { scrap: 60, parts: 18, wire: 4, fuel: 6 },
+    cost: { scrap: 68, wood: 4, parts: 18, wire: 4, fuel: 6 },
     requires: { upgrades: ["survivor_cots", "watch_post"] },
     effects: {
       passive: {
-        scrap: 0.025,
-        parts: 0.01,
+        scrap: 0.02,
+        parts: 0.008,
       },
       salvageYieldBonus: 0.08,
       scoutBonus: 0.04,
@@ -5420,7 +5493,7 @@ const ZONES = [
     hours: 2,
     encounterChance: 0.2,
     enemies: ["walker", "screecher"],
-    loot: { scrap: [5, 9], cloth: [1, 2], water: [0, 1], food: [0, 2], parts: [1, 2], fuel: [0, 1] },
+    loot: { scrap: [5, 9], wood: [2, 4], cloth: [1, 2], water: [0, 1], food: [0, 2], parts: [1, 2], fuel: [0, 1] },
     itemPool: ["pry_bar", "canned_beans"],
     itemChance: 0.16,
   },
@@ -5432,7 +5505,7 @@ const ZONES = [
     hours: 3,
     encounterChance: 0.28,
     enemies: ["walker", "stalker"],
-    loot: { scrap: [7, 12], cloth: [1, 3], water: [1, 2], food: [1, 3], parts: [2, 4], medicine: [0, 1] },
+    loot: { scrap: [7, 12], wood: [2, 5], cloth: [1, 3], water: [1, 2], food: [1, 3], parts: [2, 4], medicine: [0, 1] },
     itemPool: ["patchwork_vest", "bandage_roll"],
     itemChance: 0.2,
   },
@@ -5679,15 +5752,17 @@ const SCAVENGE_SOURCES = [
     id: "rubble",
     label: "Search rubble",
     short: "RU",
-    description: "Broken masonry, split wiring, wet cloth, open pockets.",
-    detail: "Balanced salvage. Cheap, quick, and still the only lane that always pays in scrap.",
-    focus: ["Scrap", "Cloth", "Water"],
-    tags: ["1h", "low noise", "street debris"],
+    description: "Broken masonry, splintered frames, wet cloth, open pockets.",
+    detail: "Balanced salvage with real shelter material in it. Cheap, quick, and no longer quiet if you lean on it too hard.",
+    focus: ["Scrap", "Wood", "Drinkable Water"],
+    tags: ["1h", "rising noise", "street debris"],
     hours: 1,
-    threat: 0.35,
-    noise: 0.4,
+    threat: 0.42,
+    noise: 0.52,
     scrapMod: { min: 0, max: 0 },
-    directResources: {},
+    directResources: {
+      wood: [1, 1],
+    },
     guaranteed: ["common"],
     rolls: [
       { rarity: "uncommon", chance: 0.74 },
@@ -5737,7 +5812,7 @@ const SCAVENGE_SOURCES = [
     short: "PN",
     description: "Cupboards, kitchen sinks, old shelves, and sealed luck.",
     detail: "Reliable food and water lane. Low yield in scrap, high value when hunger starts talking.",
-    focus: ["Food", "Water", "Medicine"],
+    focus: ["Food", "Drinkable Water", "Medicine"],
     tags: ["1h", "quiet", "food lane"],
     hours: 1,
     threat: 0.28,
@@ -5822,7 +5897,7 @@ const SCAVENGE_SOURCES = [
     label: "Crack sealed caches",
     short: "SC",
     description: "Locked service cases, ammo tins, and someone else's emergency plan.",
-    detail: "Late mid-game cache lane. Costs more threat, pays with gear and upper-tier hardware.",
+    detail: "Late mid-game cache lane. Costs more threat and needs a pry bar, but pays with gear and upper-tier hardware.",
     focus: ["Ammo", "Parts", "Gear"],
     tags: ["2h", "high noise", "sealed stock"],
     hours: 2,
@@ -5843,7 +5918,7 @@ const SCAVENGE_SOURCES = [
     ],
     bonusChance: 0.7,
     rarityBias: { rare: 0.03, epic: 0.06, legendary: 0.05 },
-    requires: { upgrades: ["watch_post", "crafting_bench"] },
+    requires: { upgrades: ["watch_post", "crafting_bench"], items: ["pry_bar"] },
     logLabel: "the sealed caches",
     eventChance: 0.58,
   },
@@ -6999,6 +7074,22 @@ function getTimeStamp(state) {
   return `D${state.time.day} ${hourStamp(state.time.hour)}`;
 }
 
+function getShelterUpkeep(state) {
+  const crew = Math.max(0, state.survivors?.total || 0);
+  const mealCost = Math.max(1, 1 + Math.floor(crew / 2));
+  const waterCost = Math.max(1, 1 + Math.ceil(crew / 2));
+
+  return {
+    crew,
+    mealHours: 6,
+    waterHours: 4,
+    mealCost,
+    waterCost,
+    mealHoursLeft: Math.max(0, 6 - state.clocks.hunger),
+    waterHoursLeft: Math.max(0, 4 - state.clocks.thirst),
+  };
+}
+
 function addLog(state, text, category = "general") {
   state.log.unshift({
     stamp: getTimeStamp(state),
@@ -7222,6 +7313,15 @@ function getDerivedState(state) {
   }
   if (equippedArmor?.defense) {
     derived.defense += equippedArmor.defense;
+  }
+  if (hasItem(state, "pry_bar")) {
+    derived.salvageYieldBonus += 0.08;
+    derived.searchPartChance += 0.06;
+  }
+  if (hasItem(state, "salvage_hatchet")) {
+    derived.salvageYieldBonus += 0.04;
+    derived.forageYieldBonus += 0.06;
+    derived.nightMitigation += 0.12;
   }
 
   derived.attack += Math.floor(state.resources.morale / 4);
@@ -7932,25 +8032,71 @@ function applyZoneRewards(state, zoneId, rewards) {
   addLog(state, `You return from ${zone.name} with ${fragments.join(" and ")}.`, "expedition");
 }
 
+function sourceEncounterProfile(sourceId) {
+  switch (sourceId) {
+    case "vehicle_shells":
+      return { zoneId: "abandoned_gas_station", enemies: ["walker", "stalker"], rewards: { resources: { parts: 1 } } };
+    case "dead_pantries":
+      return { zoneId: "burned_apartments", enemies: ["walker"], rewards: { resources: { food: 1 } } };
+    case "clinic_drawers":
+      return { zoneId: "hospital_wing", enemies: ["walker", "screecher"], rewards: { resources: { medicine: 1 } } };
+    case "signal_wrecks":
+      return { zoneId: "radio_tower_perimeter", enemies: ["stalker", "static_touched"], rewards: { resources: { wire: 1 } } };
+    case "sealed_caches":
+      return { zoneId: "radio_tower_perimeter", enemies: ["stalker", "relay_brute"], rewards: { resources: { ammo: 1, parts: 1 } } };
+    case "rubble":
+    default:
+      return { zoneId: "ruined_street", enemies: ["walker", "screecher"], rewards: { resources: { wood: 1 } } };
+  }
+}
+
+function sourceEncounterChance(state, source) {
+  const searchPressure = Math.max(0, state.stats.searches - 2) * 0.022;
+  const shelterPressure = state.shelter.threat * 0.03 + state.shelter.noise * 0.024;
+  const lanePressure = (source.threat || 0.3) * 0.12 + (source.noise || 0.3) * 0.08;
+
+  return clamp(
+    0.015 + searchPressure + shelterPressure + lanePressure,
+    0.05,
+    source.id === "rubble" ? 0.24 : 0.38,
+  );
+}
+
 function maybeUseFood(state) {
-  if (state.resources.food > 0) {
-    state.resources.food -= 1;
+  const upkeep = getShelterUpkeep(state);
+  const available = state.resources.food;
+  const spent = Math.min(available, upkeep.mealCost);
+
+  if (spent > 0) {
+    state.resources.food -= spent;
+  }
+
+  if (spent >= upkeep.mealCost) {
     state.condition = clamp(state.condition + 1, 0, getDerivedState(state).maxCondition);
   } else {
-    state.condition = clamp(state.condition - 8, 0, getDerivedState(state).maxCondition);
-    state.resources.morale = Math.max(0, state.resources.morale - 2);
-    addLog(state, "Hunger turns sharp. The room feels smaller.");
+    const shortage = upkeep.mealCost - spent;
+    state.condition = clamp(state.condition - (8 + shortage * 2), 0, getDerivedState(state).maxCondition);
+    state.resources.morale = Math.max(0, state.resources.morale - (2 + shortage));
+    addLog(state, `The shelter needs ${upkeep.mealCost} food and only finds ${spent}. Hunger turns sharp fast.`, "night");
   }
 }
 
 function maybeUseWater(state) {
-  if (state.resources.water > 0) {
-    state.resources.water -= 1;
+  const upkeep = getShelterUpkeep(state);
+  const available = state.resources.water;
+  const spent = Math.min(available, upkeep.waterCost);
+
+  if (spent > 0) {
+    state.resources.water -= spent;
+  }
+
+  if (spent >= upkeep.waterCost) {
     state.condition = clamp(state.condition, 0, getDerivedState(state).maxCondition);
   } else {
-    state.condition = clamp(state.condition - 6, 0, getDerivedState(state).maxCondition);
-    state.resources.morale = Math.max(0, state.resources.morale - 1);
-    addLog(state, "Your mouth dries to paper. The static sounds closer.");
+    const shortage = upkeep.waterCost - spent;
+    state.condition = clamp(state.condition - (6 + shortage * 2), 0, getDerivedState(state).maxCondition);
+    state.resources.morale = Math.max(0, state.resources.morale - (1 + shortage));
+    addLog(state, `The shelter needs ${upkeep.waterCost} drinkable water and comes up short. The room dries out with you in it.`, "night");
   }
 }
 
@@ -8108,8 +8254,8 @@ function runScavengeSource(state, sourceId = "rubble") {
   advanceTime(state, source.hours || 1);
   state.stats.searches += 1;
   state.stats.scavengeSources[sourceId] = (state.stats.scavengeSources[sourceId] || 0) + 1;
-  state.shelter.threat = clamp(state.shelter.threat + (source.threat || 0.35) + 0.12, 0, 12);
-  state.shelter.noise = clamp(state.shelter.noise + (source.noise || 0.4) + 0.08 - traitBonuses.scavengeNoiseReduction, 0, 10);
+  state.shelter.threat = clamp(state.shelter.threat + (source.threat || 0.35) + 0.16, 0, 12);
+  state.shelter.noise = clamp(state.shelter.noise + (source.noise || 0.4) + 0.12 - traitBonuses.scavengeNoiseReduction, 0, 10);
 
   const scrapMin = Math.max(0, derived.searchScrapMin + (source.scrapMod?.min || 0));
   const scrapMax = Math.max(scrapMin, derived.searchScrapMax + (source.scrapMod?.max || 0));
@@ -8117,6 +8263,12 @@ function runScavengeSource(state, sourceId = "rubble") {
   const lootBundle = createLootBundle();
   addResource(state, "scrap", directScrap);
   applySourceDirectResources(lootBundle, source);
+  if (hasItem(state, "salvage_hatchet") && ["rubble", "dead_pantries"].includes(source.id)) {
+    addDirectResourceFind(lootBundle, "wood", 1);
+  }
+  if (hasItem(state, "pry_bar") && ["vehicle_shells", "sealed_caches"].includes(source.id)) {
+    addDirectResourceFind(lootBundle, "parts", 1);
+  }
   rollSourceRarities(source, state, derived, lootBundle);
 
   for (let rollIndex = 0; rollIndex < derived.searchBonusRolls; rollIndex += 1) {
@@ -8137,7 +8289,10 @@ function runScavengeSource(state, sourceId = "rubble") {
     ? ` ${formatLootFinds(lootBundle.finds)}.`
     : "";
   addLog(state, `You work ${source.logLabel}. scrap +${directScrap}.${lootSummary}`, "loot");
-  if (chance(source.eventChance || 0.42)) {
+  if (!state.combat && chance(sourceEncounterChance(state, source))) {
+    const profile = sourceEncounterProfile(source.id);
+    createCombat(state, pickOne(profile.enemies), profile.zoneId, profile.rewards);
+  } else if (chance(source.eventChance || 0.42)) {
     runEvent(state, "search");
   }
 
@@ -8604,18 +8759,19 @@ function eatRation(state) {
 }
 
 function patchBarricade(state) {
-  if (state.resources.scrap < 8) {
+  if (state.resources.scrap < 6 || state.resources.wood < 2) {
     return false;
   }
 
-  state.resources.scrap -= 8;
-  state.shelter.threat = clamp(state.shelter.threat - 1.4, 0, 12);
+  state.resources.scrap -= 6;
+  state.resources.wood -= 2;
+  state.shelter.threat = clamp(state.shelter.threat - (hasItem(state, "salvage_hatchet") ? 1.9 : 1.5), 0, 12);
   state.shelter.warmth = clamp(state.shelter.warmth + 0.6, 0, 10);
   state.shelter.noise = clamp(state.shelter.noise + 0.18, 0, 10);
   if (hasUpgrade(state, "basic_barricade")) {
-    setStructureDamage(state, "basic_barricade", getStructureDamage(state, "basic_barricade") - 1);
+    setStructureDamage(state, "basic_barricade", getStructureDamage(state, "basic_barricade") - (hasItem(state, "salvage_hatchet") ? 2 : 1));
   }
-  addLog(state, "You patch weak seams with metal and stubbornness.", "build");
+  addLog(state, `You patch weak seams with wood, scrap, and stubbornness${hasItem(state, "salvage_hatchet") ? ", using the hatchet to bite the joins clean" : ""}.`, "build");
   return true;
 }
 
@@ -8642,11 +8798,11 @@ function recruitSurvivor(state) {
   if (state.survivors.total >= derived.survivorCap) {
     return false;
   }
-  if (!canAfford(state, { scrap: 18, food: 3 })) {
+  if (!canAfford(state, { scrap: 22, wood: 1, food: 4, water: 2 })) {
     return false;
   }
 
-  spendResources(state, { scrap: 18, food: 3 });
+  spendResources(state, { scrap: 22, wood: 1, food: 4, water: 2 });
   syncSurvivorRoster(state);
   const index = state.survivors.roster.length;
   const traitId = SURVIVOR_TRAIT_IDS[randInt(0, SURVIVOR_TRAIT_IDS.length - 1)];
@@ -9162,54 +9318,53 @@ function renderCondition(state, derived) {
   const percent = Math.round((state.condition / derived.maxCondition) * 100);
   const label = conditionLabel(percent);
   const readout = byId("condition-readout");
-  readout.textContent = `Condition ${state.condition}/${derived.maxCondition} · ${label}`;
+  readout.textContent = `Condition ${state.condition}/${derived.maxCondition} - ${label}`;
   readout.title = "Condition is your overall survival state. If it collapses, the run ends. Food, water, warmth, combat, and bad nights all push it.";
   byId("condition-bar").innerHTML = `<div class="meter-fill ${meterClass(percent)}" style="width:${percent}%"></div>`;
 }
 
 function renderSummaryStrip(state, derived) {
+  const upkeep = getShelterUpkeep(state);
   const pills = [
     {
-      label: "Warmth",
-      value: state.shelter.warmth.toFixed(1),
-      note: state.shelter.warmth >= 4 ? "higher is safer at night" : "cold shelter, fix soon",
+      label: "Heat line",
+      value: `${state.shelter.warmth.toFixed(1)}/10`,
+      note: state.shelter.warmth >= 4 ? "night buffer is holding" : "cold shelter, fix soon",
       tone: state.shelter.warmth >= 4 ? "good" : state.shelter.warmth >= 2 ? "warn" : "danger",
-      tip: "Warmth slows collapse at night. Low warmth makes every dark hour worse.",
+      tip: "Heat line tracks how much warmth the shelter is holding. Low warmth makes every night and cold spell hit harder.",
     },
     {
-      label: "Threat",
-      value: state.shelter.threat.toFixed(1),
-      note: state.shelter.threat < 3 ? "keep this low" : "outside pressure building",
+      label: "Outside threat",
+      value: `${state.shelter.threat.toFixed(1)}/12`,
+      note: state.shelter.threat < 3 ? "outside pressure is light" : "outside pressure building",
       tone: state.shelter.threat < 3 ? "good" : state.shelter.threat < 6 ? "warn" : "danger",
       tip: "Threat is the outside pressure around the shelter. High threat makes infected, raids, and breaches more likely.",
     },
     {
-      label: "Noise",
-      value: state.shelter.noise.toFixed(1),
-      note: state.shelter.noise < 3 ? "quiet line" : "loud shelters draw heat",
+      label: "Noise trail",
+      value: `${state.shelter.noise.toFixed(1)}/10`,
+      note: state.shelter.noise < 3 ? "quiet shelter line" : "loud shelters draw heat",
       tone: state.shelter.noise < 3 ? "good" : state.shelter.noise < 6 ? "warn" : "danger",
       tip: "Noise is how loud your shelter and actions are. Loud runs and loud nights attract trouble.",
     },
   ];
 
   if (state.discoveredResources.includes("food")) {
-    const hoursLeft = Math.max(0, 6 - state.clocks.hunger);
     pills.push({
-      label: "Next meal",
-      value: `${hoursLeft}h`,
-      note: hoursLeft <= 1 ? "eat soon" : "meal buffer left",
-      tone: hoursLeft <= 1 ? "danger" : hoursLeft <= 2 ? "warn" : "neutral",
-      tip: "When this reaches zero, the shelter consumes food automatically. If none is available, condition drops hard.",
+      label: "Meal due",
+      value: `${upkeep.mealHoursLeft}h / ${upkeep.mealCost}`,
+      note: upkeep.mealHoursLeft <= 1 ? "stores need food now" : "next shelter meal",
+      tone: upkeep.mealHoursLeft <= 1 ? "danger" : upkeep.mealHoursLeft <= 2 ? "warn" : "neutral",
+      tip: `Every ${upkeep.mealHours}h the shelter consumes ${upkeep.mealCost} food. More crew means a larger meal bill.`,
     });
   }
   if (state.discoveredResources.includes("water")) {
-    const hoursLeft = Math.max(0, 4 - state.clocks.thirst);
     pills.push({
       label: "Water due",
-      value: `${hoursLeft}h`,
-      note: hoursLeft <= 1 ? "drink soon" : "water buffer left",
-      tone: hoursLeft <= 1 ? "danger" : hoursLeft <= 2 ? "warn" : "neutral",
-      tip: "When this hits zero, the shelter consumes water automatically. No water means faster condition loss.",
+      value: `${upkeep.waterHoursLeft}h / ${upkeep.waterCost}`,
+      note: upkeep.waterHoursLeft <= 1 ? "refill drinkable water" : "next shelter drink",
+      tone: upkeep.waterHoursLeft <= 1 ? "danger" : upkeep.waterHoursLeft <= 2 ? "warn" : "neutral",
+      tip: `Every ${upkeep.waterHours}h the shelter consumes ${upkeep.waterCost} drinkable water. Crew makes this rise fast.`,
     });
   }
   if (state.unlockedSections.includes("survivors")) {
@@ -9217,7 +9372,9 @@ function renderSummaryStrip(state, derived) {
     pills.push({
       label: "Crew",
       value: `${state.survivors.total}/${derived.survivorCap}`,
-      note: freeBeds > 0 ? `${freeBeds} berth open` : "full shelter line",
+      note: state.survivors.total > 0
+        ? `${upkeep.mealCost} food + ${upkeep.waterCost} water per cycle`
+        : freeBeds > 0 ? `${freeBeds} berth open` : "full shelter line",
       tone: freeBeds > 0 ? "neutral" : "warn",
       tip: "Crew capacity controls how many survivors can stay. More hands help, but they also increase upkeep pressure.",
     });
@@ -9248,13 +9405,13 @@ function renderSummaryStrip(state, derived) {
 function renderSubtitle(state) {
   let subtitle = "The streets went quiet. The wires did not.";
   if (state.unlockedSections.includes("upgrades")) {
-    subtitle = "Rubble stops being debris the second you learn how to sort it.";
+    subtitle = "Rubble stops being debris once you can turn it into stores, timber, and heat.";
   }
   if (state.unlockedSections.includes("map")) {
-    subtitle = "The shelter holds. The city starts offering routes and hard choices.";
+    subtitle = "One room becomes a shelter. A shelter becomes a base the second routes start feeding it.";
   }
   if (state.unlockedSections.includes("radio")) {
-    subtitle = "The static stops sounding random once it realizes you are listening.";
+    subtitle = "The base starts holding long enough for the radio to become another survival problem.";
   }
   if (state.flags.worldReveal) {
     subtitle = "The outbreak had a transmission layer. You are standing inside its residue.";
@@ -9444,22 +9601,48 @@ function readyUpgradeCandidate(state, upgrades) {
 
 function currentDirective(state, upgrades) {
   const readyUpgrade = readyUpgradeCandidate(state, upgrades);
+  const upkeep = getShelterUpkeep(state);
+  const lowFood = state.unlockedSections.includes("shelter")
+    && state.discoveredResources.includes("food")
+    && state.resources.food < upkeep.mealCost;
+  const lowWater = state.unlockedSections.includes("shelter")
+    && state.discoveredResources.includes("water")
+    && state.resources.water < upkeep.waterCost;
+
   if (state.combat) {
     return {
       title: "Combat contact",
       detail: "Resolve the current encounter before you push any other operation.",
     };
   }
+  if (lowFood) {
+    return {
+      title: "Secure food stores",
+      detail: `The shelter needs ${upkeep.mealCost} food every ${upkeep.mealHours}h. Do not build past your pantry.`,
+    };
+  }
+  if (lowWater) {
+    return {
+      title: "Refill drinkable water",
+      detail: `The shelter needs ${upkeep.waterCost} drinkable water every ${upkeep.waterHours}h. Dehydration now hits the whole room.`,
+    };
+  }
   if (!state.flags.burnUnlocked) {
     return {
       title: "Stabilize the room",
-      detail: `${Math.max(0, 3 - state.stats.searches)} more rubble searches unlock warmth control.`,
+      detail: `${Math.max(0, 3 - state.stats.searches)} more rubble searches unlock warmth control, but every run also raises noise.`,
     };
   }
   if (readyUpgrade) {
     return {
       title: `Build ${readyUpgrade.name}`,
-      detail: "A funded upgrade is waiting. Converting salvage into systems is the fastest way forward.",
+      detail: "A funded project is waiting. Converting salvage into shelter systems is the fastest way forward.",
+    };
+  }
+  if (state.unlockedSections.includes("upgrades") && !state.upgrades.includes("basic_barricade")) {
+    return {
+      title: "Reinforce the perimeter",
+      detail: "Barricade work is the first real line between you and a bad night.",
     };
   }
   if (state.expedition.selectedZone) {
@@ -9474,7 +9657,7 @@ function currentDirective(state, upgrades) {
   if (state.unlockedSections.includes("radio") && state.resources.fuel > 0 && state.resources.parts > 0) {
     return {
       title: "Sweep the band",
-      detail: "The receiver has enough fuel and parts. Push signal progress while the line is viable.",
+      detail: "The receiver has fuel and parts, but signal work is secondary to holding the shelter together.",
     };
   }
   if (state.unlockedSections.includes("map") && !state.expedition.selectedZone) {
@@ -9484,8 +9667,8 @@ function currentDirective(state, upgrades) {
     };
   }
   return {
-    title: "Push the scavenging lanes",
-    detail: "Keep the salvage loop moving until the next system or route unlocks.",
+    title: "Loot and hold",
+    detail: "Feed the shelter, bank materials, and only then push for the next system or route.",
   };
 }
 
@@ -9532,8 +9715,8 @@ function getTutorialStep(state) {
     return {
       id: "search",
       title: "Start with rubble",
-      summary: "Search rubble first. Scrap is the root resource for everything that follows.",
-      chips: ["get scrap", "unlock warmth"],
+      summary: "Search rubble first. Early runs are how you pull scrap, wood, and the first real survival materials out of the street.",
+      chips: ["get scrap", "find wood", "unlock warmth"],
       tabs: ["overview"],
       action: {
         action: "search-rubble",
@@ -9548,7 +9731,7 @@ function getTutorialStep(state) {
     return {
       id: "warmth",
       title: "Unlock warmth control",
-      summary: "A few more rubble runs unlock the burn-for-warmth action. That is your first survival stabilizer.",
+      summary: "A few more rubble runs unlock the burn-for-warmth action. That is your first shelter stabilizer, but it is also loud.",
       chips: [`${Math.max(0, 3 - state.stats.searches)} searches left`, "survive today"],
       tabs: ["overview"],
       action: {
@@ -9565,8 +9748,8 @@ function getTutorialStep(state) {
     return {
       id: "stash",
       title: "Build Shelter Stash first",
-      summary: "The stash is the first real pivot from raw panic into shelter management.",
-      chips: ["opens shelter loop", "better survival flow"],
+      summary: "The stash is the first real pivot from raw panic into shelter management. It means you are building a place, not just hiding in one.",
+      chips: ["opens shelter loop", "wood matters now"],
       tabs: ["overview", "craft"],
       action: state.ui.activeTab === "craft" && stashReady
         ? {
@@ -9591,8 +9774,8 @@ function getTutorialStep(state) {
     return {
       id: "food_loop",
       title: "Secure food next",
-      summary: "After shelter, hunger and water become the next failure point. Build the food loop before you over-expand.",
-      chips: ["food > comfort", "stabilize before routes"],
+      summary: "After shelter, food and drinkable water become the next failure point. Secure stores before you over-expand.",
+      chips: ["food > comfort", "water is upkeep", "stabilize before routes"],
       tabs: ["overview", "craft"],
       action: state.ui.activeTab === "craft" && foodReady
         ? {
@@ -9633,15 +9816,15 @@ function getTutorialStep(state) {
     return {
       id: "crew",
       title: "Recruit the first survivor",
-      summary: "Crew matters once the shelter can feed them. One survivor is enough to start learning roles.",
+      summary: "Crew matters once the shelter can feed and water them. One survivor is enough to start learning roles without wrecking your stores.",
       chips: ["roles unlock slowly", "do not overstaff early"],
       tabs: ["overview", "survivors"],
       action: {
         action: state.ui.activeTab === "survivors" ? "recruit" : "set-tab",
         label: state.ui.activeTab === "survivors" ? "Recruit survivor" : "Open Crew",
-        meta: state.ui.activeTab === "survivors" ? "18 scrap / 3 food" : "crew tab",
+        meta: state.ui.activeTab === "survivors" ? "22 scrap / 1 wood / 4 food / 2 water" : "crew tab",
         data: state.ui.activeTab === "survivors" ? {} : { tab: "survivors" },
-        disabled: state.ui.activeTab === "survivors" && !canAfford(state, { scrap: 18, food: 3 }),
+        disabled: state.ui.activeTab === "survivors" && !canAfford(state, { scrap: 22, wood: 1, food: 4, water: 2 }),
         variant: "primary compact",
       },
     };
@@ -9718,6 +9901,7 @@ function renderTutorialBanner(state) {
 
 function renderCommandDesk(state, derived, availableSources, availableUpgrades) {
   const forecast = getNightForecast(state);
+  const upkeep = getShelterUpkeep(state);
   const readyUpgrade = readyUpgradeCandidate(state, availableUpgrades);
   const directive = currentDirective(state, availableUpgrades);
   const preview = state.expedition.selectedZone
@@ -9786,13 +9970,13 @@ function renderCommandDesk(state, derived, availableSources, availableUpgrades) 
             : "Routes surface later. Keep leaning on the city."}</p>
       </div>
       <div class="command-card">
-        <span class="note-label">Signal + growth</span>
-        <h4>${state.unlockedSections.includes("radio") ? `Signal ${state.story.radioProgress}` : "Receiver dark"}</h4>
+        <span class="note-label">Shelter + growth</span>
+        <h4>${state.unlockedSections.includes("radio") ? `Signal ${state.story.radioProgress} / upkeep ${upkeep.mealCost}:${upkeep.waterCost}` : `Upkeep ${upkeep.mealCost}:${upkeep.waterCost}`}</h4>
         <div class="command-stat-row">
           <div><span>Lanes</span><strong>${availableSources.length}</strong></div>
           <div><span>Builds</span><strong>${availableUpgrades.length}</strong></div>
           <div><span>Crew</span><strong>${state.survivors.total}/${derived.survivorCap}</strong></div>
-          <div><span>Morale</span><strong>${state.resources.morale}</strong></div>
+          <div><span>Stores</span><strong>${state.resources.food}/${state.resources.water}</strong></div>
         </div>
       </div>
     </div>
@@ -9816,6 +10000,8 @@ function renderInventoryItemCard(itemId, amount) {
       meta: item.type,
       data: { item: itemId },
     });
+  } else if (item.type === "tool") {
+    actionMarkup = `<div class="chip-row">${tagList(["tool", "passive utility"])}</div>`;
   }
 
   return `
@@ -11210,6 +11396,84 @@ function renderTabStage(state, derived, bodyMarkup, isMobile = false) {
 
 
 // render/tabs-primary.js
+const BUILD_UPGRADE_IDS = new Set([
+  "shelter_stash",
+  "campfire",
+  "basic_barricade",
+  "food_crate",
+  "crafting_bench",
+  "weapon_rack",
+  "armor_hooks",
+  "watch_post",
+  "ammo_press",
+  "rain_collector",
+  "radio_rig",
+  "map_board",
+  "survivor_cots",
+  "smokehouse",
+  "trader_beacon",
+  "scout_bike",
+  "signal_decoder",
+  "auto_scavenger",
+  "faraday_mesh",
+  "relay_tap",
+  "bunker_drill",
+]);
+
+function upgradeDiscipline(upgrade) {
+  if (BUILD_UPGRADE_IDS.has(upgrade.id)) {
+    return "build";
+  }
+  return "craft";
+}
+
+function upgradeDisciplineLabel(upgrade) {
+  return upgradeDiscipline(upgrade) === "build" ? "base build" : "fieldcraft";
+}
+
+function getUpgradeMissingNotes(state, upgrade) {
+  const missing = [];
+
+  Object.entries(upgrade.cost || {}).forEach(([resourceId, amount]) => {
+    const have = state.resources[resourceId] || 0;
+    if (have < amount) {
+      missing.push(`${resourceLabel(resourceId)} ${have}/${amount}`);
+    }
+  });
+
+  Object.entries(upgrade.materials || {}).forEach(([itemId, amount]) => {
+    const have = state.inventory[itemId] || 0;
+    if (have < amount) {
+      missing.push(`${itemLabel(itemId)} ${have}/${amount}`);
+    }
+  });
+
+  return missing;
+}
+
+function renderUpgradeQueue(state, title, ready, blocked, emptyText) {
+  return `
+    <div class="queue-column">
+      <div class="surface-head">
+        <h4>${title}</h4>
+        <span class="tag">${ready.length + blocked.length}</span>
+      </div>
+      ${ready.length
+        ? `<div class="detail-list">${ready.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>`
+        : ""}
+      ${blocked.length
+        ? `
+          <div class="queue-stack">
+            <span class="note-label">Need salvage</span>
+            <div class="detail-list">${blocked.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>
+          </div>
+        `
+        : ""}
+      ${!ready.length && !blocked.length ? `<p class="empty-state">${emptyText}</p>` : ""}
+    </div>
+  `;
+}
+
 function renderQuickGoals(state) {
   const sources = getAvailableScavengeSources(state);
   const hasVehicleLane = sources.some((source) => source.id === "vehicle_shells");
@@ -11218,7 +11482,7 @@ function renderQuickGoals(state) {
     { label: "Unlock warmth", value: state.flags.burnUnlocked ? "open" : `${Math.max(0, 3 - state.stats.searches)} searches left` },
     { label: "Open second lane", value: hasVehicleLane ? "open" : `${Math.max(0, 4 - state.stats.searches)} searches left` },
     { label: "Food lane", value: hasFoodLane ? "open" : state.upgrades.includes("food_search") ? "ready on board" : "build Simple Food Search" },
-    { label: "Find cloth", value: state.resources.cloth > 0 ? `${state.resources.cloth} in stash` : "still looking" },
+    { label: "Bank wood", value: state.resources.wood > 0 ? `${state.resources.wood} in stash` : "still looking" },
     { label: "Find sharp metal", value: hasItem(state, "sharp_metal") ? "recovered" : "rare salvage" },
   ];
 
@@ -11252,7 +11516,7 @@ function renderOverviewActions(state) {
     utilityButtons.push(actionButton({
       action: "forage-food",
       label: "Fallback food search",
-      meta: "plain, safe, and still useful when pantries go dry",
+      meta: "small gain, still noisy, useful when stores collapse",
       variant: "compact utility-trigger",
     }));
   }
@@ -11297,7 +11561,11 @@ function renderOverviewActions(state) {
 function renderUpgradeCard(state, upgrade) {
   const built = state.upgrades.includes(upgrade.id);
   const ready = canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials);
+  const discipline = upgradeDisciplineLabel(upgrade);
   const meta = [];
+  const missing = getUpgradeMissingNotes(state, upgrade);
+
+  meta.push(discipline);
   if (Object.keys(upgrade.cost || {}).length) {
     meta.push(formatCost(upgrade.cost));
   }
@@ -11309,14 +11577,15 @@ function renderUpgradeCard(state, upgrade) {
     <div class="list-block upgrade-card ${built ? "is-built-upgrade" : ready ? "is-ready-upgrade" : "is-blocked-upgrade"}">
       <div class="surface-head">
         <h4>${upgrade.name}</h4>
-        <span class="tag">${built ? "built" : ready ? "ready" : "scavenge"}</span>
+        <span class="tag">${built ? "built" : ready ? "ready" : "blocked"}</span>
       </div>
       <p class="note">${upgrade.description}</p>
       ${meta.length ? `<div class="chip-row">${tagList(meta)}</div>` : ""}
+      ${!built && missing.length ? `<div class="chip-row">${tagList(missing)}</div>` : ""}
       ${built ? "" : actionButton({
         action: "buy-upgrade",
         label: `${upgrade.verb || "Build"} ${upgrade.name}`,
-        meta: ready ? "Permanent unlock" : "Need more salvage",
+        meta: ready ? "Permanent unlock" : "Need salvage or tools",
         disabled: !ready,
         data: { upgrade: upgrade.id },
       })}
@@ -11415,33 +11684,44 @@ function renderOverviewTab(state, derived, _isMobile = false) {
 function renderCraftTab(state, isMobile = false) {
   const visibleUpgrades = getVisibleUpgrades(state);
   const available = visibleUpgrades.filter((upgrade) => !state.upgrades.includes(upgrade.id));
-  const ready = available.filter((upgrade) => canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials));
-  const blocked = available.filter((upgrade) => !ready.includes(upgrade));
+  const buildUpgrades = available.filter((upgrade) => upgradeDiscipline(upgrade) === "build");
+  const craftUpgrades = available.filter((upgrade) => upgradeDiscipline(upgrade) === "craft");
+  const readyBuilds = buildUpgrades.filter((upgrade) => canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials));
+  const blockedBuilds = buildUpgrades.filter((upgrade) => !readyBuilds.includes(upgrade));
+  const readyCrafts = craftUpgrades.filter((upgrade) => canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials));
+  const blockedCrafts = craftUpgrades.filter((upgrade) => !readyCrafts.includes(upgrade));
   const built = state.upgrades
     .map((upgradeId) => visibleUpgrades.find((upgrade) => upgrade.id === upgradeId))
     .filter(Boolean);
+  const builtBuilds = built.filter((upgrade) => upgradeDiscipline(upgrade) === "build");
+  const builtCrafts = built.filter((upgrade) => upgradeDiscipline(upgrade) === "craft");
 
   if (isMobile) {
     return `
       <div class="tab-mobile-flow tab-mobile-flow-craft">
         ${surfaceCard({
-          title: "Ready now",
-          meta: `${ready.length} ready`,
-          body: ready.length
-            ? `<div class="detail-list">${ready.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>`
-            : `<p class="empty-state">Nothing is funded yet. Push scavenging first.</p>`,
+          title: "Base builds",
+          meta: `${readyBuilds.length} ready / ${blockedBuilds.length} blocked`,
+          body: `
+            <details class="mobile-accordion" open>
+              <summary>Open build queue</summary>
+              <div class="mobile-accordion-body">
+                ${renderUpgradeQueue(state, "Shelter works", readyBuilds, blockedBuilds, "No base structures are open yet.")}
+              </div>
+            </details>
+          `,
         })}
         ${surfaceCard({
-          title: "Need salvage",
-          meta: `${blocked.length} queued`,
-          body: blocked.length
-            ? `
-              <details class="mobile-accordion" open>
-                <summary>Open blocked builds</summary>
-                <div class="detail-list">${blocked.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>
-              </details>
-            `
-            : `<p class="empty-state">No blocked builds are waiting.</p>`,
+          title: "Fieldcraft",
+          meta: `${readyCrafts.length} ready / ${blockedCrafts.length} blocked`,
+          body: `
+            <details class="mobile-accordion" open>
+              <summary>Open fieldcraft queue</summary>
+              <div class="mobile-accordion-body">
+                ${renderUpgradeQueue(state, "Tools and fieldwork", readyCrafts, blockedCrafts, "No fieldcraft jobs are open yet.")}
+              </div>
+            </details>
+          `,
         })}
         ${surfaceCard({
           title: "Systems online",
@@ -11456,7 +11736,7 @@ function renderCraftTab(state, isMobile = false) {
                       <h4>${upgrade.name}</h4>
                       <span class="tag">live</span>
                     </div>
-                    <div class="chip-row">${tagList([upgrade.verb || "build", "installed"])}</div>
+                    <div class="chip-row">${tagList([upgradeDisciplineLabel(upgrade), "installed"])}</div>
                   </div>
                 `).join("")}</div>
               </details>
@@ -11470,39 +11750,14 @@ function renderCraftTab(state, isMobile = false) {
   return `
     <div class="tab-grid">
       ${surfaceCard({
-        title: "Build board",
-        meta: `${ready.length} ready / ${blocked.length} blocked`,
+        title: "Build + craft board",
+        meta: `${available.length} open`,
         className: "span-8",
         body: available.length
           ? `
-            <div class="upgrade-card-grid">
-              <div class="list-block compact-block">
-                <div class="surface-head">
-                  <h4>Ready now</h4>
-                  <span class="tag">${ready.length}</span>
-                </div>
-                ${ready.length
-                  ? `<div class="detail-list">${ready.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>`
-                  : `<p class="empty-state">Nothing is funded yet.</p>`}
-              </div>
-              <div class="list-block compact-block">
-                <div class="surface-head">
-                  <h4>Need salvage</h4>
-                  <span class="tag">${blocked.length}</span>
-                </div>
-                ${blocked.length
-                  ? `<div class="detail-list">${blocked.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>`
-                  : `<p class="empty-state">No blocked builds waiting.</p>`}
-              </div>
-              <div class="list-block compact-block">
-                <div class="surface-head">
-                  <h4>Systems online</h4>
-                  <span class="tag">${built.length}</span>
-                </div>
-                ${built.length
-                  ? `<div class="chip-row">${tagList(built.map((upgrade) => upgrade.name))}</div>`
-                  : `<p class="empty-state">Still living hand-to-mouth.</p>`}
-              </div>
+            <div class="queue-board">
+              ${renderUpgradeQueue(state, "Base builds", readyBuilds, blockedBuilds, "No base structures are open yet.")}
+              ${renderUpgradeQueue(state, "Fieldcraft", readyCrafts, blockedCrafts, "No fieldcraft jobs are open yet.")}
             </div>
           `
           : `<p class="empty-state">No fresh plans yet. Search deeper.</p>`,
@@ -11512,15 +11767,28 @@ function renderCraftTab(state, isMobile = false) {
         meta: `${built.length} total`,
         className: "span-4",
         body: built.length
-          ? `<div class="detail-list">${built.map((upgrade) => `
-            <div class="list-block">
-              <div class="surface-head">
-                <h4>${upgrade.name}</h4>
-                <span class="tag">stable</span>
+          ? `
+            <div class="detail-list">
+              <div class="list-block compact-block">
+                <div class="surface-head">
+                  <h4>Base builds</h4>
+                  <span class="tag">${builtBuilds.length}</span>
+                </div>
+                ${builtBuilds.length
+                  ? `<div class="chip-row">${tagList(builtBuilds.map((upgrade) => upgrade.name))}</div>`
+                  : `<p class="empty-state">No base systems live.</p>`}
               </div>
-              <p class="note">${upgrade.description}</p>
+              <div class="list-block compact-block">
+                <div class="surface-head">
+                  <h4>Fieldcraft</h4>
+                  <span class="tag">${builtCrafts.length}</span>
+                </div>
+                ${builtCrafts.length
+                  ? `<div class="chip-row">${tagList(builtCrafts.map((upgrade) => upgrade.name))}</div>`
+                  : `<p class="empty-state">No crafted tools online.</p>`}
+              </div>
             </div>
-          `).join("")}</div>`
+          `
           : `<p class="empty-state">You still live hand-to-mouth.</p>`,
       })}
       ${surfaceCard({
@@ -11759,24 +12027,25 @@ function renderExpeditionPlanner(state) {
 }
 
 function renderShelterTab(state, derived, isMobile = false) {
+  const upkeep = getShelterUpkeep(state);
   const actions = [
     actionButton({
       action: "eat-ration",
       label: "Eat 1 food",
-      meta: "Push hunger back and stabilize condition.",
+      meta: "Reset your hunger clock and steady yourself.",
       disabled: state.resources.food < 1,
     }),
     actionButton({
       action: "drink-water",
-      label: "Drink 1 water",
+      label: "Drink 1 drinkable water",
       meta: "Reset thirst and steady yourself.",
       disabled: state.resources.water < 1,
     }),
     actionButton({
       action: "patch-barricade",
-      label: "Patch barricade",
-      meta: "Spend 8 scrap to steady the perimeter.",
-      disabled: state.resources.scrap < 8,
+      label: "Patch barricade line",
+      meta: "6 scrap / 2 wood / steadier fence",
+      disabled: state.resources.scrap < 6 || state.resources.wood < 2,
     }),
   ];
 
@@ -11825,7 +12094,27 @@ function renderShelterTab(state, derived, isMobile = false) {
             <div class="fact"><span>Morale</span><strong>${state.resources.morale}</strong></div>
             <div class="fact"><span>Food</span><strong>${state.resources.food}</strong></div>
             <div class="fact"><span>Water</span><strong>${state.resources.water}</strong></div>
+            <div class="fact"><span>Wood</span><strong>${state.resources.wood}</strong></div>
           </div>
+        `,
+      })}
+      ${surfaceCard({
+        title: "Shelter flow",
+        meta: `${upkeep.crew} crew / live upkeep`,
+        className: "span-4",
+        body: `
+          <div class="fact-grid">
+            <div class="fact"><span>Meal cycle</span><strong>${upkeep.mealCost} / ${upkeep.mealHours}h</strong></div>
+            <div class="fact"><span>Water cycle</span><strong>${upkeep.waterCost} / ${upkeep.waterHours}h</strong></div>
+            <div class="fact"><span>Meal due</span><strong>${upkeep.mealHoursLeft}h</strong></div>
+            <div class="fact"><span>Water due</span><strong>${upkeep.waterHoursLeft}h</strong></div>
+            <div class="fact"><span>Crew</span><strong>${upkeep.crew}</strong></div>
+            <div class="fact"><span>Beds</span><strong>${derived.survivorCap}</strong></div>
+          </div>
+          <div class="chip-row">${tagList([
+            `${upkeep.mealCost} food every ${upkeep.mealHours}h`,
+            `${upkeep.waterCost} water every ${upkeep.waterHours}h`,
+          ])}</div>
         `,
       })}
       ${surfaceCard({
@@ -11836,7 +12125,7 @@ function renderShelterTab(state, derived, isMobile = false) {
       })}
       ${surfaceCard({
         title: "Survival actions",
-        meta: "keep the room alive",
+        meta: "manual control",
         className: "span-4",
         body: `<div class="action-stack">${actions.join("")}</div>`,
       })}
@@ -11866,7 +12155,7 @@ function renderShelterTab(state, derived, isMobile = false) {
       ${surfaceCard({
         title: "Support edges",
         meta: activeEdges.length ? `${activeEdges.length} active` : "manual only",
-        className: "span-8",
+        className: "span-4",
         body: `
           ${activeEdges.length ? `<div class="chip-row">${tagList(activeEdges)}</div>` : `<p class="empty-state">Most gains still come from decisions, not automation.</p>`}
           ${passive.length ? `<div class="chip-row">${tagList(passive)}</div>` : ""}
@@ -11879,7 +12168,7 @@ function renderShelterTab(state, derived, isMobile = false) {
         body: `
           <div class="detail-list">
             <div class="list-block compact-block">
-              <p class="note">Warmth falls. Threat rises. Noise paints a target on the fence.</p>
+              <p class="note">Warmth falls. Threat rises. Noise paints a target on the fence. Crew now eats and drinks on a timed cycle.</p>
             </div>
             <div class="list-block compact-block">
               <p class="note">${mapGuidance}</p>
@@ -11982,6 +12271,45 @@ function accordionSection(title, meta, body, open = false) {
       </summary>
       <div class="mobile-accordion-body">${body}</div>
     </details>
+  `;
+}
+
+const PATCH_NOTES = [
+  {
+    version: "v5.0",
+    title: "Survival Foundation Overhaul",
+    points: [
+      "Day 1 scavenging is louder and more dangerous.",
+      "Wood is now a real shelter material.",
+      "Crew consumes food and drinkable water on upkeep cycles.",
+      "Build and Fieldcraft are split on the board.",
+      "Trade and Factions stay parked while survival is tightened.",
+    ],
+  },
+  {
+    version: "v4.x",
+    title: "UI and Shelter Passes",
+    points: [
+      "Desktop and mobile shells were rebuilt for cleaner control.",
+      "Shelter map switched to fixed grid positions.",
+      "Leaderboard, save transfer, and username flow were added.",
+    ],
+  },
+];
+
+function renderPatchNotes() {
+  return `
+    <div class="detail-list patch-note-list">
+      ${PATCH_NOTES.map((note) => `
+        <div class="list-block compact-block">
+          <div class="surface-head">
+            <h4>${note.title}</h4>
+            <span class="tag">${note.version}</span>
+          </div>
+          <div class="chip-row">${tagList(note.points)}</div>
+        </div>
+      `).join("")}
+    </div>
   `;
 }
 
@@ -12101,8 +12429,8 @@ function renderSurvivorTab(state, derived, _isMobile = false) {
             ${actionButton({
               action: "recruit",
               label: "Recruit survivor",
-              meta: "18 scrap / 3 food",
-              disabled: state.survivors.total >= derived.survivorCap || !canAfford(state, { scrap: 18, food: 3 }),
+              meta: "22 scrap / 1 wood / 4 food / 2 water",
+              disabled: state.survivors.total >= derived.survivorCap || !canAfford(state, { scrap: 22, wood: 1, food: 4, water: 2 }),
             })}
           </div>
         `,
@@ -12581,6 +12909,7 @@ function renderLogTab(state, isMobile = false) {
           title: "Archive",
           meta: `${state.log.length} entries`,
           body: `
+            ${accordionSection("Patch notes", `${PATCH_NOTES[0].version}`, renderPatchNotes(), true)}
             ${accordionSection("Recent feed", `${Math.min(10, state.log.length)} latest`, renderMiniLog(state.log, 10), true)}
             ${accordionSection("Event pulse", `${state.log.length} entries`, renderLogPulse(state))}
             ${accordionSection("Full archive", `${state.log.length} total`, `
@@ -12618,6 +12947,11 @@ function renderLogTab(state, isMobile = false) {
     ],
     [
       surfaceCard({
+        title: "Patch notes",
+        meta: PATCH_NOTES[0].version,
+        body: renderPatchNotes(),
+      }),
+      surfaceCard({
         title: "Event pulse",
         meta: `${state.log.length} entries`,
         body: renderLogPulse(state),
@@ -12635,10 +12969,10 @@ function renderLogTab(state, isMobile = false) {
 function renderHelpTab(state, isMobile = false) {
   const tutorialStep = getTutorialStep(state);
   const earlyLoop = [
-    "Search rubble until warmth is unlocked.",
-    "Build Shelter Stash before spreading into too many systems.",
-    "Secure food before chasing bigger routes.",
-    "Use Map for one route at a time, not every route at once.",
+    "Loot rubble until warmth and shelter storage are real.",
+    "Stabilize food and drinkable water before overbuilding.",
+    "Collect wood, scrap, parts, cloth, and wire with intent.",
+    "Turn one room into a shelter before you chase the city.",
   ];
   const combatGuide = [
     "Attack when the enemy intent looks weak or you can finish it.",
@@ -12647,10 +12981,10 @@ function renderHelpTab(state, isMobile = false) {
     "Retreat is for bad fights, not default fights.",
   ];
   const signalGuide = [
-    "Pick one investigation and repeat it.",
-    "Radio milestones are directional now, not blind RNG.",
+    "Radio is secondary until the shelter can survive without panic.",
+    "Pick one investigation and repeat it when you can afford the parts and fuel.",
     "Signal objectives and tower routes feed the radio board faster.",
-    "Major mystery beats now come from deliberate trace work, not blind luck.",
+    "Major mystery beats come from deliberate trace work, not blind luck.",
   ];
 
   if (isMobile) {
@@ -12672,9 +13006,9 @@ function renderHelpTab(state, isMobile = false) {
               ` : ""}
               <div class="list-block compact-block"><div class="chip-row">${tagList(earlyLoop)}</div></div>
             `, true)}
-            ${accordionSection("Core loop", "survive -> build -> choose", `
+            ${accordionSection("Core loop", "loot -> survive -> defend", `
               <div class="detail-list">
-                <div class="list-block compact-block"><div class="chip-row">${tagList(["survive today", "build stability", "choose direction"])}</div></div>
+                <div class="list-block compact-block"><div class="chip-row">${tagList(["loot", "stabilize", "collect resources", "survive", "build shelter", "build base", "defend"])}</div></div>
               </div>
             `)}
             ${accordionSection("Combat", "fight clean", `<div class="list-block compact-block"><div class="chip-row">${tagList(combatGuide)}</div></div>`)}
@@ -12710,12 +13044,12 @@ function renderHelpTab(state, isMobile = false) {
       }),
       surfaceCard({
         title: "Core loop",
-        meta: "survive -> build -> choose",
+        meta: "loot -> survive -> build -> defend",
         body: `
           <div class="detail-list">
-            <div class="list-block compact-block"><p class="note"><strong>Survive today:</strong> condition, warmth, food, water, threat, and noise.</p></div>
-            <div class="list-block compact-block"><p class="note"><strong>Build stability:</strong> upgrades and shelter systems turn panic into options.</p></div>
-            <div class="list-block compact-block"><p class="note"><strong>Choose direction:</strong> routes, radio tracks, and crew pressure shape the run.</p></div>
+            <div class="list-block compact-block"><p class="note"><strong>Loot:</strong> pull scrap, wood, water, and salvage out of the city.</p></div>
+            <div class="list-block compact-block"><p class="note"><strong>Stabilize + survive:</strong> hold condition, warmth, food, water, threat, and noise together.</p></div>
+            <div class="list-block compact-block"><p class="note"><strong>Build shelter -> build base -> defend:</strong> shelter systems turn panic into structure, then structure into a defended base.</p></div>
           </div>
         `,
       }),
@@ -12741,9 +13075,9 @@ function renderHelpTab(state, isMobile = false) {
         body: `
           <div class="detail-list">
             <div class="list-block compact-block"><p class="note"><strong>Overview:</strong> next best action and current pressure.</p></div>
-            <div class="list-block compact-block"><p class="note"><strong>Craft:</strong> install systems and read what to scavenge next.</p></div>
-            <div class="list-block compact-block"><p class="note"><strong>Map:</strong> choose zone, objective, and approach.</p></div>
-            <div class="list-block compact-block"><p class="note"><strong>Radio / Crew / Routes:</strong> direction-setting systems, not early obligations.</p></div>
+            <div class="list-block compact-block"><p class="note"><strong>Craft:</strong> split base builds from fieldcraft and read what to scavenge next.</p></div>
+            <div class="list-block compact-block"><p class="note"><strong>Shelter:</strong> manage food, water, warmth, defense, and repairs.</p></div>
+            <div class="list-block compact-block"><p class="note"><strong>Map / Radio / Crew:</strong> direction-setting systems, not early obligations.</p></div>
           </div>
         `,
       }),
@@ -13171,7 +13505,7 @@ function summarizeRoster(roster) {
 
 function createInitialState() {
   return {
-    version: 6,
+    version: 7,
     time: {
       day: 1,
       hour: 7,
@@ -13179,6 +13513,7 @@ function createInitialState() {
     condition: 78,
     resources: {
       scrap: 0,
+      wood: 0,
       food: 0,
       water: 0,
       cloth: 0,

@@ -36,6 +36,45 @@ function accordionSection(title, meta, body, open = false) {
   `;
 }
 
+const PATCH_NOTES = [
+  {
+    version: "v5.0",
+    title: "Survival Foundation Overhaul",
+    points: [
+      "Day 1 scavenging is louder and more dangerous.",
+      "Wood is now a real shelter material.",
+      "Crew consumes food and drinkable water on upkeep cycles.",
+      "Build and Fieldcraft are split on the board.",
+      "Trade and Factions stay parked while survival is tightened.",
+    ],
+  },
+  {
+    version: "v4.x",
+    title: "UI and Shelter Passes",
+    points: [
+      "Desktop and mobile shells were rebuilt for cleaner control.",
+      "Shelter map switched to fixed grid positions.",
+      "Leaderboard, save transfer, and username flow were added.",
+    ],
+  },
+];
+
+function renderPatchNotes() {
+  return `
+    <div class="detail-list patch-note-list">
+      ${PATCH_NOTES.map((note) => `
+        <div class="list-block compact-block">
+          <div class="surface-head">
+            <h4>${note.title}</h4>
+            <span class="tag">${note.version}</span>
+          </div>
+          <div class="chip-row">${tagList(note.points)}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
 
 function leaderboardStatusLabel(board) {
   if (!board.enabled) {
@@ -152,8 +191,8 @@ export function renderSurvivorTab(state, derived, _isMobile = false) {
             ${actionButton({
               action: "recruit",
               label: "Recruit survivor",
-              meta: "18 scrap / 3 food",
-              disabled: state.survivors.total >= derived.survivorCap || !canAfford(state, { scrap: 18, food: 3 }),
+              meta: "22 scrap / 1 wood / 4 food / 2 water",
+              disabled: state.survivors.total >= derived.survivorCap || !canAfford(state, { scrap: 22, wood: 1, food: 4, water: 2 }),
             })}
           </div>
         `,
@@ -632,6 +671,7 @@ export function renderLogTab(state, isMobile = false) {
           title: "Archive",
           meta: `${state.log.length} entries`,
           body: `
+            ${accordionSection("Patch notes", `${PATCH_NOTES[0].version}`, renderPatchNotes(), true)}
             ${accordionSection("Recent feed", `${Math.min(10, state.log.length)} latest`, renderMiniLog(state.log, 10), true)}
             ${accordionSection("Event pulse", `${state.log.length} entries`, renderLogPulse(state))}
             ${accordionSection("Full archive", `${state.log.length} total`, `
@@ -669,6 +709,11 @@ export function renderLogTab(state, isMobile = false) {
     ],
     [
       surfaceCard({
+        title: "Patch notes",
+        meta: PATCH_NOTES[0].version,
+        body: renderPatchNotes(),
+      }),
+      surfaceCard({
         title: "Event pulse",
         meta: `${state.log.length} entries`,
         body: renderLogPulse(state),
@@ -686,10 +731,10 @@ export function renderLogTab(state, isMobile = false) {
 export function renderHelpTab(state, isMobile = false) {
   const tutorialStep = getTutorialStep(state);
   const earlyLoop = [
-    "Search rubble until warmth is unlocked.",
-    "Build Shelter Stash before spreading into too many systems.",
-    "Secure food before chasing bigger routes.",
-    "Use Map for one route at a time, not every route at once.",
+    "Loot rubble until warmth and shelter storage are real.",
+    "Stabilize food and drinkable water before overbuilding.",
+    "Collect wood, scrap, parts, cloth, and wire with intent.",
+    "Turn one room into a shelter before you chase the city.",
   ];
   const combatGuide = [
     "Attack when the enemy intent looks weak or you can finish it.",
@@ -698,10 +743,10 @@ export function renderHelpTab(state, isMobile = false) {
     "Retreat is for bad fights, not default fights.",
   ];
   const signalGuide = [
-    "Pick one investigation and repeat it.",
-    "Radio milestones are directional now, not blind RNG.",
+    "Radio is secondary until the shelter can survive without panic.",
+    "Pick one investigation and repeat it when you can afford the parts and fuel.",
     "Signal objectives and tower routes feed the radio board faster.",
-    "Major mystery beats now come from deliberate trace work, not blind luck.",
+    "Major mystery beats come from deliberate trace work, not blind luck.",
   ];
 
   if (isMobile) {
@@ -723,9 +768,9 @@ export function renderHelpTab(state, isMobile = false) {
               ` : ""}
               <div class="list-block compact-block"><div class="chip-row">${tagList(earlyLoop)}</div></div>
             `, true)}
-            ${accordionSection("Core loop", "survive -> build -> choose", `
+            ${accordionSection("Core loop", "loot -> survive -> defend", `
               <div class="detail-list">
-                <div class="list-block compact-block"><div class="chip-row">${tagList(["survive today", "build stability", "choose direction"])}</div></div>
+                <div class="list-block compact-block"><div class="chip-row">${tagList(["loot", "stabilize", "collect resources", "survive", "build shelter", "build base", "defend"])}</div></div>
               </div>
             `)}
             ${accordionSection("Combat", "fight clean", `<div class="list-block compact-block"><div class="chip-row">${tagList(combatGuide)}</div></div>`)}
@@ -761,12 +806,12 @@ export function renderHelpTab(state, isMobile = false) {
       }),
       surfaceCard({
         title: "Core loop",
-        meta: "survive -> build -> choose",
+        meta: "loot -> survive -> build -> defend",
         body: `
           <div class="detail-list">
-            <div class="list-block compact-block"><p class="note"><strong>Survive today:</strong> condition, warmth, food, water, threat, and noise.</p></div>
-            <div class="list-block compact-block"><p class="note"><strong>Build stability:</strong> upgrades and shelter systems turn panic into options.</p></div>
-            <div class="list-block compact-block"><p class="note"><strong>Choose direction:</strong> routes, radio tracks, and crew pressure shape the run.</p></div>
+            <div class="list-block compact-block"><p class="note"><strong>Loot:</strong> pull scrap, wood, water, and salvage out of the city.</p></div>
+            <div class="list-block compact-block"><p class="note"><strong>Stabilize + survive:</strong> hold condition, warmth, food, water, threat, and noise together.</p></div>
+            <div class="list-block compact-block"><p class="note"><strong>Build shelter -> build base -> defend:</strong> shelter systems turn panic into structure, then structure into a defended base.</p></div>
           </div>
         `,
       }),
@@ -792,9 +837,9 @@ export function renderHelpTab(state, isMobile = false) {
         body: `
           <div class="detail-list">
             <div class="list-block compact-block"><p class="note"><strong>Overview:</strong> next best action and current pressure.</p></div>
-            <div class="list-block compact-block"><p class="note"><strong>Craft:</strong> install systems and read what to scavenge next.</p></div>
-            <div class="list-block compact-block"><p class="note"><strong>Map:</strong> choose zone, objective, and approach.</p></div>
-            <div class="list-block compact-block"><p class="note"><strong>Radio / Crew / Routes:</strong> direction-setting systems, not early obligations.</p></div>
+            <div class="list-block compact-block"><p class="note"><strong>Craft:</strong> split base builds from fieldcraft and read what to scavenge next.</p></div>
+            <div class="list-block compact-block"><p class="note"><strong>Shelter:</strong> manage food, water, warmth, defense, and repairs.</p></div>
+            <div class="list-block compact-block"><p class="note"><strong>Map / Radio / Crew:</strong> direction-setting systems, not early obligations.</p></div>
           </div>
         `,
       }),

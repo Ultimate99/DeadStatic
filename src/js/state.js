@@ -104,7 +104,7 @@ function summarizeRoster(roster) {
 
 export function createInitialState() {
   return {
-    version: 6,
+    version: 7,
     time: {
       day: 1,
       hour: 7,
@@ -112,6 +112,7 @@ export function createInitialState() {
     condition: 78,
     resources: {
       scrap: 0,
+      wood: 0,
       food: 0,
       water: 0,
       cloth: 0,

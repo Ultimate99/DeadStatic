@@ -241,6 +241,22 @@ export function getTimeStamp(state) {
   return `D${state.time.day} ${hourStamp(state.time.hour)}`;
 }
 
+export function getShelterUpkeep(state) {
+  const crew = Math.max(0, state.survivors?.total || 0);
+  const mealCost = Math.max(1, 1 + Math.floor(crew / 2));
+  const waterCost = Math.max(1, 1 + Math.ceil(crew / 2));
+
+  return {
+    crew,
+    mealHours: 6,
+    waterHours: 4,
+    mealCost,
+    waterCost,
+    mealHoursLeft: Math.max(0, 6 - state.clocks.hunger),
+    waterHoursLeft: Math.max(0, 4 - state.clocks.thirst),
+  };
+}
+
 export function addLog(state, text, category = "general") {
   state.log.unshift({
     stamp: getTimeStamp(state),
@@ -464,6 +480,15 @@ export function getDerivedState(state) {
   }
   if (equippedArmor?.defense) {
     derived.defense += equippedArmor.defense;
+  }
+  if (hasItem(state, "pry_bar")) {
+    derived.salvageYieldBonus += 0.08;
+    derived.searchPartChance += 0.06;
+  }
+  if (hasItem(state, "salvage_hatchet")) {
+    derived.salvageYieldBonus += 0.04;
+    derived.forageYieldBonus += 0.06;
+    derived.nightMitigation += 0.12;
   }
 
   derived.attack += Math.floor(state.resources.morale / 4);
@@ -1174,25 +1199,71 @@ function applyZoneRewards(state, zoneId, rewards) {
   addLog(state, `You return from ${zone.name} with ${fragments.join(" and ")}.`, "expedition");
 }
 
+function sourceEncounterProfile(sourceId) {
+  switch (sourceId) {
+    case "vehicle_shells":
+      return { zoneId: "abandoned_gas_station", enemies: ["walker", "stalker"], rewards: { resources: { parts: 1 } } };
+    case "dead_pantries":
+      return { zoneId: "burned_apartments", enemies: ["walker"], rewards: { resources: { food: 1 } } };
+    case "clinic_drawers":
+      return { zoneId: "hospital_wing", enemies: ["walker", "screecher"], rewards: { resources: { medicine: 1 } } };
+    case "signal_wrecks":
+      return { zoneId: "radio_tower_perimeter", enemies: ["stalker", "static_touched"], rewards: { resources: { wire: 1 } } };
+    case "sealed_caches":
+      return { zoneId: "radio_tower_perimeter", enemies: ["stalker", "relay_brute"], rewards: { resources: { ammo: 1, parts: 1 } } };
+    case "rubble":
+    default:
+      return { zoneId: "ruined_street", enemies: ["walker", "screecher"], rewards: { resources: { wood: 1 } } };
+  }
+}
+
+function sourceEncounterChance(state, source) {
+  const searchPressure = Math.max(0, state.stats.searches - 2) * 0.022;
+  const shelterPressure = state.shelter.threat * 0.03 + state.shelter.noise * 0.024;
+  const lanePressure = (source.threat || 0.3) * 0.12 + (source.noise || 0.3) * 0.08;
+
+  return clamp(
+    0.015 + searchPressure + shelterPressure + lanePressure,
+    0.05,
+    source.id === "rubble" ? 0.24 : 0.38,
+  );
+}
+
 function maybeUseFood(state) {
-  if (state.resources.food > 0) {
-    state.resources.food -= 1;
+  const upkeep = getShelterUpkeep(state);
+  const available = state.resources.food;
+  const spent = Math.min(available, upkeep.mealCost);
+
+  if (spent > 0) {
+    state.resources.food -= spent;
+  }
+
+  if (spent >= upkeep.mealCost) {
     state.condition = clamp(state.condition + 1, 0, getDerivedState(state).maxCondition);
   } else {
-    state.condition = clamp(state.condition - 8, 0, getDerivedState(state).maxCondition);
-    state.resources.morale = Math.max(0, state.resources.morale - 2);
-    addLog(state, "Hunger turns sharp. The room feels smaller.");
+    const shortage = upkeep.mealCost - spent;
+    state.condition = clamp(state.condition - (8 + shortage * 2), 0, getDerivedState(state).maxCondition);
+    state.resources.morale = Math.max(0, state.resources.morale - (2 + shortage));
+    addLog(state, `The shelter needs ${upkeep.mealCost} food and only finds ${spent}. Hunger turns sharp fast.`, "night");
   }
 }
 
 function maybeUseWater(state) {
-  if (state.resources.water > 0) {
-    state.resources.water -= 1;
+  const upkeep = getShelterUpkeep(state);
+  const available = state.resources.water;
+  const spent = Math.min(available, upkeep.waterCost);
+
+  if (spent > 0) {
+    state.resources.water -= spent;
+  }
+
+  if (spent >= upkeep.waterCost) {
     state.condition = clamp(state.condition, 0, getDerivedState(state).maxCondition);
   } else {
-    state.condition = clamp(state.condition - 6, 0, getDerivedState(state).maxCondition);
-    state.resources.morale = Math.max(0, state.resources.morale - 1);
-    addLog(state, "Your mouth dries to paper. The static sounds closer.");
+    const shortage = upkeep.waterCost - spent;
+    state.condition = clamp(state.condition - (6 + shortage * 2), 0, getDerivedState(state).maxCondition);
+    state.resources.morale = Math.max(0, state.resources.morale - (1 + shortage));
+    addLog(state, `The shelter needs ${upkeep.waterCost} drinkable water and comes up short. The room dries out with you in it.`, "night");
   }
 }
 
@@ -1350,8 +1421,8 @@ export function runScavengeSource(state, sourceId = "rubble") {
   advanceTime(state, source.hours || 1);
   state.stats.searches += 1;
   state.stats.scavengeSources[sourceId] = (state.stats.scavengeSources[sourceId] || 0) + 1;
-  state.shelter.threat = clamp(state.shelter.threat + (source.threat || 0.35) + 0.12, 0, 12);
-  state.shelter.noise = clamp(state.shelter.noise + (source.noise || 0.4) + 0.08 - traitBonuses.scavengeNoiseReduction, 0, 10);
+  state.shelter.threat = clamp(state.shelter.threat + (source.threat || 0.35) + 0.16, 0, 12);
+  state.shelter.noise = clamp(state.shelter.noise + (source.noise || 0.4) + 0.12 - traitBonuses.scavengeNoiseReduction, 0, 10);
 
   const scrapMin = Math.max(0, derived.searchScrapMin + (source.scrapMod?.min || 0));
   const scrapMax = Math.max(scrapMin, derived.searchScrapMax + (source.scrapMod?.max || 0));
@@ -1359,6 +1430,12 @@ export function runScavengeSource(state, sourceId = "rubble") {
   const lootBundle = createLootBundle();
   addResource(state, "scrap", directScrap);
   applySourceDirectResources(lootBundle, source);
+  if (hasItem(state, "salvage_hatchet") && ["rubble", "dead_pantries"].includes(source.id)) {
+    addDirectResourceFind(lootBundle, "wood", 1);
+  }
+  if (hasItem(state, "pry_bar") && ["vehicle_shells", "sealed_caches"].includes(source.id)) {
+    addDirectResourceFind(lootBundle, "parts", 1);
+  }
   rollSourceRarities(source, state, derived, lootBundle);
 
   for (let rollIndex = 0; rollIndex < derived.searchBonusRolls; rollIndex += 1) {
@@ -1379,7 +1456,10 @@ export function runScavengeSource(state, sourceId = "rubble") {
     ? ` ${formatLootFinds(lootBundle.finds)}.`
     : "";
   addLog(state, `You work ${source.logLabel}. scrap +${directScrap}.${lootSummary}`, "loot");
-  if (chance(source.eventChance || 0.42)) {
+  if (!state.combat && chance(sourceEncounterChance(state, source))) {
+    const profile = sourceEncounterProfile(source.id);
+    createCombat(state, pickOne(profile.enemies), profile.zoneId, profile.rewards);
+  } else if (chance(source.eventChance || 0.42)) {
     runEvent(state, "search");
   }
 
@@ -1846,18 +1926,19 @@ export function eatRation(state) {
 }
 
 export function patchBarricade(state) {
-  if (state.resources.scrap < 8) {
+  if (state.resources.scrap < 6 || state.resources.wood < 2) {
     return false;
   }
 
-  state.resources.scrap -= 8;
-  state.shelter.threat = clamp(state.shelter.threat - 1.4, 0, 12);
+  state.resources.scrap -= 6;
+  state.resources.wood -= 2;
+  state.shelter.threat = clamp(state.shelter.threat - (hasItem(state, "salvage_hatchet") ? 1.9 : 1.5), 0, 12);
   state.shelter.warmth = clamp(state.shelter.warmth + 0.6, 0, 10);
   state.shelter.noise = clamp(state.shelter.noise + 0.18, 0, 10);
   if (hasUpgrade(state, "basic_barricade")) {
-    setStructureDamage(state, "basic_barricade", getStructureDamage(state, "basic_barricade") - 1);
+    setStructureDamage(state, "basic_barricade", getStructureDamage(state, "basic_barricade") - (hasItem(state, "salvage_hatchet") ? 2 : 1));
   }
-  addLog(state, "You patch weak seams with metal and stubbornness.", "build");
+  addLog(state, `You patch weak seams with wood, scrap, and stubbornness${hasItem(state, "salvage_hatchet") ? ", using the hatchet to bite the joins clean" : ""}.`, "build");
   return true;
 }
 
@@ -1884,11 +1965,11 @@ export function recruitSurvivor(state) {
   if (state.survivors.total >= derived.survivorCap) {
     return false;
   }
-  if (!canAfford(state, { scrap: 18, food: 3 })) {
+  if (!canAfford(state, { scrap: 22, wood: 1, food: 4, water: 2 })) {
     return false;
   }
 
-  spendResources(state, { scrap: 18, food: 3 });
+  spendResources(state, { scrap: 22, wood: 1, food: 4, water: 2 });
   syncSurvivorRoster(state);
   const index = state.survivors.roster.length;
   const traitId = SURVIVOR_TRAIT_IDS[randInt(0, SURVIVOR_TRAIT_IDS.length - 1)];

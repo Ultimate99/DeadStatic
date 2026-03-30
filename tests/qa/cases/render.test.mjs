@@ -44,8 +44,8 @@ export function registerRenderTests(run) {
     assert.match(harness.elements.get("tab-content").innerHTML, /Current directive/);
     assert.match(harness.elements.get("tab-content").innerHTML, /stage-banner/);
     assert.match(harness.elements.get("tab-content").innerHTML, /Search rubble/);
-    assert.match(harness.elements.get("summary-strip").innerHTML, /higher is safer at night/);
-    assert.match(harness.elements.get("summary-strip").innerHTML, /keep this low/);
+    assert.match(harness.elements.get("summary-strip").innerHTML, /Heat line/);
+    assert.match(harness.elements.get("summary-strip").innerHTML, /Outside threat/);
 
     const clickHandler = harness.bodyListeners.get("click");
     assert.ok(clickHandler);
@@ -126,6 +126,7 @@ export function registerRenderTests(run) {
     vm.runInNewContext(bundle, harness.context, { filename: "game.js" });
 
     const tabMarkup = harness.elements.get("tab-content").innerHTML;
+    assert.match(tabMarkup, /Patch notes/);
     assert.match(tabMarkup, /Event pulse/);
     assert.match(tabMarkup, /log-pulse-stack/);
     assert.match(tabMarkup, /log-pulse-row/);
@@ -168,6 +169,6 @@ export function registerRenderTests(run) {
     assert.match(tabMarkup, /signal-spectrum/);
     assert.match(tabMarkup, /Anomaly trace/);
     assert.match(tabMarkup, /trace-node/);
-    assert.match(tabMarkup, /Transmission notes/);
+    assert.match(tabMarkup, /Signal chain/);
   });
 }

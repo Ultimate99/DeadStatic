@@ -679,6 +679,38 @@ body[data-mobile="true"] .crew-band-card {
   min-height: 0;
 }
 
+.queue-board {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.queue-column {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  min-height: 100%;
+  padding: 10px;
+  border: 1px solid rgba(205, 196, 174, 0.08);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.006), transparent 18%),
+    rgba(15, 18, 18, 0.88);
+}
+
+.queue-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.patch-note-list .list-block {
+  gap: 8px;
+}
+
+.patch-note-list .chip-row {
+  justify-content: flex-start;
+}
+
 @media (max-width: 720px) {
   body[data-mobile="true"] .tab-mobile-flow .surface-card {
     padding: 10px;
@@ -690,6 +722,10 @@ body[data-mobile="true"] .crew-band-card {
 
   body[data-mobile="true"] .fact-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .queue-board {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -17,6 +17,7 @@ import {
   getAvailableScavengeSources,
   getExpeditionPreview,
   getNightForecast,
+  getShelterUpkeep,
   getVisibleUpgrades,
   hasMaterials,
   hasItem,
@@ -45,6 +46,84 @@ import {
   structureByKey,
 } from "./shelter-map.js";
 
+const BUILD_UPGRADE_IDS = new Set([
+  "shelter_stash",
+  "campfire",
+  "basic_barricade",
+  "food_crate",
+  "crafting_bench",
+  "weapon_rack",
+  "armor_hooks",
+  "watch_post",
+  "ammo_press",
+  "rain_collector",
+  "radio_rig",
+  "map_board",
+  "survivor_cots",
+  "smokehouse",
+  "trader_beacon",
+  "scout_bike",
+  "signal_decoder",
+  "auto_scavenger",
+  "faraday_mesh",
+  "relay_tap",
+  "bunker_drill",
+]);
+
+function upgradeDiscipline(upgrade) {
+  if (BUILD_UPGRADE_IDS.has(upgrade.id)) {
+    return "build";
+  }
+  return "craft";
+}
+
+function upgradeDisciplineLabel(upgrade) {
+  return upgradeDiscipline(upgrade) === "build" ? "base build" : "fieldcraft";
+}
+
+function getUpgradeMissingNotes(state, upgrade) {
+  const missing = [];
+
+  Object.entries(upgrade.cost || {}).forEach(([resourceId, amount]) => {
+    const have = state.resources[resourceId] || 0;
+    if (have < amount) {
+      missing.push(`${resourceLabel(resourceId)} ${have}/${amount}`);
+    }
+  });
+
+  Object.entries(upgrade.materials || {}).forEach(([itemId, amount]) => {
+    const have = state.inventory[itemId] || 0;
+    if (have < amount) {
+      missing.push(`${itemLabel(itemId)} ${have}/${amount}`);
+    }
+  });
+
+  return missing;
+}
+
+function renderUpgradeQueue(state, title, ready, blocked, emptyText) {
+  return `
+    <div class="queue-column">
+      <div class="surface-head">
+        <h4>${title}</h4>
+        <span class="tag">${ready.length + blocked.length}</span>
+      </div>
+      ${ready.length
+        ? `<div class="detail-list">${ready.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>`
+        : ""}
+      ${blocked.length
+        ? `
+          <div class="queue-stack">
+            <span class="note-label">Need salvage</span>
+            <div class="detail-list">${blocked.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>
+          </div>
+        `
+        : ""}
+      ${!ready.length && !blocked.length ? `<p class="empty-state">${emptyText}</p>` : ""}
+    </div>
+  `;
+}
+
 function renderQuickGoals(state) {
   const sources = getAvailableScavengeSources(state);
   const hasVehicleLane = sources.some((source) => source.id === "vehicle_shells");
@@ -53,7 +132,7 @@ function renderQuickGoals(state) {
     { label: "Unlock warmth", value: state.flags.burnUnlocked ? "open" : `${Math.max(0, 3 - state.stats.searches)} searches left` },
     { label: "Open second lane", value: hasVehicleLane ? "open" : `${Math.max(0, 4 - state.stats.searches)} searches left` },
     { label: "Food lane", value: hasFoodLane ? "open" : state.upgrades.includes("food_search") ? "ready on board" : "build Simple Food Search" },
-    { label: "Find cloth", value: state.resources.cloth > 0 ? `${state.resources.cloth} in stash` : "still looking" },
+    { label: "Bank wood", value: state.resources.wood > 0 ? `${state.resources.wood} in stash` : "still looking" },
     { label: "Find sharp metal", value: hasItem(state, "sharp_metal") ? "recovered" : "rare salvage" },
   ];
 
@@ -87,7 +166,7 @@ function renderOverviewActions(state) {
     utilityButtons.push(actionButton({
       action: "forage-food",
       label: "Fallback food search",
-      meta: "plain, safe, and still useful when pantries go dry",
+      meta: "small gain, still noisy, useful when stores collapse",
       variant: "compact utility-trigger",
     }));
   }
@@ -132,7 +211,11 @@ function renderOverviewActions(state) {
 function renderUpgradeCard(state, upgrade) {
   const built = state.upgrades.includes(upgrade.id);
   const ready = canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials);
+  const discipline = upgradeDisciplineLabel(upgrade);
   const meta = [];
+  const missing = getUpgradeMissingNotes(state, upgrade);
+
+  meta.push(discipline);
   if (Object.keys(upgrade.cost || {}).length) {
     meta.push(formatCost(upgrade.cost));
   }
@@ -144,14 +227,15 @@ function renderUpgradeCard(state, upgrade) {
     <div class="list-block upgrade-card ${built ? "is-built-upgrade" : ready ? "is-ready-upgrade" : "is-blocked-upgrade"}">
       <div class="surface-head">
         <h4>${upgrade.name}</h4>
-        <span class="tag">${built ? "built" : ready ? "ready" : "scavenge"}</span>
+        <span class="tag">${built ? "built" : ready ? "ready" : "blocked"}</span>
       </div>
       <p class="note">${upgrade.description}</p>
       ${meta.length ? `<div class="chip-row">${tagList(meta)}</div>` : ""}
+      ${!built && missing.length ? `<div class="chip-row">${tagList(missing)}</div>` : ""}
       ${built ? "" : actionButton({
         action: "buy-upgrade",
         label: `${upgrade.verb || "Build"} ${upgrade.name}`,
-        meta: ready ? "Permanent unlock" : "Need more salvage",
+        meta: ready ? "Permanent unlock" : "Need salvage or tools",
         disabled: !ready,
         data: { upgrade: upgrade.id },
       })}
@@ -250,33 +334,44 @@ export function renderOverviewTab(state, derived, _isMobile = false) {
 export function renderCraftTab(state, isMobile = false) {
   const visibleUpgrades = getVisibleUpgrades(state);
   const available = visibleUpgrades.filter((upgrade) => !state.upgrades.includes(upgrade.id));
-  const ready = available.filter((upgrade) => canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials));
-  const blocked = available.filter((upgrade) => !ready.includes(upgrade));
+  const buildUpgrades = available.filter((upgrade) => upgradeDiscipline(upgrade) === "build");
+  const craftUpgrades = available.filter((upgrade) => upgradeDiscipline(upgrade) === "craft");
+  const readyBuilds = buildUpgrades.filter((upgrade) => canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials));
+  const blockedBuilds = buildUpgrades.filter((upgrade) => !readyBuilds.includes(upgrade));
+  const readyCrafts = craftUpgrades.filter((upgrade) => canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials));
+  const blockedCrafts = craftUpgrades.filter((upgrade) => !readyCrafts.includes(upgrade));
   const built = state.upgrades
     .map((upgradeId) => visibleUpgrades.find((upgrade) => upgrade.id === upgradeId))
     .filter(Boolean);
+  const builtBuilds = built.filter((upgrade) => upgradeDiscipline(upgrade) === "build");
+  const builtCrafts = built.filter((upgrade) => upgradeDiscipline(upgrade) === "craft");
 
   if (isMobile) {
     return `
       <div class="tab-mobile-flow tab-mobile-flow-craft">
         ${surfaceCard({
-          title: "Ready now",
-          meta: `${ready.length} ready`,
-          body: ready.length
-            ? `<div class="detail-list">${ready.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>`
-            : `<p class="empty-state">Nothing is funded yet. Push scavenging first.</p>`,
+          title: "Base builds",
+          meta: `${readyBuilds.length} ready / ${blockedBuilds.length} blocked`,
+          body: `
+            <details class="mobile-accordion" open>
+              <summary>Open build queue</summary>
+              <div class="mobile-accordion-body">
+                ${renderUpgradeQueue(state, "Shelter works", readyBuilds, blockedBuilds, "No base structures are open yet.")}
+              </div>
+            </details>
+          `,
         })}
         ${surfaceCard({
-          title: "Need salvage",
-          meta: `${blocked.length} queued`,
-          body: blocked.length
-            ? `
-              <details class="mobile-accordion" open>
-                <summary>Open blocked builds</summary>
-                <div class="detail-list">${blocked.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>
-              </details>
-            `
-            : `<p class="empty-state">No blocked builds are waiting.</p>`,
+          title: "Fieldcraft",
+          meta: `${readyCrafts.length} ready / ${blockedCrafts.length} blocked`,
+          body: `
+            <details class="mobile-accordion" open>
+              <summary>Open fieldcraft queue</summary>
+              <div class="mobile-accordion-body">
+                ${renderUpgradeQueue(state, "Tools and fieldwork", readyCrafts, blockedCrafts, "No fieldcraft jobs are open yet.")}
+              </div>
+            </details>
+          `,
         })}
         ${surfaceCard({
           title: "Systems online",
@@ -291,7 +386,7 @@ export function renderCraftTab(state, isMobile = false) {
                       <h4>${upgrade.name}</h4>
                       <span class="tag">live</span>
                     </div>
-                    <div class="chip-row">${tagList([upgrade.verb || "build", "installed"])}</div>
+                    <div class="chip-row">${tagList([upgradeDisciplineLabel(upgrade), "installed"])}</div>
                   </div>
                 `).join("")}</div>
               </details>
@@ -305,39 +400,14 @@ export function renderCraftTab(state, isMobile = false) {
   return `
     <div class="tab-grid">
       ${surfaceCard({
-        title: "Build board",
-        meta: `${ready.length} ready / ${blocked.length} blocked`,
+        title: "Build + craft board",
+        meta: `${available.length} open`,
         className: "span-8",
         body: available.length
           ? `
-            <div class="upgrade-card-grid">
-              <div class="list-block compact-block">
-                <div class="surface-head">
-                  <h4>Ready now</h4>
-                  <span class="tag">${ready.length}</span>
-                </div>
-                ${ready.length
-                  ? `<div class="detail-list">${ready.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>`
-                  : `<p class="empty-state">Nothing is funded yet.</p>`}
-              </div>
-              <div class="list-block compact-block">
-                <div class="surface-head">
-                  <h4>Need salvage</h4>
-                  <span class="tag">${blocked.length}</span>
-                </div>
-                ${blocked.length
-                  ? `<div class="detail-list">${blocked.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>`
-                  : `<p class="empty-state">No blocked builds waiting.</p>`}
-              </div>
-              <div class="list-block compact-block">
-                <div class="surface-head">
-                  <h4>Systems online</h4>
-                  <span class="tag">${built.length}</span>
-                </div>
-                ${built.length
-                  ? `<div class="chip-row">${tagList(built.map((upgrade) => upgrade.name))}</div>`
-                  : `<p class="empty-state">Still living hand-to-mouth.</p>`}
-              </div>
+            <div class="queue-board">
+              ${renderUpgradeQueue(state, "Base builds", readyBuilds, blockedBuilds, "No base structures are open yet.")}
+              ${renderUpgradeQueue(state, "Fieldcraft", readyCrafts, blockedCrafts, "No fieldcraft jobs are open yet.")}
             </div>
           `
           : `<p class="empty-state">No fresh plans yet. Search deeper.</p>`,
@@ -347,15 +417,28 @@ export function renderCraftTab(state, isMobile = false) {
         meta: `${built.length} total`,
         className: "span-4",
         body: built.length
-          ? `<div class="detail-list">${built.map((upgrade) => `
-            <div class="list-block">
-              <div class="surface-head">
-                <h4>${upgrade.name}</h4>
-                <span class="tag">stable</span>
+          ? `
+            <div class="detail-list">
+              <div class="list-block compact-block">
+                <div class="surface-head">
+                  <h4>Base builds</h4>
+                  <span class="tag">${builtBuilds.length}</span>
+                </div>
+                ${builtBuilds.length
+                  ? `<div class="chip-row">${tagList(builtBuilds.map((upgrade) => upgrade.name))}</div>`
+                  : `<p class="empty-state">No base systems live.</p>`}
               </div>
-              <p class="note">${upgrade.description}</p>
+              <div class="list-block compact-block">
+                <div class="surface-head">
+                  <h4>Fieldcraft</h4>
+                  <span class="tag">${builtCrafts.length}</span>
+                </div>
+                ${builtCrafts.length
+                  ? `<div class="chip-row">${tagList(builtCrafts.map((upgrade) => upgrade.name))}</div>`
+                  : `<p class="empty-state">No crafted tools online.</p>`}
+              </div>
             </div>
-          `).join("")}</div>`
+          `
           : `<p class="empty-state">You still live hand-to-mouth.</p>`,
       })}
       ${surfaceCard({
@@ -594,24 +677,25 @@ export function renderExpeditionPlanner(state) {
 }
 
 export function renderShelterTab(state, derived, isMobile = false) {
+  const upkeep = getShelterUpkeep(state);
   const actions = [
     actionButton({
       action: "eat-ration",
       label: "Eat 1 food",
-      meta: "Push hunger back and stabilize condition.",
+      meta: "Reset your hunger clock and steady yourself.",
       disabled: state.resources.food < 1,
     }),
     actionButton({
       action: "drink-water",
-      label: "Drink 1 water",
+      label: "Drink 1 drinkable water",
       meta: "Reset thirst and steady yourself.",
       disabled: state.resources.water < 1,
     }),
     actionButton({
       action: "patch-barricade",
-      label: "Patch barricade",
-      meta: "Spend 8 scrap to steady the perimeter.",
-      disabled: state.resources.scrap < 8,
+      label: "Patch barricade line",
+      meta: "6 scrap / 2 wood / steadier fence",
+      disabled: state.resources.scrap < 6 || state.resources.wood < 2,
     }),
   ];
 
@@ -660,7 +744,27 @@ export function renderShelterTab(state, derived, isMobile = false) {
             <div class="fact"><span>Morale</span><strong>${state.resources.morale}</strong></div>
             <div class="fact"><span>Food</span><strong>${state.resources.food}</strong></div>
             <div class="fact"><span>Water</span><strong>${state.resources.water}</strong></div>
+            <div class="fact"><span>Wood</span><strong>${state.resources.wood}</strong></div>
           </div>
+        `,
+      })}
+      ${surfaceCard({
+        title: "Shelter flow",
+        meta: `${upkeep.crew} crew / live upkeep`,
+        className: "span-4",
+        body: `
+          <div class="fact-grid">
+            <div class="fact"><span>Meal cycle</span><strong>${upkeep.mealCost} / ${upkeep.mealHours}h</strong></div>
+            <div class="fact"><span>Water cycle</span><strong>${upkeep.waterCost} / ${upkeep.waterHours}h</strong></div>
+            <div class="fact"><span>Meal due</span><strong>${upkeep.mealHoursLeft}h</strong></div>
+            <div class="fact"><span>Water due</span><strong>${upkeep.waterHoursLeft}h</strong></div>
+            <div class="fact"><span>Crew</span><strong>${upkeep.crew}</strong></div>
+            <div class="fact"><span>Beds</span><strong>${derived.survivorCap}</strong></div>
+          </div>
+          <div class="chip-row">${tagList([
+            `${upkeep.mealCost} food every ${upkeep.mealHours}h`,
+            `${upkeep.waterCost} water every ${upkeep.waterHours}h`,
+          ])}</div>
         `,
       })}
       ${surfaceCard({
@@ -671,7 +775,7 @@ export function renderShelterTab(state, derived, isMobile = false) {
       })}
       ${surfaceCard({
         title: "Survival actions",
-        meta: "keep the room alive",
+        meta: "manual control",
         className: "span-4",
         body: `<div class="action-stack">${actions.join("")}</div>`,
       })}
@@ -701,7 +805,7 @@ export function renderShelterTab(state, derived, isMobile = false) {
       ${surfaceCard({
         title: "Support edges",
         meta: activeEdges.length ? `${activeEdges.length} active` : "manual only",
-        className: "span-8",
+        className: "span-4",
         body: `
           ${activeEdges.length ? `<div class="chip-row">${tagList(activeEdges)}</div>` : `<p class="empty-state">Most gains still come from decisions, not automation.</p>`}
           ${passive.length ? `<div class="chip-row">${tagList(passive)}</div>` : ""}
@@ -714,7 +818,7 @@ export function renderShelterTab(state, derived, isMobile = false) {
         body: `
           <div class="detail-list">
             <div class="list-block compact-block">
-              <p class="note">Warmth falls. Threat rises. Noise paints a target on the fence.</p>
+              <p class="note">Warmth falls. Threat rises. Noise paints a target on the fence. Crew now eats and drinks on a timed cycle.</p>
             </div>
             <div class="list-block compact-block">
               <p class="note">${mapGuidance}</p>

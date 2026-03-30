@@ -198,10 +198,9 @@ run("search rubble yields tiered loot and discoveries", () => {
   });
 
   assert.ok(state.resources.scrap > 0);
-  assert.ok(state.resources.cloth >= 1);
+  assert.ok(state.resources.wood >= 1);
   assert.ok(state.resources.wire >= 1);
-  assert.ok((state.inventory.sharp_metal || 0) >= 1);
-  assert.ok(state.discoveredResources.includes("cloth"));
+  assert.ok(state.discoveredResources.includes("wood"));
   assert.ok(state.discoveredResources.includes("wire"));
   assert.equal(state.stats.scavengeSources.rubble, 3);
 });
@@ -209,12 +208,12 @@ run("search rubble yields tiered loot and discoveries", () => {
 run("backpack respects cloth requirement before it can be built", () => {
   const state = createInitialState();
   state.stats.searches = 3;
-  state.resources.scrap = 5;
+  state.resources.scrap = 7;
 
   evaluateProgression(state);
   assert.equal(buyUpgrade(state, "backpack"), false);
 
-  state.resources.scrap = 6;
+  state.resources.scrap = 8;
   state.resources.cloth = 3;
   assert.equal(buyUpgrade(state, "backpack"), true);
   assert.ok(state.upgrades.includes("backpack"));
@@ -238,6 +237,7 @@ run("source-based scavenging lanes unlock and record distinct runs", () => {
 
   state.stats.searches = 4;
   state.upgrades = ["food_search", "first_aid_rag", "radio_rig", "watch_post", "crafting_bench"];
+  state.inventory.pry_bar = 1;
   evaluateProgression(state);
 
   const sourceIds = getAvailableScavengeSources(state).map((source) => source.id);
@@ -285,6 +285,7 @@ run("save migration fills new night, expedition, and inspector defaults", () => 
     assert.equal(state.ui.mobileResourceDrawerOpen, false);
     assert.equal(state.ui.mobileShelterMode, "ops");
     assert.equal(state.ui.mobileInspectorStructure, null);
+    assert.equal(state.resources.wood, 0);
     assert.deepEqual(state.shelter.damage, {});
     assert.equal(state.settings.tutorialHints, true);
     assert.equal(state.player.username, "");
@@ -373,7 +374,9 @@ run("survivor recruitment now creates a roster with traited members", () => {
   state.upgrades = ["survivor_cots"];
   state.unlockedSections = ["survivors"];
   state.resources.scrap = 40;
+  state.resources.wood = 2;
   state.resources.food = 8;
+  state.resources.water = 4;
   evaluateProgression(state);
 
   assert.equal(recruitSurvivor(state), true);
@@ -381,6 +384,26 @@ run("survivor recruitment now creates a roster with traited members", () => {
   assert.equal(state.survivors.roster.length, 1);
   assert.ok(state.survivors.roster[0].traitId);
   assert.equal(state.survivors.roster[0].role, "idle");
+});
+
+run("crew upkeep consumes shelter food and drinkable water over time", () => {
+  const state = createInitialState();
+  state.upgrades = ["survivor_cots", "shelter_stash"];
+  state.unlockedSections = ["shelter", "survivors"];
+  state.survivors.total = 2;
+  state.survivors.idle = 2;
+  state.resources.food = 1;
+  state.resources.water = 0;
+
+  withRandomSequence([0.2, 0.3, 0.4, 0.5], () => {
+    for (let index = 0; index < 6; index += 1) {
+      searchRubble(state);
+    }
+  });
+
+  assert.ok(state.condition < 78);
+  assert.ok(state.resources.food <= 1);
+  assert.ok(state.log.some((entry) => /drinkable water|food/i.test(entry.text)));
 });
 
 run("directed radio investigations resolve milestones without relying on random key events", () => {
@@ -459,6 +482,8 @@ run("standalone build stays inline and bundled runtime renders tabs and actions"
   assert.match(harness.elements.get("tab-content").innerHTML, /Current directive/);
   assert.match(harness.elements.get("tab-content").innerHTML, /stage-banner/);
   assert.match(harness.elements.get("tab-content").innerHTML, /Search rubble/);
+  assert.match(harness.elements.get("summary-strip").innerHTML, /Heat line/);
+  assert.match(harness.elements.get("summary-strip").innerHTML, /Outside threat/);
   assert.match(harness.elements.get("tab-content").innerHTML, /New player guide/);
   assert.match(harness.elements.get("tab-content").innerHTML, /Set Username/);
   assert.match(harness.elements.get("tab-content").innerHTML, /Skip tutorial/);
@@ -539,6 +564,7 @@ run("log tab renders compact pulse rows instead of stretched tiles", () => {
 
   const tabMarkup = harness.elements.get("tab-content").innerHTML;
   assert.match(tabMarkup, /Event pulse/);
+  assert.match(tabMarkup, /Patch notes/);
   assert.match(tabMarkup, /log-pulse-stack/);
   assert.match(tabMarkup, /log-pulse-row/);
   assert.doesNotMatch(tabMarkup, /log-pulse-grid/);
@@ -577,6 +603,7 @@ run("help and settings tabs render onboarding support surfaces", () => {
   const helpMarkup = helpHarness.elements.get("tab-content").innerHTML;
   assert.match(helpMarkup, /First 10 minutes/);
   assert.match(helpMarkup, /Core loop/);
+  assert.match(helpMarkup, /build base/i);
   assert.match(helpMarkup, /Combat quick guide/);
 
   const settingsState = createInitialState();
