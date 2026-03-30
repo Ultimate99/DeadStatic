@@ -180,58 +180,58 @@ const ITEMS = {
     id: "sharp_metal",
     name: "Sharp Metal",
     type: "material",
-    description: "A sign edge snapped into something almost intentional.",
+    description: "Craft material for blades, bars, and improvised tools.",
   },
   rusty_knife: {
     id: "rusty_knife",
     name: "Rusty Knife",
     type: "weapon",
     attack: 3,
-    description: "Ugly steel, honest reach.",
+    description: "Weapon. Attack 3.",
   },
   pry_bar: {
     id: "pry_bar",
     name: "Pry Bar",
     type: "tool",
-    description: "Forced entry, broken lockers, and every crate that wants to stay shut.",
+    description: "Tool. Opens sealed caches and improves parts salvage.",
   },
   salvage_hatchet: {
     id: "salvage_hatchet",
     name: "Salvage Hatchet",
     type: "tool",
-    description: "Splits timber, bites into weak boards, and keeps the fence honest.",
+    description: "Tool. Improves wood recovery and shelter work.",
   },
   carpenter_kit: {
     id: "carpenter_kit",
     name: "Carpenter Kit",
     type: "tool",
-    description: "Squares, clamps, spikes, and the discipline to keep the shelter from rotting loose.",
+    description: "Tool. Improves repairs and maintenance.",
   },
   hand_drill: {
     id: "hand_drill",
     name: "Hand Drill",
     type: "tool",
-    description: "Slow, clean leverage for repair work, power rigs, and careful salvage.",
+    description: "Tool. Improves parts salvage, repairs, and signal rig work.",
   },
   signal_meter: {
     id: "signal_meter",
     name: "Signal Meter",
     type: "tool",
-    description: "A tuned meter that separates real signal from ambient static and bad hope.",
+    description: "Tool. Improves signal and anomaly trace work.",
   },
   nail_bat: {
     id: "nail_bat",
     name: "Nail Bat",
     type: "weapon",
     attack: 5,
-    description: "No subtlety. Good weight.",
+    description: "Weapon. Attack 5.",
   },
   hunting_spear: {
     id: "hunting_spear",
     name: "Hunting Spear",
     type: "weapon",
     attack: 6,
-    description: "Long reach, clean thrusts, and less need to let the dead get close.",
+    description: "Weapon. Attack 6.",
   },
   transit_pistol: {
     id: "transit_pistol",
@@ -239,7 +239,7 @@ const ITEMS = {
     type: "weapon",
     attack: 4,
     ammoPerAttack: 1,
-    description: "Reliable if fed and held with intent.",
+    description: "Weapon. Attack 4. Uses 1 ammo.",
   },
   tower_rifle: {
     id: "tower_rifle",
@@ -247,49 +247,49 @@ const ITEMS = {
     type: "weapon",
     attack: 6,
     ammoPerAttack: 1,
-    description: "Recovered from height and bad judgment.",
+    description: "Weapon. Attack 6. Uses 1 ammo.",
   },
   fire_axe: {
     id: "fire_axe",
     name: "Fire Axe",
     type: "weapon",
     attack: 7,
-    description: "The city made these for emergencies. The city was right.",
+    description: "Weapon. Attack 7.",
   },
   patchwork_vest: {
     id: "patchwork_vest",
     name: "Patchwork Vest",
     type: "armor",
     defense: 2,
-    description: "Layered fabric, cut plates, and stubborn stitching.",
+    description: "Armor. Defense 2.",
   },
   riot_padding: {
     id: "riot_padding",
     name: "Riot Padding",
     type: "armor",
     defense: 3,
-    description: "Old municipal armor, still trying.",
+    description: "Armor. Defense 3.",
   },
   signal_cloak: {
     id: "signal_cloak",
     name: "Signal Cloak",
     type: "armor",
     defense: 2,
-    description: "Copper-threaded cloth that makes the air feel wrong.",
+    description: "Armor. Defense 2. Useful on signal-heavy runs.",
   },
   first_aid_rag: {
     id: "first_aid_rag",
     name: "First Aid Rag",
     type: "consumable",
     heal: 14,
-    description: "Barely sterile. Still better than nothing.",
+    description: "Consumable. Heal 14.",
   },
   bandage_roll: {
     id: "bandage_roll",
     name: "Bandage Roll",
     type: "consumable",
     heal: 22,
-    description: "Enough clean wrap to buy another afternoon.",
+    description: "Consumable. Heal 22.",
   },
   canned_beans: {
     id: "canned_beans",
@@ -297,14 +297,14 @@ const ITEMS = {
     type: "consumable",
     condition: 6,
     resources: { food: 1 },
-    description: "Still sealed. Still sacred.",
+    description: "Consumable. Food +1 and Condition +6.",
   },
   fuel_cell: {
     id: "fuel_cell",
     name: "Fuel Cell",
     type: "consumable",
     resources: { fuel: 2 },
-    description: "Portable heat and worse ideas.",
+    description: "Consumable. Fuel +2.",
   },
   road_flare: {
     id: "road_flare",
@@ -312,7 +312,7 @@ const ITEMS = {
     type: "consumable",
     condition: 4,
     resources: { morale: 1 },
-    description: "A hard red burn that makes the dark feel answerable.",
+    description: "Consumable. Morale +1 and Condition +4.",
   },
   field_filter: {
     id: "field_filter",
@@ -320,7 +320,7 @@ const ITEMS = {
     type: "consumable",
     condition: 4,
     resources: { water: 2 },
-    description: "A cracked purifier that still wins arguments with bad water.",
+    description: "Consumable. Drinkable Water +2 and Condition +4.",
   },
   clinic_case: {
     id: "clinic_case",
@@ -328,45 +328,45 @@ const ITEMS = {
     type: "consumable",
     heal: 18,
     resources: { medicine: 1 },
-    description: "A hard-shell medical kit that still shuts clean.",
+    description: "Consumable. Heal 18 and Medicine +1.",
   },
   coil_spike: {
     id: "coil_spike",
     name: "Coil Spike",
     type: "weapon",
     attack: 5,
-    description: "A relay pin turned into a brutal hand tool.",
+    description: "Weapon. Attack 5.",
   },
   tower_battery: {
     id: "tower_battery",
     name: "Tower Battery",
     type: "consumable",
     resources: { electronics: 2, fuel: 1 },
-    description: "A dense emergency cell that still remembers the grid.",
+    description: "Consumable. Electronics +2 and Fuel +1.",
   },
   odd_relic: {
     id: "odd_relic",
     name: "Odd Relic",
     type: "key",
-    description: "Warms in static pockets and heavy weather.",
+    description: "Key item for anomaly progress and late trades.",
   },
   relay_key: {
     id: "relay_key",
     name: "Relay Key",
     type: "key",
-    description: "Stamped with a tower insignia and a serial that should be archived.",
+    description: "Key item for relay and sublevel progression.",
   },
   bunker_pass: {
     id: "bunker_pass",
     name: "Bunker Pass",
     type: "key",
-    description: "Access card from somewhere that should be empty.",
+    description: "Key item for bunker access.",
   },
   static_lens: {
     id: "static_lens",
     name: "Static Lens",
     type: "key",
-    description: "A warped optic that makes the noise feel structural.",
+    description: "Key item for anomaly route decoding.",
   },
 };
 
@@ -378,7 +378,7 @@ const UPGRADES = [
   {
     id: "backpack",
     name: "Backpack",
-    description: "Stitch scavenged cloth and straps into something worth carrying.",
+    description: "Adds one extra loot roll and slightly improves scrap pulls.",
     verb: "Rig",
     cost: { scrap: 8, cloth: 3 },
     requires: { searches: 3 },
@@ -387,7 +387,7 @@ const UPGRADES = [
   {
     id: "rusty_knife",
     name: "Rusty Knife",
-    description: "Wrap a sharp shard, bind the handle, and call it honest work.",
+    description: "Early melee weapon. Grants Rusty Knife and +1 attack.",
     verb: "Bind",
     cost: { scrap: 6, parts: 3, cloth: 1 },
     materials: { sharp_metal: 1 },
@@ -401,7 +401,7 @@ const UPGRADES = [
   {
     id: "shelter_stash",
     name: "Shelter Stash",
-    description: "A corner that counts as ownership.",
+    description: "Opens Shelter and starts tracked food storage.",
     verb: "Secure",
     cost: { scrap: 14, wood: 4, cloth: 2 },
     requires: { searches: 4 },
@@ -414,7 +414,7 @@ const UPGRADES = [
   {
     id: "campfire",
     name: "Campfire",
-    description: "A controlled glow beats a cold death.",
+    description: "Improves burn relief, adds minor defense, and reveals Fuel.",
     verb: "Assemble",
     cost: { scrap: 18, wood: 3, fuel: 2, cloth: 1 },
     requires: { upgrades: ["shelter_stash"], burnUses: 1 },
@@ -428,7 +428,7 @@ const UPGRADES = [
   {
     id: "basic_barricade",
     name: "Basic Barricade",
-    description: "It will not stop everything. It does not need to.",
+    description: "Base defense +2 and lower night damage.",
     verb: "Brace",
     cost: { scrap: 24, wood: 5, parts: 4, wire: 2 },
     requires: { upgrades: ["shelter_stash"] },
@@ -437,7 +437,7 @@ const UPGRADES = [
   {
     id: "first_aid_rag",
     name: "First Aid Rag",
-    description: "A filthy medical miracle.",
+    description: "Consumable heal item. Reveals Medicine.",
     cost: { cloth: 2, medicine: 1 },
     requires: { searches: 5 },
     effects: {
@@ -448,7 +448,7 @@ const UPGRADES = [
   {
     id: "food_search",
     name: "Simple Food Search",
-    description: "Separate hunger from useful scrap before both kill you.",
+    description: "Adds food search chance and one extra search roll.",
     cost: { scrap: 14, wood: 2, water: 1 },
     requires: { upgrades: ["shelter_stash"] },
     effects: {
@@ -459,7 +459,7 @@ const UPGRADES = [
   {
     id: "small_scavenge",
     name: "Small Scavenging Runs",
-    description: "A cautious loop beyond line of sight.",
+    description: "Opens Map and the Ruined Street route.",
     cost: { scrap: 28, food: 2, water: 2 },
     requires: { upgrades: ["backpack", "rusty_knife"] },
     effects: {
@@ -471,7 +471,7 @@ const UPGRADES = [
   {
     id: "food_crate",
     name: "Food Storage",
-    description: "Enough order to keep hunger from winning by accounting.",
+    description: "Improves forage yield and stabilizes food flow.",
     cost: { scrap: 30, wood: 4, parts: 5, cloth: 2 },
     requires: { upgrades: ["food_search"] },
     effects: {
@@ -482,7 +482,7 @@ const UPGRADES = [
   {
     id: "crafting_bench",
     name: "Crafting Bench",
-    description: "The first place built for making instead of hiding.",
+    description: "Unlocks Inventory and improves parts and rare salvage.",
     cost: { scrap: 34, wood: 4, parts: 8, wire: 2 },
     requires: { upgrades: ["small_scavenge"] },
     effects: {
@@ -494,7 +494,7 @@ const UPGRADES = [
   {
     id: "pry_bar_tool",
     name: "Pry Bar",
-    description: "Leverage wins fights with crates, doors, and sealed salvage before they start.",
+    description: "Passive tool for sealed salvage, parts yield, and locked lanes.",
     verb: "Forge",
     cost: { scrap: 14, wood: 1, parts: 4, cloth: 1 },
     materials: { sharp_metal: 1 },
@@ -509,7 +509,7 @@ const UPGRADES = [
   {
     id: "salvage_hatchet",
     name: "Salvage Hatchet",
-    description: "A compact splitter for timber, weak boards, and ugly shelter work.",
+    description: "Passive tool for wood recovery, shelter work, and minor night resistance.",
     verb: "Forge",
     cost: { scrap: 16, wood: 3, parts: 3, cloth: 1 },
     materials: { sharp_metal: 1 },
@@ -524,7 +524,7 @@ const UPGRADES = [
   {
     id: "carpenter_kit",
     name: "Carpenter Kit",
-    description: "A real repair roll: square, clamps, spikes, and enough discipline to keep the base from shaking apart.",
+    description: "Repair tool. Adds repair power, maintenance support, and night resistance.",
     verb: "Assemble",
     cost: { scrap: 20, wood: 4, parts: 6, cloth: 1 },
     requires: { upgrades: ["crafting_bench", "salvage_hatchet"] },
@@ -539,7 +539,7 @@ const UPGRADES = [
   {
     id: "hand_drill",
     name: "Hand Drill",
-    description: "Slow leverage for clean fix work, better joints, and signal rigs that stop dying from lazy braces.",
+    description: "Repair and signal tool. Improves parts salvage and fix work.",
     verb: "Build",
     cost: { scrap: 22, wood: 2, parts: 7, wire: 2 },
     requires: { upgrades: ["crafting_bench", "pry_bar_tool"] },
@@ -554,7 +554,7 @@ const UPGRADES = [
   {
     id: "weapon_rack",
     name: "Weapon Slot",
-    description: "A proper place for a proper answer.",
+    description: "Unlocks weapon loadout and adds +1 attack.",
     cost: { scrap: 34, wood: 2, parts: 6, wire: 1 },
     requires: { upgrades: ["crafting_bench"] },
     effects: {
@@ -566,7 +566,7 @@ const UPGRADES = [
   {
     id: "nail_bat",
     name: "Nail Bat",
-    description: "The first reliable answer to anything that reaches the doorway.",
+    description: "Mid-tier melee weapon. Grants Nail Bat and +1 attack.",
     verb: "Hammer",
     cost: { scrap: 18, wood: 5, parts: 3, wire: 1, cloth: 1 },
     requires: { upgrades: ["weapon_rack", "crafting_bench"] },
@@ -579,7 +579,7 @@ const UPGRADES = [
   {
     id: "hunting_spear",
     name: "Hunting Spear",
-    description: "Long reach, cleaner kills, and less need to let the dead lean on you.",
+    description: "Long-reach weapon. Grants Hunting Spear, +2 attack, and better expedition loot.",
     verb: "Shaft",
     cost: { scrap: 24, wood: 7, parts: 4, cloth: 2 },
     requires: { upgrades: ["weapon_rack", "watch_post"] },
@@ -593,7 +593,7 @@ const UPGRADES = [
   {
     id: "armor_hooks",
     name: "Armor Slot",
-    description: "A wall of hooks for whatever passes as protection now.",
+    description: "Unlocks armor loadout and adds +1 defense.",
     cost: { scrap: 34, wood: 2, parts: 6, cloth: 2 },
     requires: { upgrades: ["crafting_bench"] },
     effects: {
@@ -605,7 +605,7 @@ const UPGRADES = [
   {
     id: "riot_padding_kit",
     name: "Riot Padding",
-    description: "Municipal armor re-cut for a world where everything closes distance too fast.",
+    description: "Armor upgrade. Grants Riot Padding and +1 defense.",
     verb: "Refit",
     cost: { scrap: 24, cloth: 5, parts: 6, wire: 1 },
     requires: { upgrades: ["armor_hooks", "watch_post"] },
@@ -618,7 +618,7 @@ const UPGRADES = [
   {
     id: "watch_post",
     name: "Watch Post",
-    description: "Higher eyes make the nights shorter.",
+    description: "Major defense module. Adds defense, crew capacity, and safer routes.",
     cost: { scrap: 46, wood: 7, parts: 8, wire: 2 },
     requires: { upgrades: ["basic_barricade"] },
     effects: {
@@ -631,7 +631,7 @@ const UPGRADES = [
   {
     id: "tripwire_grid",
     name: "Tripwire Grid",
-    description: "Wire the approach, mark the choke, and make every breach pay for the step.",
+    description: "Perimeter trap. Adds defense, coverage, and siege resistance.",
     cost: { scrap: 38, wood: 5, parts: 6, wire: 5 },
     requires: { upgrades: ["basic_barricade", "watch_post"] },
     effects: {
@@ -644,7 +644,7 @@ const UPGRADES = [
   {
     id: "ammo_press",
     name: "Ammo Press",
-    description: "No bullets appear on purpose by accident.",
+    description: "Unlocks Ammo and improves rare salvage.",
     cost: { scrap: 40, wood: 2, parts: 10, chemicals: 3 },
     requires: { upgrades: ["crafting_bench"] },
     effects: {
@@ -655,7 +655,7 @@ const UPGRADES = [
   {
     id: "repair_rig",
     name: "Repair Rig",
-    description: "A fixed frame for real patch work, clean joints, and fast line repairs when the fence starts to fail.",
+    description: "Raises repair output, maintenance support, and night stability.",
     cost: { scrap: 42, wood: 5, parts: 10, wire: 2 },
     requires: { upgrades: ["crafting_bench", "survivor_cots"] },
     effects: {
@@ -667,7 +667,7 @@ const UPGRADES = [
   {
     id: "rain_collector",
     name: "Rain Collector",
-    description: "A cleaner mouthful than the old pipes.",
+    description: "Passive water income and minor recovery.",
     cost: { scrap: 28, wood: 4, parts: 5, cloth: 2, wire: 2 },
     requires: { upgrades: ["shelter_stash"] },
     effects: {
@@ -679,7 +679,7 @@ const UPGRADES = [
   {
     id: "water_still",
     name: "Water Still",
-    description: "Turns dubious runoff into something the shelter can keep inside people.",
+    description: "Adds safer water income, water security, and slow recovery.",
     cost: { scrap: 28, wood: 5, parts: 6, fuel: 2, cloth: 2 },
     requires: { upgrades: ["rain_collector", "smokehouse"] },
     effects: {
@@ -691,7 +691,7 @@ const UPGRADES = [
   {
     id: "radio_rig",
     name: "Radio",
-    description: "The dead city still has a voice.",
+    description: "Unlocks Radio and increases trace depth.",
     cost: { scrap: 32, parts: 10, wire: 5, electronics: 3, fuel: 2 },
     requires: { upgrades: ["watch_post"] },
     effects: {
@@ -703,7 +703,7 @@ const UPGRADES = [
   {
     id: "battery_bank",
     name: "Battery Bank",
-    description: "Stack reserve cells and stop letting every quiet hour kill your signal tools.",
+    description: "Supplies power for signal tools and stabilizes the radio stack.",
     cost: { scrap: 36, parts: 9, wire: 4, electronics: 3, fuel: 2 },
     requires: { upgrades: ["radio_rig"] },
     effects: {
@@ -715,7 +715,7 @@ const UPGRADES = [
   {
     id: "signal_meter",
     name: "Signal Meter",
-    description: "A tuned meter that catches the difference between carrier, interference, and something worse.",
+    description: "Signal tool. Improves trace gain and anomaly gain.",
     verb: "Tune",
     cost: { scrap: 24, parts: 6, wire: 4, electronics: 2 },
     requires: { upgrades: ["radio_rig", "crafting_bench"] },
@@ -729,7 +729,7 @@ const UPGRADES = [
   {
     id: "flood_lights",
     name: "Flood Lights",
-    description: "Hard white arcs over the fence line. Ugly. Effective. Impossible to ignore.",
+    description: "Boosts perimeter coverage, defense, and night resistance.",
     cost: { scrap: 34, parts: 8, wire: 5, electronics: 2, fuel: 3 },
     requires: { upgrades: ["watch_post", "radio_rig"] },
     effects: {
@@ -741,7 +741,7 @@ const UPGRADES = [
   {
     id: "map_board",
     name: "Map",
-    description: "A wall of routes, guesses, and exits that failed.",
+    description: "Opens new zones and route planning.",
     cost: { scrap: 32, wood: 3, parts: 5, cloth: 2 },
     requires: { upgrades: ["small_scavenge"] },
     effects: {
@@ -752,7 +752,7 @@ const UPGRADES = [
   {
     id: "survivor_cots",
     name: "Survivor Recruitment",
-    description: "A second mattress is a public statement.",
+    description: "Unlocks Crew and increases survivor capacity.",
     cost: { scrap: 36, wood: 6, food: 4, water: 3, cloth: 4 },
     requires: { upgrades: ["food_crate"] },
     effects: {
@@ -764,7 +764,7 @@ const UPGRADES = [
   {
     id: "smokehouse",
     name: "Smokehouse",
-    description: "A shelter that smells like tomorrow.",
+    description: "Improves food preservation and slow recovery.",
     cost: { scrap: 48, wood: 8, parts: 8, fuel: 4, cloth: 2 },
     requires: { upgrades: ["food_crate"] },
     effects: {
@@ -775,7 +775,7 @@ const UPGRADES = [
   {
     id: "trader_beacon",
     name: "Signal Beacon",
-    description: "A disciplined tower mark that sharpens the shelter line instead of advertising a market.",
+    description: "Strengthens signal gain and quiet-night mitigation.",
     cost: { scrap: 40, wood: 3, parts: 8, wire: 3, fuel: 4 },
     requires: { upgrades: ["radio_rig"] },
     effects: {
@@ -786,7 +786,7 @@ const UPGRADES = [
   {
     id: "scout_bike",
     name: "Scout Bike",
-    description: "Fast enough to be reckless on purpose.",
+    description: "Unlocks deeper zones and improves expedition returns.",
     cost: { scrap: 52, parts: 14, fuel: 8, electronics: 2 },
     requires: { upgrades: ["map_board"] },
     effects: {
@@ -798,7 +798,7 @@ const UPGRADES = [
   {
     id: "signal_decoder",
     name: "Signal Decoder",
-    description: "Translates the hiss into intent.",
+    description: "Major radio upgrade. Deepens traces and reveals late mystery lanes.",
     cost: { scrap: 52, parts: 14, wire: 4, electronics: 4, relics: 2 },
     requires: { upgrades: ["radio_rig"], radioProgress: 2 },
     effects: {
@@ -810,7 +810,7 @@ const UPGRADES = [
   {
     id: "auto_scavenger",
     name: "Auto Scavenger",
-    description: "A dumb rig that can still find bright metal.",
+    description: "Small passive scrap and parts income plus better salvage routes.",
     cost: { scrap: 68, wood: 4, parts: 18, wire: 4, fuel: 6 },
     requires: { upgrades: ["survivor_cots", "watch_post"] },
     effects: {
@@ -825,7 +825,7 @@ const UPGRADES = [
   {
     id: "faraday_mesh",
     name: "Faraday Mesh",
-    description: "Wire the walls before the walls start listening back.",
+    description: "Heavy late defense against signal pressure and siege nights.",
     cost: { scrap: 64, parts: 18, wire: 8, electronics: 2, relics: 2 },
     requires: { upgrades: ["signal_decoder"] },
     effects: {
@@ -836,7 +836,7 @@ const UPGRADES = [
   {
     id: "relay_tap",
     name: "Relay Tap",
-    description: "Steal power from a signal that never asked permission.",
+    description: "Boosts late radio depth, signal gain, and anomaly gain.",
     cost: { scrap: 66, parts: 20, wire: 7, electronics: 4, fuel: 8 },
     requires: { upgrades: ["trader_beacon"], radioProgress: 4 },
     effects: {
@@ -848,7 +848,7 @@ const UPGRADES = [
   {
     id: "bunker_drill",
     name: "Bunker Drill",
-    description: "Something under the city was not meant to open easily.",
+    description: "Opens the bunker route and pushes secret progress.",
     cost: { scrap: 78, parts: 22, wire: 6, fuel: 12, relics: 3 },
     requires: { upgrades: ["signal_decoder"], secretProgress: 2 },
     effects: {
@@ -5371,6 +5371,69 @@ function itemLabel(itemId) {
   return ITEMS[itemId]?.name || itemId;
 }
 
+function formatSignedStat(value, suffix = "") {
+  const normalized = Number(value);
+  if (!Number.isFinite(normalized) || normalized === 0) {
+    return null;
+  }
+
+  const rounded = Math.abs(normalized) >= 1
+    ? Number(normalized.toFixed(2))
+    : Number(normalized.toFixed(3));
+  return `${rounded > 0 ? "+" : ""}${rounded}${suffix}`;
+}
+
+function renderResourceChange(resourceId, amount) {
+  const formatted = formatSignedStat(amount);
+  return formatted ? `${resourceLabel(resourceId)} ${formatted}` : null;
+}
+
+function itemSummaryChips(item) {
+  const chips = [item.type];
+
+  if (item.attack) {
+    chips.push(`atk ${item.attack}`);
+  }
+  if (item.defense) {
+    chips.push(`def ${item.defense}`);
+  }
+  if (item.heal) {
+    chips.push(`heal ${item.heal}`);
+  }
+  if (item.condition) {
+    chips.push(`cond +${item.condition}`);
+  }
+  if (item.ammoPerAttack) {
+    chips.push(`ammo ${item.ammoPerAttack}/hit`);
+  }
+  if (item.resources) {
+    Object.entries(item.resources).forEach(([resourceId, amount]) => {
+      const label = renderResourceChange(resourceId, amount);
+      if (label) {
+        chips.push(label);
+      }
+    });
+  }
+
+  const toolChips = {
+    pry_bar: ["sealed caches", "parts salvage"],
+    salvage_hatchet: ["wood salvage", "shelter work"],
+    carpenter_kit: ["repairs +1", "maintenance +1"],
+    hand_drill: ["repairs +1", "parts salvage"],
+    signal_meter: ["signal trace", "anomaly trace"],
+  };
+
+  if (toolChips[item.id]) {
+    chips.push(...toolChips[item.id]);
+  } else if (item.type === "key") {
+    chips.push("progress item");
+  } else if (item.type === "material") {
+    chips.push("craft material");
+  }
+
+  return chips;
+}
+
 function contentAvailable(state, requirements = {}) {
   if (requirements.searches && state.stats.searches < requirements.searches) {
     return false;
@@ -6257,7 +6320,7 @@ function renderCommandDesk(state, derived, availableSources, availableUpgrades) 
 
 function renderInventoryItemCard(itemId, amount) {
   const item = ITEMS[itemId];
-  let actionMarkup = `<div class="chip-row">${tagList(["stored"])}</div>`;
+  let actionMarkup = "";
   if (item.type === "weapon" || item.type === "armor") {
     actionMarkup = actionButton({
       action: "equip-item",
@@ -6272,9 +6335,9 @@ function renderInventoryItemCard(itemId, amount) {
       meta: item.type,
       data: { item: itemId },
     });
-  } else if (item.type === "tool") {
-    actionMarkup = `<div class="chip-row">${tagList(["tool", "passive utility"])}</div>`;
   }
+
+  const summary = itemSummaryChips(item);
 
   return `
     <div class="list-block inventory-item-card">
@@ -6282,7 +6345,8 @@ function renderInventoryItemCard(itemId, amount) {
         <h4>${item.name}</h4>
         <span class="tag">${item.type} x${amount}</span>
       </div>
-      <p class="note">${item.description}</p>
+      ${summary.length ? `<div class="chip-row">${tagList(summary)}</div>` : ""}
+      ${item.description ? `<p class="note">${item.description}</p>` : ""}
       ${actionMarkup}
     </div>
   `;
@@ -7748,6 +7812,76 @@ function upgradeDisciplineLabel(upgrade) {
   return upgradeDiscipline(upgrade) === "build" ? "base build" : "fieldcraft";
 }
 
+function formatPercent(value) {
+  return `${Math.round(value * 100)}%`;
+}
+
+function upgradeEffectChips(upgrade) {
+  const effects = upgrade.effects || {};
+  const chips = [];
+
+  if (effects.attack) chips.push(`atk +${effects.attack}`);
+  if (effects.defense) chips.push(`def +${effects.defense}`);
+  if (effects.searchBonusRolls) chips.push(`loot rolls +${effects.searchBonusRolls}`);
+  if (effects.searchFoodChance) chips.push(`food search +${formatPercent(effects.searchFoodChance)}`);
+  if (effects.searchPartChance) chips.push(`parts +${formatPercent(effects.searchPartChance)}`);
+  if (effects.conditionRegen) chips.push(`regen +${effects.conditionRegen}/h`);
+  if (effects.survivorCap) chips.push(`crew cap +${effects.survivorCap}`);
+  if (effects.expeditionLootBonus) chips.push(`expedition loot +${formatPercent(effects.expeditionLootBonus)}`);
+  if (effects.scoutBonus) chips.push(`route safety +${formatPercent(effects.scoutBonus)}`);
+  if (effects.radioDepth) chips.push(`radio depth +${effects.radioDepth}`);
+  if (effects.rareLootBonus) chips.push(`rare loot +${formatPercent(effects.rareLootBonus)}`);
+  if (effects.salvageYieldBonus) chips.push(`salvage +${formatPercent(effects.salvageYieldBonus)}`);
+  if (effects.forageYieldBonus) chips.push(`forage +${formatPercent(effects.forageYieldBonus)}`);
+  if (effects.signalGain) chips.push(`signal +${formatPercent(effects.signalGain)}`);
+  if (effects.anomalyGain) chips.push(`anomaly +${formatPercent(effects.anomalyGain)}`);
+  if (effects.nightMitigation) chips.push(`night resist +${formatPercent(effects.nightMitigation)}`);
+  if (effects.power) chips.push(`power +${effects.power}`);
+  if (effects.coverage) chips.push(`coverage +${effects.coverage}`);
+  if (effects.repairPower) chips.push(`repairs +${effects.repairPower}`);
+  if (effects.maintenance) chips.push(`maintenance +${effects.maintenance}`);
+  if (effects.foodSecurity) chips.push(`food security +${effects.foodSecurity}`);
+  if (effects.waterSecurity) chips.push(`water security +${effects.waterSecurity}`);
+  if (effects.siegeMitigation) chips.push(`siege resist +${formatPercent(effects.siegeMitigation)}`);
+  if (effects.burnCondition) chips.push(`burn +${effects.burnCondition} cond`);
+  if (effects.weaponSlot) chips.push("weapon slot");
+  if (effects.armorSlot) chips.push("armor slot");
+
+  if (effects.passive) {
+    Object.entries(effects.passive).forEach(([resourceId, amount]) => {
+      chips.push(`${resourceLabel(resourceId)} +${amount}/h`);
+    });
+  }
+  if (effects.grantItems) {
+    Object.entries(effects.grantItems).forEach(([itemId, amount]) => {
+      chips.push(`grants ${itemLabel(itemId)} x${amount}`);
+    });
+  }
+  if (effects.unlockSections) {
+    effects.unlockSections.forEach((sectionId) => {
+      chips.push(`opens ${TAB_NAME_BY_SECTION[sectionId] || sectionId}`);
+    });
+  }
+  if (effects.unlockZones) {
+    effects.unlockZones.forEach((zoneId) => {
+      const zone = ZONES.find((entry) => entry.id === zoneId);
+      chips.push(`route ${zone?.name || zoneId}`);
+    });
+  }
+
+  return chips;
+}
+
+const TAB_NAME_BY_SECTION = {
+  shelter: "Shelter",
+  inventory: "Inventory",
+  map: "Map",
+  survivors: "Crew",
+  radio: "Radio",
+  trader: "Trade",
+  factions: "Factions",
+};
+
 function getUpgradeMissingNotes(state, upgrade) {
   const missing = [];
 
@@ -7881,6 +8015,7 @@ function renderUpgradeCard(state, upgrade) {
   const discipline = upgradeDisciplineLabel(upgrade);
   const meta = [];
   const missing = getUpgradeMissingNotes(state, upgrade);
+  const effectChips = upgradeEffectChips(upgrade);
 
   meta.push(discipline);
   if (Object.keys(upgrade.cost || {}).length) {
@@ -7896,13 +8031,13 @@ function renderUpgradeCard(state, upgrade) {
         <h4>${upgrade.name}</h4>
         <span class="tag">${built ? "built" : ready ? "ready" : "blocked"}</span>
       </div>
-      <p class="note">${upgrade.description}</p>
       ${meta.length ? `<div class="chip-row">${tagList(meta)}</div>` : ""}
+      ${effectChips.length ? `<div class="chip-row">${tagList(effectChips)}</div>` : ""}
       ${!built && missing.length ? `<div class="chip-row">${tagList(missing)}</div>` : ""}
       ${built ? "" : actionButton({
         action: "buy-upgrade",
         label: `${upgrade.verb || "Build"} ${upgrade.name}`,
-        meta: ready ? "Permanent unlock" : "Need salvage or tools",
+        meta: ready ? "Permanent unlock" : missing[0] || "Need salvage or tools",
         disabled: !ready,
         data: { upgrade: upgrade.id },
       })}

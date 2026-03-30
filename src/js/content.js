@@ -2,7 +2,7 @@ export const UPGRADES = [
   {
     id: "backpack",
     name: "Backpack",
-    description: "Stitch scavenged cloth and straps into something worth carrying.",
+    description: "Adds one extra loot roll and slightly improves scrap pulls.",
     verb: "Rig",
     cost: { scrap: 8, cloth: 3 },
     requires: { searches: 3 },
@@ -11,7 +11,7 @@ export const UPGRADES = [
   {
     id: "rusty_knife",
     name: "Rusty Knife",
-    description: "Wrap a sharp shard, bind the handle, and call it honest work.",
+    description: "Early melee weapon. Grants Rusty Knife and +1 attack.",
     verb: "Bind",
     cost: { scrap: 6, parts: 3, cloth: 1 },
     materials: { sharp_metal: 1 },
@@ -25,7 +25,7 @@ export const UPGRADES = [
   {
     id: "shelter_stash",
     name: "Shelter Stash",
-    description: "A corner that counts as ownership.",
+    description: "Opens Shelter and starts tracked food storage.",
     verb: "Secure",
     cost: { scrap: 14, wood: 4, cloth: 2 },
     requires: { searches: 4 },
@@ -38,7 +38,7 @@ export const UPGRADES = [
   {
     id: "campfire",
     name: "Campfire",
-    description: "A controlled glow beats a cold death.",
+    description: "Improves burn relief, adds minor defense, and reveals Fuel.",
     verb: "Assemble",
     cost: { scrap: 18, wood: 3, fuel: 2, cloth: 1 },
     requires: { upgrades: ["shelter_stash"], burnUses: 1 },
@@ -52,7 +52,7 @@ export const UPGRADES = [
   {
     id: "basic_barricade",
     name: "Basic Barricade",
-    description: "It will not stop everything. It does not need to.",
+    description: "Base defense +2 and lower night damage.",
     verb: "Brace",
     cost: { scrap: 24, wood: 5, parts: 4, wire: 2 },
     requires: { upgrades: ["shelter_stash"] },
@@ -61,7 +61,7 @@ export const UPGRADES = [
   {
     id: "first_aid_rag",
     name: "First Aid Rag",
-    description: "A filthy medical miracle.",
+    description: "Consumable heal item. Reveals Medicine.",
     cost: { cloth: 2, medicine: 1 },
     requires: { searches: 5 },
     effects: {
@@ -72,7 +72,7 @@ export const UPGRADES = [
   {
     id: "food_search",
     name: "Simple Food Search",
-    description: "Separate hunger from useful scrap before both kill you.",
+    description: "Adds food search chance and one extra search roll.",
     cost: { scrap: 14, wood: 2, water: 1 },
     requires: { upgrades: ["shelter_stash"] },
     effects: {
@@ -83,7 +83,7 @@ export const UPGRADES = [
   {
     id: "small_scavenge",
     name: "Small Scavenging Runs",
-    description: "A cautious loop beyond line of sight.",
+    description: "Opens Map and the Ruined Street route.",
     cost: { scrap: 28, food: 2, water: 2 },
     requires: { upgrades: ["backpack", "rusty_knife"] },
     effects: {
@@ -95,7 +95,7 @@ export const UPGRADES = [
   {
     id: "food_crate",
     name: "Food Storage",
-    description: "Enough order to keep hunger from winning by accounting.",
+    description: "Improves forage yield and stabilizes food flow.",
     cost: { scrap: 30, wood: 4, parts: 5, cloth: 2 },
     requires: { upgrades: ["food_search"] },
     effects: {
@@ -106,7 +106,7 @@ export const UPGRADES = [
   {
     id: "crafting_bench",
     name: "Crafting Bench",
-    description: "The first place built for making instead of hiding.",
+    description: "Unlocks Inventory and improves parts and rare salvage.",
     cost: { scrap: 34, wood: 4, parts: 8, wire: 2 },
     requires: { upgrades: ["small_scavenge"] },
     effects: {
@@ -118,7 +118,7 @@ export const UPGRADES = [
   {
     id: "pry_bar_tool",
     name: "Pry Bar",
-    description: "Leverage wins fights with crates, doors, and sealed salvage before they start.",
+    description: "Passive tool for sealed salvage, parts yield, and locked lanes.",
     verb: "Forge",
     cost: { scrap: 14, wood: 1, parts: 4, cloth: 1 },
     materials: { sharp_metal: 1 },
@@ -133,7 +133,7 @@ export const UPGRADES = [
   {
     id: "salvage_hatchet",
     name: "Salvage Hatchet",
-    description: "A compact splitter for timber, weak boards, and ugly shelter work.",
+    description: "Passive tool for wood recovery, shelter work, and minor night resistance.",
     verb: "Forge",
     cost: { scrap: 16, wood: 3, parts: 3, cloth: 1 },
     materials: { sharp_metal: 1 },
@@ -148,7 +148,7 @@ export const UPGRADES = [
   {
     id: "carpenter_kit",
     name: "Carpenter Kit",
-    description: "A real repair roll: square, clamps, spikes, and enough discipline to keep the base from shaking apart.",
+    description: "Repair tool. Adds repair power, maintenance support, and night resistance.",
     verb: "Assemble",
     cost: { scrap: 20, wood: 4, parts: 6, cloth: 1 },
     requires: { upgrades: ["crafting_bench", "salvage_hatchet"] },
@@ -163,7 +163,7 @@ export const UPGRADES = [
   {
     id: "hand_drill",
     name: "Hand Drill",
-    description: "Slow leverage for clean fix work, better joints, and signal rigs that stop dying from lazy braces.",
+    description: "Repair and signal tool. Improves parts salvage and fix work.",
     verb: "Build",
     cost: { scrap: 22, wood: 2, parts: 7, wire: 2 },
     requires: { upgrades: ["crafting_bench", "pry_bar_tool"] },
@@ -178,7 +178,7 @@ export const UPGRADES = [
   {
     id: "weapon_rack",
     name: "Weapon Slot",
-    description: "A proper place for a proper answer.",
+    description: "Unlocks weapon loadout and adds +1 attack.",
     cost: { scrap: 34, wood: 2, parts: 6, wire: 1 },
     requires: { upgrades: ["crafting_bench"] },
     effects: {
@@ -190,7 +190,7 @@ export const UPGRADES = [
   {
     id: "nail_bat",
     name: "Nail Bat",
-    description: "The first reliable answer to anything that reaches the doorway.",
+    description: "Mid-tier melee weapon. Grants Nail Bat and +1 attack.",
     verb: "Hammer",
     cost: { scrap: 18, wood: 5, parts: 3, wire: 1, cloth: 1 },
     requires: { upgrades: ["weapon_rack", "crafting_bench"] },
@@ -203,7 +203,7 @@ export const UPGRADES = [
   {
     id: "hunting_spear",
     name: "Hunting Spear",
-    description: "Long reach, cleaner kills, and less need to let the dead lean on you.",
+    description: "Long-reach weapon. Grants Hunting Spear, +2 attack, and better expedition loot.",
     verb: "Shaft",
     cost: { scrap: 24, wood: 7, parts: 4, cloth: 2 },
     requires: { upgrades: ["weapon_rack", "watch_post"] },
@@ -217,7 +217,7 @@ export const UPGRADES = [
   {
     id: "armor_hooks",
     name: "Armor Slot",
-    description: "A wall of hooks for whatever passes as protection now.",
+    description: "Unlocks armor loadout and adds +1 defense.",
     cost: { scrap: 34, wood: 2, parts: 6, cloth: 2 },
     requires: { upgrades: ["crafting_bench"] },
     effects: {
@@ -229,7 +229,7 @@ export const UPGRADES = [
   {
     id: "riot_padding_kit",
     name: "Riot Padding",
-    description: "Municipal armor re-cut for a world where everything closes distance too fast.",
+    description: "Armor upgrade. Grants Riot Padding and +1 defense.",
     verb: "Refit",
     cost: { scrap: 24, cloth: 5, parts: 6, wire: 1 },
     requires: { upgrades: ["armor_hooks", "watch_post"] },
@@ -242,7 +242,7 @@ export const UPGRADES = [
   {
     id: "watch_post",
     name: "Watch Post",
-    description: "Higher eyes make the nights shorter.",
+    description: "Major defense module. Adds defense, crew capacity, and safer routes.",
     cost: { scrap: 46, wood: 7, parts: 8, wire: 2 },
     requires: { upgrades: ["basic_barricade"] },
     effects: {
@@ -255,7 +255,7 @@ export const UPGRADES = [
   {
     id: "tripwire_grid",
     name: "Tripwire Grid",
-    description: "Wire the approach, mark the choke, and make every breach pay for the step.",
+    description: "Perimeter trap. Adds defense, coverage, and siege resistance.",
     cost: { scrap: 38, wood: 5, parts: 6, wire: 5 },
     requires: { upgrades: ["basic_barricade", "watch_post"] },
     effects: {
@@ -268,7 +268,7 @@ export const UPGRADES = [
   {
     id: "ammo_press",
     name: "Ammo Press",
-    description: "No bullets appear on purpose by accident.",
+    description: "Unlocks Ammo and improves rare salvage.",
     cost: { scrap: 40, wood: 2, parts: 10, chemicals: 3 },
     requires: { upgrades: ["crafting_bench"] },
     effects: {
@@ -279,7 +279,7 @@ export const UPGRADES = [
   {
     id: "repair_rig",
     name: "Repair Rig",
-    description: "A fixed frame for real patch work, clean joints, and fast line repairs when the fence starts to fail.",
+    description: "Raises repair output, maintenance support, and night stability.",
     cost: { scrap: 42, wood: 5, parts: 10, wire: 2 },
     requires: { upgrades: ["crafting_bench", "survivor_cots"] },
     effects: {
@@ -291,7 +291,7 @@ export const UPGRADES = [
   {
     id: "rain_collector",
     name: "Rain Collector",
-    description: "A cleaner mouthful than the old pipes.",
+    description: "Passive water income and minor recovery.",
     cost: { scrap: 28, wood: 4, parts: 5, cloth: 2, wire: 2 },
     requires: { upgrades: ["shelter_stash"] },
     effects: {
@@ -303,7 +303,7 @@ export const UPGRADES = [
   {
     id: "water_still",
     name: "Water Still",
-    description: "Turns dubious runoff into something the shelter can keep inside people.",
+    description: "Adds safer water income, water security, and slow recovery.",
     cost: { scrap: 28, wood: 5, parts: 6, fuel: 2, cloth: 2 },
     requires: { upgrades: ["rain_collector", "smokehouse"] },
     effects: {
@@ -315,7 +315,7 @@ export const UPGRADES = [
   {
     id: "radio_rig",
     name: "Radio",
-    description: "The dead city still has a voice.",
+    description: "Unlocks Radio and increases trace depth.",
     cost: { scrap: 32, parts: 10, wire: 5, electronics: 3, fuel: 2 },
     requires: { upgrades: ["watch_post"] },
     effects: {
@@ -327,7 +327,7 @@ export const UPGRADES = [
   {
     id: "battery_bank",
     name: "Battery Bank",
-    description: "Stack reserve cells and stop letting every quiet hour kill your signal tools.",
+    description: "Supplies power for signal tools and stabilizes the radio stack.",
     cost: { scrap: 36, parts: 9, wire: 4, electronics: 3, fuel: 2 },
     requires: { upgrades: ["radio_rig"] },
     effects: {
@@ -339,7 +339,7 @@ export const UPGRADES = [
   {
     id: "signal_meter",
     name: "Signal Meter",
-    description: "A tuned meter that catches the difference between carrier, interference, and something worse.",
+    description: "Signal tool. Improves trace gain and anomaly gain.",
     verb: "Tune",
     cost: { scrap: 24, parts: 6, wire: 4, electronics: 2 },
     requires: { upgrades: ["radio_rig", "crafting_bench"] },
@@ -353,7 +353,7 @@ export const UPGRADES = [
   {
     id: "flood_lights",
     name: "Flood Lights",
-    description: "Hard white arcs over the fence line. Ugly. Effective. Impossible to ignore.",
+    description: "Boosts perimeter coverage, defense, and night resistance.",
     cost: { scrap: 34, parts: 8, wire: 5, electronics: 2, fuel: 3 },
     requires: { upgrades: ["watch_post", "radio_rig"] },
     effects: {
@@ -365,7 +365,7 @@ export const UPGRADES = [
   {
     id: "map_board",
     name: "Map",
-    description: "A wall of routes, guesses, and exits that failed.",
+    description: "Opens new zones and route planning.",
     cost: { scrap: 32, wood: 3, parts: 5, cloth: 2 },
     requires: { upgrades: ["small_scavenge"] },
     effects: {
@@ -376,7 +376,7 @@ export const UPGRADES = [
   {
     id: "survivor_cots",
     name: "Survivor Recruitment",
-    description: "A second mattress is a public statement.",
+    description: "Unlocks Crew and increases survivor capacity.",
     cost: { scrap: 36, wood: 6, food: 4, water: 3, cloth: 4 },
     requires: { upgrades: ["food_crate"] },
     effects: {
@@ -388,7 +388,7 @@ export const UPGRADES = [
   {
     id: "smokehouse",
     name: "Smokehouse",
-    description: "A shelter that smells like tomorrow.",
+    description: "Improves food preservation and slow recovery.",
     cost: { scrap: 48, wood: 8, parts: 8, fuel: 4, cloth: 2 },
     requires: { upgrades: ["food_crate"] },
     effects: {
@@ -399,7 +399,7 @@ export const UPGRADES = [
   {
     id: "trader_beacon",
     name: "Signal Beacon",
-    description: "A disciplined tower mark that sharpens the shelter line instead of advertising a market.",
+    description: "Strengthens signal gain and quiet-night mitigation.",
     cost: { scrap: 40, wood: 3, parts: 8, wire: 3, fuel: 4 },
     requires: { upgrades: ["radio_rig"] },
     effects: {
@@ -410,7 +410,7 @@ export const UPGRADES = [
   {
     id: "scout_bike",
     name: "Scout Bike",
-    description: "Fast enough to be reckless on purpose.",
+    description: "Unlocks deeper zones and improves expedition returns.",
     cost: { scrap: 52, parts: 14, fuel: 8, electronics: 2 },
     requires: { upgrades: ["map_board"] },
     effects: {
@@ -422,7 +422,7 @@ export const UPGRADES = [
   {
     id: "signal_decoder",
     name: "Signal Decoder",
-    description: "Translates the hiss into intent.",
+    description: "Major radio upgrade. Deepens traces and reveals late mystery lanes.",
     cost: { scrap: 52, parts: 14, wire: 4, electronics: 4, relics: 2 },
     requires: { upgrades: ["radio_rig"], radioProgress: 2 },
     effects: {
@@ -434,7 +434,7 @@ export const UPGRADES = [
   {
     id: "auto_scavenger",
     name: "Auto Scavenger",
-    description: "A dumb rig that can still find bright metal.",
+    description: "Small passive scrap and parts income plus better salvage routes.",
     cost: { scrap: 68, wood: 4, parts: 18, wire: 4, fuel: 6 },
     requires: { upgrades: ["survivor_cots", "watch_post"] },
     effects: {
@@ -449,7 +449,7 @@ export const UPGRADES = [
   {
     id: "faraday_mesh",
     name: "Faraday Mesh",
-    description: "Wire the walls before the walls start listening back.",
+    description: "Heavy late defense against signal pressure and siege nights.",
     cost: { scrap: 64, parts: 18, wire: 8, electronics: 2, relics: 2 },
     requires: { upgrades: ["signal_decoder"] },
     effects: {
@@ -460,7 +460,7 @@ export const UPGRADES = [
   {
     id: "relay_tap",
     name: "Relay Tap",
-    description: "Steal power from a signal that never asked permission.",
+    description: "Boosts late radio depth, signal gain, and anomaly gain.",
     cost: { scrap: 66, parts: 20, wire: 7, electronics: 4, fuel: 8 },
     requires: { upgrades: ["trader_beacon"], radioProgress: 4 },
     effects: {
@@ -472,7 +472,7 @@ export const UPGRADES = [
   {
     id: "bunker_drill",
     name: "Bunker Drill",
-    description: "Something under the city was not meant to open easily.",
+    description: "Opens the bunker route and pushes secret progress.",
     cost: { scrap: 78, parts: 22, wire: 6, fuel: 12, relics: 3 },
     requires: { upgrades: ["signal_decoder"], secretProgress: 2 },
     effects: {

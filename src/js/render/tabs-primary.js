@@ -87,6 +87,76 @@ function upgradeDisciplineLabel(upgrade) {
   return upgradeDiscipline(upgrade) === "build" ? "base build" : "fieldcraft";
 }
 
+function formatPercent(value) {
+  return `${Math.round(value * 100)}%`;
+}
+
+function upgradeEffectChips(upgrade) {
+  const effects = upgrade.effects || {};
+  const chips = [];
+
+  if (effects.attack) chips.push(`atk +${effects.attack}`);
+  if (effects.defense) chips.push(`def +${effects.defense}`);
+  if (effects.searchBonusRolls) chips.push(`loot rolls +${effects.searchBonusRolls}`);
+  if (effects.searchFoodChance) chips.push(`food search +${formatPercent(effects.searchFoodChance)}`);
+  if (effects.searchPartChance) chips.push(`parts +${formatPercent(effects.searchPartChance)}`);
+  if (effects.conditionRegen) chips.push(`regen +${effects.conditionRegen}/h`);
+  if (effects.survivorCap) chips.push(`crew cap +${effects.survivorCap}`);
+  if (effects.expeditionLootBonus) chips.push(`expedition loot +${formatPercent(effects.expeditionLootBonus)}`);
+  if (effects.scoutBonus) chips.push(`route safety +${formatPercent(effects.scoutBonus)}`);
+  if (effects.radioDepth) chips.push(`radio depth +${effects.radioDepth}`);
+  if (effects.rareLootBonus) chips.push(`rare loot +${formatPercent(effects.rareLootBonus)}`);
+  if (effects.salvageYieldBonus) chips.push(`salvage +${formatPercent(effects.salvageYieldBonus)}`);
+  if (effects.forageYieldBonus) chips.push(`forage +${formatPercent(effects.forageYieldBonus)}`);
+  if (effects.signalGain) chips.push(`signal +${formatPercent(effects.signalGain)}`);
+  if (effects.anomalyGain) chips.push(`anomaly +${formatPercent(effects.anomalyGain)}`);
+  if (effects.nightMitigation) chips.push(`night resist +${formatPercent(effects.nightMitigation)}`);
+  if (effects.power) chips.push(`power +${effects.power}`);
+  if (effects.coverage) chips.push(`coverage +${effects.coverage}`);
+  if (effects.repairPower) chips.push(`repairs +${effects.repairPower}`);
+  if (effects.maintenance) chips.push(`maintenance +${effects.maintenance}`);
+  if (effects.foodSecurity) chips.push(`food security +${effects.foodSecurity}`);
+  if (effects.waterSecurity) chips.push(`water security +${effects.waterSecurity}`);
+  if (effects.siegeMitigation) chips.push(`siege resist +${formatPercent(effects.siegeMitigation)}`);
+  if (effects.burnCondition) chips.push(`burn +${effects.burnCondition} cond`);
+  if (effects.weaponSlot) chips.push("weapon slot");
+  if (effects.armorSlot) chips.push("armor slot");
+
+  if (effects.passive) {
+    Object.entries(effects.passive).forEach(([resourceId, amount]) => {
+      chips.push(`${resourceLabel(resourceId)} +${amount}/h`);
+    });
+  }
+  if (effects.grantItems) {
+    Object.entries(effects.grantItems).forEach(([itemId, amount]) => {
+      chips.push(`grants ${itemLabel(itemId)} x${amount}`);
+    });
+  }
+  if (effects.unlockSections) {
+    effects.unlockSections.forEach((sectionId) => {
+      chips.push(`opens ${TAB_NAME_BY_SECTION[sectionId] || sectionId}`);
+    });
+  }
+  if (effects.unlockZones) {
+    effects.unlockZones.forEach((zoneId) => {
+      const zone = ZONES.find((entry) => entry.id === zoneId);
+      chips.push(`route ${zone?.name || zoneId}`);
+    });
+  }
+
+  return chips;
+}
+
+const TAB_NAME_BY_SECTION = {
+  shelter: "Shelter",
+  inventory: "Inventory",
+  map: "Map",
+  survivors: "Crew",
+  radio: "Radio",
+  trader: "Trade",
+  factions: "Factions",
+};
+
 function getUpgradeMissingNotes(state, upgrade) {
   const missing = [];
 
@@ -220,6 +290,7 @@ function renderUpgradeCard(state, upgrade) {
   const discipline = upgradeDisciplineLabel(upgrade);
   const meta = [];
   const missing = getUpgradeMissingNotes(state, upgrade);
+  const effectChips = upgradeEffectChips(upgrade);
 
   meta.push(discipline);
   if (Object.keys(upgrade.cost || {}).length) {
@@ -235,13 +306,13 @@ function renderUpgradeCard(state, upgrade) {
         <h4>${upgrade.name}</h4>
         <span class="tag">${built ? "built" : ready ? "ready" : "blocked"}</span>
       </div>
-      <p class="note">${upgrade.description}</p>
       ${meta.length ? `<div class="chip-row">${tagList(meta)}</div>` : ""}
+      ${effectChips.length ? `<div class="chip-row">${tagList(effectChips)}</div>` : ""}
       ${!built && missing.length ? `<div class="chip-row">${tagList(missing)}</div>` : ""}
       ${built ? "" : actionButton({
         action: "buy-upgrade",
         label: `${upgrade.verb || "Build"} ${upgrade.name}`,
-        meta: ready ? "Permanent unlock" : "Need salvage or tools",
+        meta: ready ? "Permanent unlock" : missing[0] || "Need salvage or tools",
         disabled: !ready,
         data: { upgrade: upgrade.id },
       })}

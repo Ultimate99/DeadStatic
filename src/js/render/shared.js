@@ -103,6 +103,69 @@ export function itemLabel(itemId) {
   return ITEMS[itemId]?.name || itemId;
 }
 
+function formatSignedStat(value, suffix = "") {
+  const normalized = Number(value);
+  if (!Number.isFinite(normalized) || normalized === 0) {
+    return null;
+  }
+
+  const rounded = Math.abs(normalized) >= 1
+    ? Number(normalized.toFixed(2))
+    : Number(normalized.toFixed(3));
+  return `${rounded > 0 ? "+" : ""}${rounded}${suffix}`;
+}
+
+function renderResourceChange(resourceId, amount) {
+  const formatted = formatSignedStat(amount);
+  return formatted ? `${resourceLabel(resourceId)} ${formatted}` : null;
+}
+
+function itemSummaryChips(item) {
+  const chips = [item.type];
+
+  if (item.attack) {
+    chips.push(`atk ${item.attack}`);
+  }
+  if (item.defense) {
+    chips.push(`def ${item.defense}`);
+  }
+  if (item.heal) {
+    chips.push(`heal ${item.heal}`);
+  }
+  if (item.condition) {
+    chips.push(`cond +${item.condition}`);
+  }
+  if (item.ammoPerAttack) {
+    chips.push(`ammo ${item.ammoPerAttack}/hit`);
+  }
+  if (item.resources) {
+    Object.entries(item.resources).forEach(([resourceId, amount]) => {
+      const label = renderResourceChange(resourceId, amount);
+      if (label) {
+        chips.push(label);
+      }
+    });
+  }
+
+  const toolChips = {
+    pry_bar: ["sealed caches", "parts salvage"],
+    salvage_hatchet: ["wood salvage", "shelter work"],
+    carpenter_kit: ["repairs +1", "maintenance +1"],
+    hand_drill: ["repairs +1", "parts salvage"],
+    signal_meter: ["signal trace", "anomaly trace"],
+  };
+
+  if (toolChips[item.id]) {
+    chips.push(...toolChips[item.id]);
+  } else if (item.type === "key") {
+    chips.push("progress item");
+  } else if (item.type === "material") {
+    chips.push("craft material");
+  }
+
+  return chips;
+}
+
 function contentAvailable(state, requirements = {}) {
   if (requirements.searches && state.stats.searches < requirements.searches) {
     return false;
@@ -989,7 +1052,7 @@ export function renderCommandDesk(state, derived, availableSources, availableUpg
 
 export function renderInventoryItemCard(itemId, amount) {
   const item = ITEMS[itemId];
-  let actionMarkup = `<div class="chip-row">${tagList(["stored"])}</div>`;
+  let actionMarkup = "";
   if (item.type === "weapon" || item.type === "armor") {
     actionMarkup = actionButton({
       action: "equip-item",
@@ -1004,9 +1067,9 @@ export function renderInventoryItemCard(itemId, amount) {
       meta: item.type,
       data: { item: itemId },
     });
-  } else if (item.type === "tool") {
-    actionMarkup = `<div class="chip-row">${tagList(["tool", "passive utility"])}</div>`;
   }
+
+  const summary = itemSummaryChips(item);
 
   return `
     <div class="list-block inventory-item-card">
@@ -1014,7 +1077,8 @@ export function renderInventoryItemCard(itemId, amount) {
         <h4>${item.name}</h4>
         <span class="tag">${item.type} x${amount}</span>
       </div>
-      <p class="note">${item.description}</p>
+      ${summary.length ? `<div class="chip-row">${tagList(summary)}</div>` : ""}
+      ${item.description ? `<p class="note">${item.description}</p>` : ""}
       ${actionMarkup}
     </div>
   `;
