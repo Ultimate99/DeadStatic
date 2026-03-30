@@ -6203,8 +6203,14 @@ function spriteSvg(body, className, size, viewBox = "0 0 64 64") {
 
 const ITEM_SPRITES = {
   rusty_knife: `
-    <path d="M15 46 38 23l10-2-2 10-23 23-8-8Z" fill="currentColor" opacity=".9"/>
-    <path d="M38 23 46 31" stroke="var(--sprite-accent, #d3a56a)" stroke-width="3" stroke-linecap="round"/>
+    <g transform="rotate(-46 32 32)">
+      <path d="M35 10c5 2 9 7 9 13l-9 16-9-8 9-21Z" fill="#dfe3dc"/>
+      <path d="M35 13c3 2 5 5 5 9l-6 11-5-4 6-16Z" fill="#a9b3ab"/>
+      <rect x="24" y="30" width="13" height="5" rx="2.5" fill="#9c8768"/>
+      <path d="M12 32c0-3 3-6 6-6h10v12H18c-3 0-6-3-6-6Z" fill="#5f4938"/>
+      <path d="M9 32c0-2 2-4 4-4h3v8h-3c-2 0-4-2-4-4Z" fill="#433327"/>
+      <path d="M31 18 38 25" stroke="var(--sprite-accent, #98b1a2)" stroke-width="2.5" stroke-linecap="round"/>
+    </g>
   `,
   nail_bat: `
     <path d="M18 50 26 17c1-4 5-7 9-7h9l-9 44-17-4Z" fill="currentColor" opacity=".9"/>
@@ -6520,8 +6526,14 @@ function paperDollWeaponOverlay(weaponId) {
     default:
       return `
         <g class="paper-doll-weapon-shape">
-          <path d="M104 162 124 134l13-3-3 12-20 27-10-8Z" fill="var(--paper-gear, #f1cb87)"/>
-          <path d="M122 135 133 143" stroke="var(--paper-trim, #98b1a2)" stroke-width="4" stroke-linecap="round"/>
+          <g transform="rotate(20 110 154)">
+            <path d="M116 126c6 2 11 8 10 14l-10 24-12-10 12-28Z" fill="#e2e6df"/>
+            <path d="M116 130c4 2 7 6 6 10l-7 17-6-5 7-22Z" fill="#a9b2aa"/>
+            <rect x="103" y="146" width="15" height="5" rx="2.5" fill="#a48d6c"/>
+            <path d="M91 148c0-4 3-7 7-7h11v14H98c-4 0-7-3-7-7Z" fill="#654f3b"/>
+            <rect x="87" y="144" width="7" height="8" rx="3" fill="#433327"/>
+            <path d="M113 135 121 142" stroke="var(--paper-trim, #98b1a2)" stroke-width="3" stroke-linecap="round"/>
+          </g>
         </g>
       `;
   }
@@ -6575,25 +6587,31 @@ function renderPaperDoll(equipped = {}, size = 300) {
   const weaponId = equipped.weapon || null;
 
   const body = `
+    <ellipse cx="80" cy="210" rx="30" ry="8" fill="rgba(0,0,0,0.36)"/>
     <g class="paper-doll-zone paper-doll-zone-backpack">${paperDollBackpackOverlay(backpackId)}</g>
     <g class="paper-doll-body">
-      <circle cx="80" cy="28" r="18" fill="rgba(255,255,255,0.11)"/>
-      <path d="M52 56c0-13 12-24 28-24s28 11 28 24v42c0 10-8 18-18 18H70c-10 0-18-8-18-18V56Z" fill="rgba(255,255,255,0.095)"/>
-      <rect x="30" y="56" width="16" height="70" rx="10" fill="rgba(255,255,255,0.09)"/>
-      <rect x="114" y="56" width="16" height="70" rx="10" fill="rgba(255,255,255,0.09)"/>
-      <rect x="60" y="116" width="18" height="74" rx="10" fill="rgba(255,255,255,0.09)"/>
-      <rect x="82" y="116" width="18" height="74" rx="10" fill="rgba(255,255,255,0.09)"/>
+      <circle cx="80" cy="25" r="15" fill="rgba(255,255,255,0.14)"/>
+      <path d="M70 38h20l5 10H65l5-10Z" fill="rgba(255,255,255,0.08)"/>
+      <path d="M55 58c7-13 16-19 25-19s18 6 25 19l6 14v49c0 16-13 29-29 29H78c-16 0-29-13-29-29V72l6-14Z" fill="rgba(255,255,255,0.1)"/>
+      <path d="M48 69c-9 6-14 16-14 29v26c0 6 5 11 11 11h3c5 0 9-4 9-9V88c0-8-2-14-9-19Z" fill="rgba(255,255,255,0.09)"/>
+      <path d="M112 69c9 6 14 16 14 29v26c0 6-5 11-11 11h-3c-5 0-9-4-9-9V88c0-8 2-14 9-19Z" fill="rgba(255,255,255,0.09)"/>
+      <path d="M63 149h18v49c0 7-5 13-12 13h-2c-6 0-11-5-11-11v-38c0-6 2-10 7-13Z" fill="rgba(255,255,255,0.1)"/>
+      <path d="M79 149h18v49c0 7 5 13 12 13h2c6 0 11-5 11-11v-38c0-6-2-10-7-13Z" fill="rgba(255,255,255,0.1)"/>
+      <path d="M54 204h29v7c0 5-4 9-9 9H59c-5 0-9-4-9-9v-1l4-6Z" fill="rgba(255,255,255,0.12)"/>
+      <path d="M77 204h29v7c0 5-4 9-9 9H82c-5 0-9-4-9-9v-1l4-6Z" fill="rgba(255,255,255,0.12)"/>
     </g>
     <g class="paper-doll-zone paper-doll-zone-armor paper-doll-clothes-base">
-      <path d="M54 54h52l10 16-8 58H52L44 70l10-16Z" fill="rgba(255,255,255,0.06)"/>
-      <path d="M60 126h40v54H60Z" fill="rgba(255,255,255,0.05)"/>
-      <path d="M67 58h26M66 92h28" stroke="rgba(241,203,135,0.28)" stroke-width="4" stroke-linecap="round"/>
+      <path d="M58 58h44l11 16-8 72H55l-8-72 11-16Z" fill="rgba(255,255,255,0.075)"/>
+      <path d="M66 56h28l6 14H60l6-14Z" fill="rgba(255,255,255,0.05)"/>
+      <path d="M80 67v77" stroke="rgba(255,255,255,0.08)" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M62 86h36m-32 24h28m-24 24h20" stroke="rgba(241,203,135,0.34)" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M63 146h34v16H63Z" fill="rgba(255,255,255,0.035)"/>
     </g>
     <g class="paper-doll-zone paper-doll-zone-armor">${paperDollArmorOverlay(armorId)}</g>
     <g class="paper-doll-zone paper-doll-zone-weapon">${weaponId ? paperDollWeaponOverlay(weaponId) : ""}</g>
   `;
 
-  return spriteSvg(body, "ui-sprite paper-doll-sprite", size, "0 0 160 200");
+  return spriteSvg(body, "ui-sprite paper-doll-sprite", size, "0 0 160 220");
 }
 
 function navSprite(name) {
