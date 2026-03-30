@@ -179,6 +179,16 @@ export const ITEMS = {
     type: "material",
     description: "Craft material for blades, bars, and improvised tools.",
   },
+  backpack: {
+    id: "backpack",
+    name: "Backpack",
+    type: "backpack",
+    tier: "field",
+    searchBonusRolls: 1,
+    searchScrapMin: 1,
+    salvageYieldBonus: 0.05,
+    description: "Pack. Adds one extra salvage roll, raises your scrap floor, and lets you carry more out of short runs.",
+  },
   rusty_knife: {
     id: "rusty_knife",
     name: "Rusty Knife",

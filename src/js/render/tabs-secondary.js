@@ -40,6 +40,17 @@ function accordionSection(title, meta, body, open = false) {
 
 const PATCH_NOTES = [
   {
+    version: "v5.3",
+    title: "Early Survival Feel Pass",
+    points: [
+      "Backpack is now real equipment with a salvage bonus instead of a hidden passive upgrade.",
+      "Rubble pressure ramps cleaner and repeats fewer early infected contacts.",
+      "A dedicated tree line gives wood a real harvesting loop.",
+      "Food flow is stronger early, while drinkable water is less overabundant.",
+      "Night reports now explain the damage they caused more clearly.",
+    ],
+  },
+  {
     version: "v5.2",
     title: "Building / Crafting Overhaul",
     points: [
@@ -176,6 +187,9 @@ function playerGearRows(state) {
   const armor = Object.entries(state.inventory)
     .filter(([itemId, amount]) => amount > 0 && ITEMS[itemId]?.type === "armor")
     .map(([itemId, amount]) => renderInventoryItemCard(itemId, amount));
+  const backpacks = Object.entries(state.inventory)
+    .filter(([itemId, amount]) => amount > 0 && ITEMS[itemId]?.type === "backpack")
+    .map(([itemId, amount]) => renderInventoryItemCard(itemId, amount));
   const tools = Object.entries(state.inventory)
     .filter(([itemId, amount]) => amount > 0 && ITEMS[itemId]?.type === "tool")
     .map(([itemId, amount]) => renderInventoryItemCard(itemId, amount));
@@ -186,6 +200,7 @@ function playerGearRows(state) {
   return {
     weapons,
     armor,
+    backpacks,
     tools,
     consumables,
   };
@@ -235,6 +250,7 @@ export function renderPlayerTab(state, derived, isMobile = false) {
   const gear = playerGearRows(state);
   const weaponName = state.equipped.weapon ? ITEMS[state.equipped.weapon]?.name : "Bare Hands";
   const armorName = state.equipped.armor ? ITEMS[state.equipped.armor]?.name : "Street Clothes";
+  const backpackName = state.equipped.backpack ? ITEMS[state.equipped.backpack]?.name : "No Pack";
   const stressedCount = state.survivors.roster.filter((survivor) => survivor.stress >= 4).length;
   const woundedCount = state.survivors.roster.filter((survivor) => survivor.wounded > 0).length;
   const statusCards = `
@@ -257,8 +273,10 @@ export function renderPlayerTab(state, derived, isMobile = false) {
       <div class="fact-grid">
         <div class="fact"><span>Weapon</span><strong>${weaponName}</strong></div>
         <div class="fact"><span>Armor</span><strong>${armorName}</strong></div>
+        <div class="fact"><span>Backpack</span><strong>${backpackName}</strong></div>
         <div class="fact"><span>Food cost</span><strong>${upkeep.mealCost}/cycle</strong></div>
         <div class="fact"><span>Water cost</span><strong>${upkeep.waterCost}/cycle</strong></div>
+        <div class="fact"><span>Carry bonus</span><strong>${state.equipped.backpack ? "+1 loot roll" : "none"}</strong></div>
       </div>
     `,
   });
@@ -276,11 +294,12 @@ export function renderPlayerTab(state, derived, isMobile = false) {
   });
   const gearCard = (className = "") => surfaceCard({
     title: "Equipment locker",
-    meta: `${gear.weapons.length + gear.armor.length} pieces`,
+    meta: `${gear.weapons.length + gear.armor.length + gear.backpacks.length} pieces`,
     className,
-    body: gear.weapons.length || gear.armor.length
+    body: gear.weapons.length || gear.armor.length || gear.backpacks.length
       ? `
         <div class="detail-list">
+          ${gear.backpacks.length ? `<div class="list-block compact-block"><div class="surface-head"><h4>Backpacks</h4><span class="tag">${gear.backpacks.length}</span></div><div class="inventory-card-grid">${gear.backpacks.join("")}</div></div>` : ""}
           ${gear.weapons.length ? `<div class="list-block compact-block"><div class="surface-head"><h4>Weapons</h4><span class="tag">${gear.weapons.length}</span></div><div class="inventory-card-grid">${gear.weapons.join("")}</div></div>` : ""}
           ${gear.armor.length ? `<div class="list-block compact-block"><div class="surface-head"><h4>Armor</h4><span class="tag">${gear.armor.length}</span></div><div class="inventory-card-grid">${gear.armor.join("")}</div></div>` : ""}
         </div>

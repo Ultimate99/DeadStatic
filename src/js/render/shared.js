@@ -162,6 +162,15 @@ function itemSummaryChips(item) {
   if (item.ammoPerAttack) {
     chips.push(`ammo ${item.ammoPerAttack}/hit`);
   }
+  if (item.searchBonusRolls) {
+    chips.push(`loot roll +${item.searchBonusRolls}`);
+  }
+  if (item.searchScrapMin) {
+    chips.push(`scrap floor +${item.searchScrapMin}`);
+  }
+  if (item.salvageYieldBonus) {
+    chips.push(`salvage +${Math.round(item.salvageYieldBonus * 100)}%`);
+  }
   if (item.resources) {
     Object.entries(item.resources).forEach(([resourceId, amount]) => {
       const label = renderResourceChange(resourceId, amount);
@@ -184,6 +193,8 @@ function itemSummaryChips(item) {
 
   if (toolChips[item.id]) {
     chips.push(...toolChips[item.id]);
+  } else if (item.type === "backpack") {
+    chips.push("loadout gear", "carry salvage");
   } else if (item.type === "key") {
     chips.push("progress item");
   } else if (item.type === "material") {
@@ -222,6 +233,9 @@ function itemPrimaryLine(item) {
   }
   if (item.condition) {
     return `COND +${item.condition}`;
+  }
+  if (item.type === "backpack") {
+    return `PACK +${item.searchBonusRolls || 0} ROLL`;
   }
   if (item.type === "tool") {
     return `${(item.toolRole || "tool").replace(/_/g, " ").toUpperCase()} TOOL`;
@@ -741,6 +755,18 @@ function currentDirective(state, upgrades) {
     };
   }
   if (activeJob) {
+    if (lowFood) {
+      return {
+        title: `Finish ${activeJob.label}`,
+        detail: `The job is running until ${activeJob.completesAt}. Use the spare hours to secure food before the shelter meal clock hits.`,
+      };
+    }
+    if (lowWater) {
+      return {
+        title: `Finish ${activeJob.label}`,
+        detail: `The job is running until ${activeJob.completesAt}. Refill drinkable water before the shelter dries out around it.`,
+      };
+    }
     return {
       title: `Finish ${activeJob.label}`,
       detail: `${activeJob.kind === "build" ? "Base work" : "Fieldcraft"} is running. Let time pass and keep the shelter steady until ${activeJob.completesAt}.`,
@@ -773,7 +799,13 @@ function currentDirective(state, upgrades) {
   if (!state.flags.burnUnlocked) {
     return {
       title: "Stabilize the room",
-      detail: `${Math.max(0, 3 - state.stats.searches)} more rubble searches unlock warmth control, but every run also raises noise.`,
+      detail: `${Math.max(0, 2 - state.stats.searches)} more rubble searches unlock warmth control, but every run also raises noise.`,
+    };
+  }
+  if (state.unlockedSections.includes("upgrades") && !state.upgrades.includes("shelter_stash") && state.resources.wood < 4) {
+    return {
+      title: "Cut wood for the shelter",
+      detail: "Rubble is not your lumber plan. Once the stash blueprint shows up, the tree line is the cleanest way to get there.",
     };
   }
   if (readyUpgrade) {
@@ -875,7 +907,7 @@ export function getTutorialStep(state) {
       id: "warmth",
       title: "Unlock warmth control",
       summary: "A few more rubble runs unlock the burn-for-warmth action. That is your first shelter stabilizer, but it is also loud.",
-      chips: [`${Math.max(0, 3 - state.stats.searches)} searches left`, "survive today"],
+      chips: [`${Math.max(0, 2 - state.stats.searches)} searches left`, "survive today"],
       tabs: ["overview"],
       action: {
         action: "search-rubble",
@@ -1052,12 +1084,65 @@ export function renderCommandDesk(state, derived, availableSources, availableUpg
   const forecast = getNightForecast(state);
   const upkeep = getShelterUpkeep(state);
   const systems = getShelterSystems(state, derived);
+  const activeJob = getActiveWorkJob(state);
   const readyUpgrade = readyUpgradeCandidate(state, availableUpgrades);
   const directive = currentDirective(state, availableUpgrades);
+  const lowFood = state.unlockedSections.includes("shelter")
+    && state.discoveredResources.includes("food")
+    && state.resources.food < upkeep.mealCost;
+  const lowWater = state.unlockedSections.includes("shelter")
+    && state.discoveredResources.includes("water")
+    && state.resources.water < upkeep.waterCost;
   const preview = state.expedition.selectedZone
     ? getExpeditionPreview(state, state.expedition.selectedZone, state.expedition.approach)
     : null;
   const highlightAction = (() => {
+    if (activeJob && lowFood) {
+      return actionButton({
+        action: "forage-food",
+        label: "Forage while it runs",
+        meta: "cover the meal clock",
+        variant: "primary compact",
+      });
+    }
+    if (activeJob && lowWater) {
+      const pantryOpen = availableSources.some((source) => source.id === "dead_pantries");
+      return actionButton({
+        action: pantryOpen ? "search-source" : "search-rubble",
+        label: pantryOpen ? "Find water" : "Search rubble",
+        meta: pantryOpen ? "pantries or clean lanes" : "pull bottles from the street",
+        data: pantryOpen ? { source: "dead_pantries" } : {},
+        variant: "primary compact",
+      });
+    }
+    if (directive.title === "Cut wood for the shelter") {
+      return actionButton({
+        action: "search-source",
+        label: "Chop tree line",
+        meta: "wood first / low noise",
+        data: { source: "tree_line" },
+        disabled: !availableSources.some((source) => source.id === "tree_line"),
+        variant: "primary compact",
+      });
+    }
+    if (directive.title === "Secure food stores") {
+      return actionButton({
+        action: "forage-food",
+        label: "Forage food",
+        meta: "1h / food first",
+        variant: "primary compact",
+      });
+    }
+    if (directive.title === "Refill drinkable water") {
+      const pantryOpen = availableSources.some((source) => source.id === "dead_pantries");
+      return actionButton({
+        action: pantryOpen ? "search-source" : "search-rubble",
+        label: pantryOpen ? "Check dead pantries" : "Search rubble",
+        meta: pantryOpen ? "food + water lane" : "look for bottles and tins",
+        data: pantryOpen ? { source: "dead_pantries" } : {},
+        variant: "primary compact",
+      });
+    }
     if (preview && preview.canLaunch && !state.combat) {
       return actionButton({
         action: "launch-prepared",
@@ -1140,7 +1225,7 @@ export function renderInventoryItemCard(itemId, amount) {
   const item = ITEMS[itemId];
   let actionMarkup = "";
   const tooltip = itemTooltipText(item, amount);
-  if (item.type === "weapon" || item.type === "armor") {
+  if (item.type === "weapon" || item.type === "armor" || item.type === "backpack") {
     actionMarkup = actionButton({
       action: "equip-item",
       label: "Equip",

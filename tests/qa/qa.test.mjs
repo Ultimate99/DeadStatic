@@ -215,7 +215,7 @@ run("timed work queue gates backpack behind Sewing Kit and completes over time",
   state.stats.searches = 3;
   state.resources.scrap = 18;
   state.resources.cloth = 8;
-  state.resources.wire = 1;
+  state.resources.wire = 2;
 
   evaluateProgression(state);
   assert.equal(startWorkJob(state, "backpack"), false);
@@ -235,6 +235,8 @@ run("timed work queue gates backpack behind Sewing Kit and completes over time",
   assert.ok(!state.upgrades.includes("backpack"));
   advanceTime(state, 1);
   assert.ok(state.upgrades.includes("backpack"));
+  assert.equal(state.inventory.backpack, 1);
+  assert.equal(state.equipped.backpack, "backpack");
 });
 
 run("one shared work slot blocks a second job until the first one completes", () => {
@@ -282,7 +284,7 @@ run("starting a job spends resources upfront and grants output only on completio
 
   evaluateProgression(state);
   assert.equal(startWorkJob(state, "sewing_kit"), true);
-  assert.equal(state.resources.scrap, 8);
+  assert.equal(state.resources.scrap, 10);
   assert.equal(state.inventory.sewing_kit || 0, 0);
   assert.ok(!state.upgrades.includes("sewing_kit"));
 
@@ -313,6 +315,7 @@ run("source-based scavenging lanes unlock and record distinct runs", () => {
   evaluateProgression(state);
 
   const sourceIds = getAvailableScavengeSources(state).map((source) => source.id);
+  assert.ok(sourceIds.includes("tree_line"));
   assert.ok(sourceIds.includes("vehicle_shells"));
   assert.ok(sourceIds.includes("dead_pantries"));
   assert.ok(sourceIds.includes("clinic_drawers"));
@@ -325,6 +328,16 @@ run("source-based scavenging lanes unlock and record distinct runs", () => {
 
   assert.equal(state.stats.scavengeSources.vehicle_shells, 1);
   assert.ok(state.resources.parts >= 1);
+});
+
+run("tree line unlocks early as the dedicated wood lane", () => {
+  const state = createInitialState();
+  state.stats.searches = 4;
+  evaluateProgression(state);
+
+  const sourceIds = getAvailableScavengeSources(state).map((source) => source.id);
+  assert.ok(sourceIds.includes("tree_line"));
+  assert.ok(!sourceIds.includes("dead_pantries"));
 });
 
 run("shelter systems track power maintenance coverage and adjacency bonuses", () => {
@@ -395,9 +408,7 @@ run("fortified shelter systems reduce siege and breach pressure", () => {
   const strongForecast = getNightForecast(strongState);
 
   assert.ok(strongForecast.adjustedDefense > weakForecast.adjustedDefense);
-  assert.ok(strongForecast.raidChance < weakForecast.raidChance);
-  assert.ok(strongForecast.breachChance < weakForecast.breachChance);
-  assert.ok(strongForecast.quietChance > weakForecast.quietChance);
+  assert.ok(strongForecast.dangerScore < weakForecast.dangerScore);
 });
 
 run("prepared expeditions store route events and route outcomes", () => {
@@ -458,6 +469,7 @@ run("save migration fills new night, expedition, and inspector defaults", () => 
     assert.equal(state.ui.mobileShelterMode, "ops");
     assert.equal(state.ui.mobileInspectorStructure, null);
     assert.equal(state.work.activeJob, null);
+    assert.equal(state.equipped.backpack, null);
     assert.equal(state.resources.wood, 0);
     assert.deepEqual(state.shelter.damage, {});
     assert.equal(state.settings.tutorialHints, true);
@@ -859,7 +871,7 @@ run("log tab renders compact pulse rows instead of stretched tiles", () => {
   const tabMarkup = harness.elements.get("tab-content").innerHTML;
   assert.match(tabMarkup, /Event pulse/);
   assert.match(tabMarkup, /Patch notes/);
-  assert.match(tabMarkup, /v5\.2/);
+  assert.match(tabMarkup, /v5\.3/);
   assert.match(tabMarkup, /log-pulse-stack/);
   assert.match(tabMarkup, /log-pulse-row/);
   assert.doesNotMatch(tabMarkup, /log-pulse-grid/);
@@ -998,9 +1010,11 @@ run("player tab renders loadout, field stats, and tools", () => {
   state.ui.activeTab = "player";
   state.unlockedSections = ["inventory", "shelter", "survivors"];
   state.inventory.rusty_knife = 1;
+  state.inventory.backpack = 1;
   state.inventory.first_aid_rag = 1;
   state.inventory.pry_bar = 1;
   state.equipped.weapon = "rusty_knife";
+  state.equipped.backpack = "backpack";
   state.resources.ammo = 3;
 
   const harness = createBundleHarness(SEARCH_PATTERN, { initialSave: state });
@@ -1012,6 +1026,8 @@ run("player tab renders loadout, field stats, and tools", () => {
   assert.match(markup, /Tool belt/);
   assert.match(markup, /Equipment locker/);
   assert.match(markup, /Rusty Knife/);
+  assert.match(markup, /Backpack/);
+  assert.match(markup, /Carry bonus/);
   assert.match(markup, /Pry Bar/);
   assert.match(markup, /data-tooltip=/);
 });
@@ -1024,8 +1040,10 @@ run("craft tab renders work queue, categories, time, tool, and tier", () => {
   state.resources.scrap = 26;
   state.resources.cloth = 6;
   state.resources.parts = 8;
-  state.resources.wire = 1;
+  state.resources.wire = 2;
   state.inventory.sharp_metal = 1;
+  state.inventory.sewing_kit = 1;
+  state.upgrades = ["sewing_kit"];
   state.unlockedSections = ["upgrades"];
 
   const harness = createBundleHarness(SEARCH_PATTERN, { initialSave: state });

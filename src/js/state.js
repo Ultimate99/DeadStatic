@@ -110,7 +110,7 @@ function summarizeRoster(roster) {
 
 export function createInitialState() {
   return {
-    version: 9,
+    version: 10,
     time: {
       day: 1,
       hour: 7,
@@ -141,6 +141,7 @@ export function createInitialState() {
     equipped: {
       weapon: null,
       armor: null,
+      backpack: null,
     },
     survivors: {
       total: 0,

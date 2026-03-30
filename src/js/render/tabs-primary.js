@@ -357,11 +357,11 @@ function renderOverviewActions(state) {
     }));
   }
 
-  if (state.upgrades.includes("food_search")) {
+  if (state.upgrades.includes("shelter_stash") || state.upgrades.includes("food_search")) {
     utilityButtons.push(actionButton({
       action: "forage-food",
-      label: "Fallback food search",
-      meta: "small gain, still noisy, useful when stores collapse",
+      label: "Forage food",
+      meta: "1h / modest food run / use during queue time",
       variant: "compact utility-trigger",
     }));
   }
@@ -668,9 +668,10 @@ export function renderInventoryTab(state, derived, _isMobile = false) {
 
   const weaponName = state.equipped.weapon ? ITEMS[state.equipped.weapon]?.name : "Bare hands";
   const armorName = state.equipped.armor ? ITEMS[state.equipped.armor]?.name : "Street clothes";
-  const gearItems = items.filter(([itemId]) => ["weapon", "armor"].includes(ITEMS[itemId].type));
+  const backpackName = state.equipped.backpack ? ITEMS[state.equipped.backpack]?.name : "No pack";
+  const gearItems = items.filter(([itemId]) => ["weapon", "armor", "backpack"].includes(ITEMS[itemId].type));
   const fieldItems = items.filter(([itemId]) => ITEMS[itemId].type === "consumable");
-  const oddItems = items.filter(([itemId]) => !["weapon", "armor", "consumable"].includes(ITEMS[itemId].type));
+  const oddItems = items.filter(([itemId]) => !["weapon", "armor", "backpack", "consumable"].includes(ITEMS[itemId].type));
   const resourceGroups = ["core", "common", "uncommon", "rare", "social", "mythic"]
     .map((tier) => {
       const entries = state.discoveredResources
@@ -712,6 +713,7 @@ export function renderInventoryTab(state, derived, _isMobile = false) {
           <div class="fact-grid">
             <div class="fact"><span>Weapon</span><strong>${weaponName}</strong></div>
             <div class="fact"><span>Armor</span><strong>${armorName}</strong></div>
+            <div class="fact"><span>Pack</span><strong>${backpackName}</strong></div>
             <div class="fact"><span>Items</span><strong>${items.length}</strong></div>
             <div class="fact"><span>Ammo</span><strong>${state.resources.ammo}</strong></div>
           </div>
@@ -783,7 +785,13 @@ export function renderNightPlanner(state) {
             <span class="tag">${report.eventType}</span>
           </div>
           <p class="note">${report.summary}</p>
+          <div class="fact-grid">
+            <div class="fact"><span>Condition hit</span><strong>${report.conditionLoss}</strong></div>
+            <div class="fact"><span>Morale swing</span><strong>${report.moraleDelta}</strong></div>
+            <div class="fact"><span>Siege pressure</span><strong>${report.siegePressure}</strong></div>
+          </div>
           ${report.damagedStructures?.length ? `<div class="chip-row">${tagList(report.damagedStructures.map((target) => structureByKey(target).label || target))}</div>` : ""}
+          ${Object.values(report.stolen || {}).some((amount) => amount > 0) ? `<div class="chip-row">${tagList(Object.entries(report.stolen).filter(([, amount]) => amount > 0).map(([resourceId, amount]) => `${resourceLabel(resourceId)} -${amount}`))}</div>` : ""}
           ${report.crewHits?.length ? `<div class="chip-row">${tagList(report.crewHits)}</div>` : ""}
         </div>
       ` : `<p class="empty-state">No night report yet.</p>`}

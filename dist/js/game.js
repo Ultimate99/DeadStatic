@@ -182,6 +182,16 @@ const ITEMS = {
     type: "material",
     description: "Craft material for blades, bars, and improvised tools.",
   },
+  backpack: {
+    id: "backpack",
+    name: "Backpack",
+    type: "backpack",
+    tier: "field",
+    searchBonusRolls: 1,
+    searchScrapMin: 1,
+    salvageYieldBonus: 0.05,
+    description: "Pack. Adds one extra salvage roll, raises your scrap floor, and lets you carry more out of short runs.",
+  },
   rusty_knife: {
     id: "rusty_knife",
     name: "Rusty Knife",
@@ -413,20 +423,20 @@ const RAW_UPGRADES = [
   {
     id: "backpack",
     name: "Backpack",
-    description: "Adds one extra loot roll and slightly improves scrap pulls.",
+    description: "Field pack. Equips to your loadout and lets you carry more salvage out of short runs.",
     verb: "Rig",
-    cost: { scrap: 8, cloth: 3 },
-    requires: { searches: 3 },
-    effects: { searchScrapMin: 1, searchScrapMax: 1, searchBonusRolls: 1 },
+    cost: { scrap: 7, cloth: 2, wire: 1 },
+    requires: { searches: 3, items: ["sewing_kit"] },
+    effects: { grantItems: { backpack: 1 }, unlockSections: ["inventory"] },
   },
   {
     id: "rusty_knife",
     name: "Rusty Knife",
     description: "Early melee weapon. Grants Rusty Knife and +1 attack.",
     verb: "Bind",
-    cost: { scrap: 6, parts: 3, cloth: 1 },
+    cost: { scrap: 5, cloth: 1 },
     materials: { sharp_metal: 1 },
-    requires: { searches: 4 },
+    requires: { searches: 3 },
     effects: {
       attack: 1,
       grantItems: { rusty_knife: 1 },
@@ -438,8 +448,8 @@ const RAW_UPGRADES = [
     name: "Shelter Stash",
     description: "Opens Shelter and starts tracked food storage.",
     verb: "Secure",
-    cost: { scrap: 14, wood: 4, cloth: 2 },
-    requires: { searches: 4 },
+    cost: { scrap: 12, wood: 3, cloth: 2 },
+    requires: { searches: 3 },
     effects: {
       unlockSections: ["shelter"],
       discoverResources: ["food"],
@@ -482,10 +492,10 @@ const RAW_UPGRADES = [
     id: "food_search",
     name: "Simple Food Search",
     description: "Adds food search chance and one extra search roll.",
-    cost: { scrap: 14, wood: 2, water: 1 },
+    cost: { scrap: 10, wood: 1 },
     requires: { upgrades: ["shelter_stash"] },
     effects: {
-      searchFoodChance: 0.08,
+      searchFoodChance: 0.1,
       searchBonusRolls: 1,
     },
   },
@@ -544,8 +554,8 @@ const RAW_UPGRADES = [
     name: "Hammer",
     description: "Build tool for structural work and blunt weapon assembly.",
     verb: "Forge",
-    cost: { scrap: 12, wood: 2, parts: 4, cloth: 1 },
-    requires: { searches: 3 },
+    cost: { scrap: 10, wood: 2, parts: 2, cloth: 1 },
+    requires: { searches: 2 },
     effects: {
       grantItems: { hammer: 1 },
       unlockSections: ["inventory"],
@@ -556,8 +566,8 @@ const RAW_UPGRADES = [
     name: "Sewing Kit",
     description: "Clothwork tool for packs, patched armor, and stitched repairs.",
     verb: "Stitch",
-    cost: { scrap: 8, cloth: 4, wire: 1 },
-    requires: { searches: 3 },
+    cost: { scrap: 6, cloth: 3, wire: 1 },
+    requires: { searches: 2 },
     effects: {
       grantItems: { sewing_kit: 1 },
       unlockSections: ["inventory"],
@@ -957,7 +967,7 @@ const UPGRADE_RULES = {
     tier: "field",
     hours: 1,
     requiredTools: ["sewing_kit"],
-    resultLabel: "Carry more salvage",
+    resultLabel: "Equip backpack",
   },
   rusty_knife: {
     category: "weapon",
@@ -1662,15 +1672,15 @@ const SCAVENGE_SOURCES = [
     label: "Search rubble",
     short: "RU",
     description: "Broken masonry, splintered frames, wet cloth, open pockets.",
-    detail: "Balanced salvage with real shelter material in it. Cheap, quick, and no longer quiet if you lean on it too hard.",
-    focus: ["Scrap", "Wood", "Drinkable Water"],
+    detail: "Balanced salvage for scrap, cloth, and loose finds. Good for starting runs, worse than a real wood or food lane once the shelter is standing.",
+    focus: ["Scrap", "Cloth", "Drinkable Water"],
     tags: ["1h", "rising noise", "street debris"],
     hours: 1,
     threat: 0.42,
     noise: 0.52,
     scrapMod: { min: 0, max: 0 },
     directResources: {
-      wood: [1, 1],
+      wood: [0, 1],
     },
     guaranteed: ["common"],
     rolls: [
@@ -1685,6 +1695,34 @@ const SCAVENGE_SOURCES = [
     rarityBias: { uncommon: 0.02, rare: 0.03 },
     logLabel: "the rubble",
     eventChance: 0.42,
+  },
+  {
+    id: "tree_line",
+    label: "Chop tree line",
+    short: "TR",
+    description: "Dead branches, fence timber, split trunks, and anything the shelter can burn or brace with.",
+    detail: "Best early wood lane. It is slower than ripping pockets, but it turns daylight into walls, fire, and repairs.",
+    focus: ["Wood", "Cloth", "Fuel"],
+    tags: ["1h", "low noise", "wood lane"],
+    hours: 1,
+    threat: 0.22,
+    noise: 0.24,
+    scrapMod: { min: -2, max: -1 },
+    directResources: {
+      wood: [2, 3],
+      cloth: [0, 1],
+    },
+    guaranteed: ["common"],
+    rolls: [
+      { rarity: "uncommon", chance: 0.44 },
+      { rarity: "rare", chance: 0.1, rareBonus: 0.6 },
+      { rarity: "epic", chance: 0.04, rareBonus: 0.2, requires: { upgrades: ["salvage_hatchet"] } },
+    ],
+    bonusChance: 0.34,
+    rarityBias: { uncommon: 0.03 },
+    requires: { searches: 4 },
+    logLabel: "the tree line",
+    eventChance: 0.24,
   },
   {
     id: "vehicle_shells",
@@ -2186,9 +2224,9 @@ const SEARCH_LOOT_TABLE = [
     id: "loot_water",
     type: "resource",
     key: "water",
-    amount: [1, 2],
+    amount: [1, 1],
     rarity: "common",
-    weight: 16,
+    weight: 10,
   },
   {
     id: "loot_food",
@@ -3636,11 +3674,18 @@ function getDerivedState(state) {
 
   const equippedWeapon = ITEMS[state.equipped.weapon];
   const equippedArmor = ITEMS[state.equipped.armor];
+  const equippedBackpack = ITEMS[state.equipped.backpack];
   if (equippedWeapon?.attack) {
     derived.attack += equippedWeapon.attack;
   }
   if (equippedArmor?.defense) {
     derived.defense += equippedArmor.defense;
+  }
+  if (equippedBackpack) {
+    derived.searchBonusRolls += equippedBackpack.searchBonusRolls || 0;
+    derived.searchScrapMin += equippedBackpack.searchScrapMin || 0;
+    derived.salvageYieldBonus += equippedBackpack.salvageYieldBonus || 0;
+    derived.expeditionLootBonus += equippedBackpack.expeditionLootBonus || 0;
   }
   if (hasItem(state, "pry_bar")) {
     derived.salvageYieldBonus += 0.08;
@@ -3742,6 +3787,7 @@ function getNightForecast(state) {
   const guardBonus = guardStrength(state) * 0.34;
   const signalBonus = state.survivors.assigned.tuner * 0.05;
   const maintenancePenalty = Math.max(0, -systems.maintenanceBalance);
+  const firstNightRelief = state.stats.nightsSurvived === 0 ? 1.6 : 0;
   const dangerScore = clamp(
     state.shelter.threat * 1.5
       + adjustedNoise * 1.28
@@ -3752,22 +3798,24 @@ function getNightForecast(state) {
       - state.shelter.warmth * 0.24
       - systems.coverage * 0.22
       - guardBonus
-      - signalBonus,
+      - signalBonus
+      - firstNightRelief,
     0,
     14,
   );
 
-  const infectedChance = clamp(
+  let infectedChance = clamp(
     0.16
       + state.shelter.threat * 0.08
       + adjustedNoise * 0.05
       + maintenancePenalty * 0.03
       - adjustedDefense * 0.018
-      - systems.coverage * 0.012,
+      - systems.coverage * 0.012
+      - firstNightRelief * 0.03,
     0.1,
     0.86,
   );
-  const raidChance = clamp(
+  let raidChance = clamp(
     (state.time.day >= 3 ? 0.1 : 0.03)
       + adjustedNoise * 0.06
       + state.resources.reputation * 0.01
@@ -3776,11 +3824,12 @@ function getNightForecast(state) {
       + (faction.raidBias || 0)
       - (faction.raidMitigation || 0)
       - systems.coverage * 0.02
-      - adjustedDefense * 0.012,
+      - adjustedDefense * 0.012
+      - firstNightRelief * 0.02,
     0.04,
     0.7,
   );
-  const breachChance = clamp(
+  let breachChance = clamp(
     0.08
       + Math.max(0, dangerScore - 1.5) * 0.06
       + maintenancePenalty * 0.035
@@ -3788,20 +3837,28 @@ function getNightForecast(state) {
       - (faction.breachMitigation || 0)
       - derived.siegeMitigation * 0.03
       - systems.coverage * 0.014
-      - adjustedDefense * 0.015,
+      - adjustedDefense * 0.015
+      - firstNightRelief * 0.04,
     0.03,
     0.64,
   );
-  const siegeChance = clamp(
+  let siegeChance = clamp(
     (state.time.day >= 4 ? 0.06 : 0.01)
       + Math.max(0, dangerScore - 4.2) * 0.05
       + breachChance * 0.32
       + raidChance * 0.14
       - adjustedDefense * 0.012
-      - derived.siegeMitigation * 0.03,
+      - derived.siegeMitigation * 0.03
+      - firstNightRelief * 0.06,
     0.01,
     0.56,
   );
+  if (state.stats.nightsSurvived === 0) {
+    infectedChance = Math.min(infectedChance, 0.62);
+    raidChance = Math.min(raidChance, 0.18);
+    breachChance = Math.min(breachChance, 0.24);
+    siegeChance = Math.min(siegeChance, 0.14);
+  }
   const quietChance = clamp(1 - (infectedChance * 0.46 + raidChance * 0.36 + breachChance * 0.32 + siegeChance * 0.28), 0.04, 0.58);
   const hoursUntilNight = state.time.hour < 21 ? 21 - state.time.hour : 24 - state.time.hour + 21;
 
@@ -4124,6 +4181,9 @@ function grantItem(state, itemId, amount = 1) {
   if (item.type === "armor" && !state.equipped.armor) {
     state.equipped.armor = itemId;
   }
+  if (item.type === "backpack" && !state.equipped.backpack) {
+    state.equipped.backpack = itemId;
+  }
 }
 
 function pickWeightedEntry(entries) {
@@ -4407,12 +4467,12 @@ function getAvailableUpgrades(state) {
 
 function evaluateProgression(state) {
   syncSurvivorRoster(state);
-  if (state.stats.searches >= 3 && !state.flags.burnUnlocked) {
+  if (state.stats.searches >= 2 && !state.flags.burnUnlocked) {
     state.flags.burnUnlocked = true;
     addLog(state, "Cold makes simple math persuasive. Twelve scrap for warmth suddenly sounds fair.");
   }
 
-  if ((state.stats.searches >= 4 || state.resources.scrap >= 8) && !state.unlockedSections.includes("upgrades")) {
+  if ((state.stats.searches >= 3 || state.resources.scrap >= 6) && !state.unlockedSections.includes("upgrades")) {
     unlockSection(state, "upgrades", "Plans start replacing panic. You can build.");
   }
 
@@ -4517,6 +4577,8 @@ function applyZoneRewards(state, zoneId, rewards) {
 
 function sourceEncounterProfile(sourceId) {
   switch (sourceId) {
+    case "tree_line":
+      return { zoneId: "ruined_street", enemies: ["walker"], rewards: { resources: { wood: 2 } } };
     case "vehicle_shells":
       return { zoneId: "abandoned_gas_station", enemies: ["walker", "screecher"], rewards: { resources: { parts: 1 } } };
     case "dead_pantries":
@@ -4534,14 +4596,15 @@ function sourceEncounterProfile(sourceId) {
 }
 
 function sourceEncounterChance(state, source) {
-  const searchPressure = Math.max(0, state.stats.searches - 2) * 0.018;
+  const searchPressure = Math.max(0, state.stats.searches - 3) * 0.014;
   const shelterPressure = state.shelter.threat * 0.022 + state.shelter.noise * 0.018;
   const lanePressure = (source.threat || 0.3) * 0.12 + (source.noise || 0.3) * 0.08;
+  const openingGrace = source.id === "rubble" ? Math.max(0, 5 - state.stats.searches) * 0.018 : 0;
 
   return clamp(
-    0.01 + searchPressure + shelterPressure + lanePressure,
-    0.03,
-    source.id === "rubble" ? 0.16 : 0.24,
+    0.008 + searchPressure + shelterPressure + lanePressure - openingGrace,
+    source.id === "rubble" ? 0.012 : 0.03,
+    source.id === "rubble" ? 0.1 : source.id === "tree_line" ? 0.12 : 0.22,
   );
 }
 
@@ -4841,6 +4904,13 @@ function advanceTime(state, hours) {
       recoverSurvivorsAtDawn(state);
       maybeTriggerCrewConflict(state);
       addLog(state, "A grey dawn leaks over the shelter. You are still here.", "night");
+      if (state.night.lastReport) {
+        addLog(
+          state,
+          `Dawn report: ${state.night.lastReport.eventType} / condition -${state.night.lastReport.conditionLoss}${state.night.lastReport.damagedStructures?.length ? ` / damage ${state.night.lastReport.damagedStructures.map((target) => damageLabel(target)).join(", ")}` : ""}.`,
+          "night",
+        );
+      }
     }
   }
 }
@@ -4865,11 +4935,20 @@ function runScavengeSource(state, sourceId = "rubble") {
   const lootBundle = createLootBundle();
   addResource(state, "scrap", directScrap);
   applySourceDirectResources(lootBundle, source);
-  if (hasItem(state, "salvage_hatchet") && ["rubble", "dead_pantries"].includes(source.id)) {
+  if (hasItem(state, "salvage_hatchet") && ["rubble", "dead_pantries", "tree_line"].includes(source.id)) {
     addDirectResourceFind(lootBundle, "wood", 1);
   }
   if (hasItem(state, "pry_bar") && ["vehicle_shells", "sealed_caches"].includes(source.id)) {
     addDirectResourceFind(lootBundle, "parts", 1);
+  }
+  if (chance(derived.searchFoodChance) && ["rubble", "dead_pantries"].includes(source.id)) {
+    addDirectResourceFind(lootBundle, "food", 1);
+  }
+  if (chance(derived.searchPartChance) && ["rubble", "vehicle_shells", "sealed_caches"].includes(source.id)) {
+    addDirectResourceFind(lootBundle, "parts", 1);
+  }
+  if (chance(derived.searchMedicineChance) && ["rubble", "clinic_drawers"].includes(source.id)) {
+    addDirectResourceFind(lootBundle, "medicine", 1);
   }
   rollSourceRarities(source, state, derived, lootBundle);
 
@@ -4928,19 +5007,23 @@ function forageFood(state) {
   state.stats.foodSearches += 1;
   state.shelter.noise = clamp(state.shelter.noise + 0.3, 0, 10);
   state.shelter.threat = clamp(state.shelter.threat + 0.12, 0, 12);
-  addResource(state, "food", zoneRewardMultiplier(randInt(1, 2), derived.forageYieldBonus));
-  addResource(state, "water", zoneRewardMultiplier(randInt(0, 1), derived.forageYieldBonus));
+  addResource(state, "food", zoneRewardMultiplier(randInt(2, 3), derived.forageYieldBonus));
+  addResource(state, "water", zoneRewardMultiplier(randInt(0, 1), derived.forageYieldBonus * 0.5));
   if (chance(0.18)) {
     addResource(state, "medicine", 1);
   }
   if (chance(0.12)) {
     addResource(state, "cloth", 1);
   }
+  if (chance(0.2)) {
+    grantItem(state, "canned_beans", 1);
+  }
   addLog(state, "You search for food instead of useful things. Today, that is the useful thing.", "loot");
   if (chance(0.55)) {
     runEvent(state, "food");
   }
   evaluateProgression(state);
+  return true;
 }
 
 function drinkWater(state) {
@@ -5357,6 +5440,11 @@ function equipItem(state, itemId) {
   if (item.type === "armor") {
     state.equipped.armor = itemId;
     addLog(state, `Equipped: ${item.name}.`, "build");
+    return true;
+  }
+  if (item.type === "backpack") {
+    state.equipped.backpack = itemId;
+    addLog(state, `Packed: ${item.name}.`, "build");
     return true;
   }
 
@@ -5942,6 +6030,15 @@ function itemSummaryChips(item) {
   if (item.ammoPerAttack) {
     chips.push(`ammo ${item.ammoPerAttack}/hit`);
   }
+  if (item.searchBonusRolls) {
+    chips.push(`loot roll +${item.searchBonusRolls}`);
+  }
+  if (item.searchScrapMin) {
+    chips.push(`scrap floor +${item.searchScrapMin}`);
+  }
+  if (item.salvageYieldBonus) {
+    chips.push(`salvage +${Math.round(item.salvageYieldBonus * 100)}%`);
+  }
   if (item.resources) {
     Object.entries(item.resources).forEach(([resourceId, amount]) => {
       const label = renderResourceChange(resourceId, amount);
@@ -5964,6 +6061,8 @@ function itemSummaryChips(item) {
 
   if (toolChips[item.id]) {
     chips.push(...toolChips[item.id]);
+  } else if (item.type === "backpack") {
+    chips.push("loadout gear", "carry salvage");
   } else if (item.type === "key") {
     chips.push("progress item");
   } else if (item.type === "material") {
@@ -6002,6 +6101,9 @@ function itemPrimaryLine(item) {
   }
   if (item.condition) {
     return `COND +${item.condition}`;
+  }
+  if (item.type === "backpack") {
+    return `PACK +${item.searchBonusRolls || 0} ROLL`;
   }
   if (item.type === "tool") {
     return `${(item.toolRole || "tool").replace(/_/g, " ").toUpperCase()} TOOL`;
@@ -6521,6 +6623,18 @@ function currentDirective(state, upgrades) {
     };
   }
   if (activeJob) {
+    if (lowFood) {
+      return {
+        title: `Finish ${activeJob.label}`,
+        detail: `The job is running until ${activeJob.completesAt}. Use the spare hours to secure food before the shelter meal clock hits.`,
+      };
+    }
+    if (lowWater) {
+      return {
+        title: `Finish ${activeJob.label}`,
+        detail: `The job is running until ${activeJob.completesAt}. Refill drinkable water before the shelter dries out around it.`,
+      };
+    }
     return {
       title: `Finish ${activeJob.label}`,
       detail: `${activeJob.kind === "build" ? "Base work" : "Fieldcraft"} is running. Let time pass and keep the shelter steady until ${activeJob.completesAt}.`,
@@ -6553,7 +6667,13 @@ function currentDirective(state, upgrades) {
   if (!state.flags.burnUnlocked) {
     return {
       title: "Stabilize the room",
-      detail: `${Math.max(0, 3 - state.stats.searches)} more rubble searches unlock warmth control, but every run also raises noise.`,
+      detail: `${Math.max(0, 2 - state.stats.searches)} more rubble searches unlock warmth control, but every run also raises noise.`,
+    };
+  }
+  if (state.unlockedSections.includes("upgrades") && !state.upgrades.includes("shelter_stash") && state.resources.wood < 4) {
+    return {
+      title: "Cut wood for the shelter",
+      detail: "Rubble is not your lumber plan. Once the stash blueprint shows up, the tree line is the cleanest way to get there.",
     };
   }
   if (readyUpgrade) {
@@ -6655,7 +6775,7 @@ function getTutorialStep(state) {
       id: "warmth",
       title: "Unlock warmth control",
       summary: "A few more rubble runs unlock the burn-for-warmth action. That is your first shelter stabilizer, but it is also loud.",
-      chips: [`${Math.max(0, 3 - state.stats.searches)} searches left`, "survive today"],
+      chips: [`${Math.max(0, 2 - state.stats.searches)} searches left`, "survive today"],
       tabs: ["overview"],
       action: {
         action: "search-rubble",
@@ -6832,12 +6952,65 @@ function renderCommandDesk(state, derived, availableSources, availableUpgrades) 
   const forecast = getNightForecast(state);
   const upkeep = getShelterUpkeep(state);
   const systems = getShelterSystems(state, derived);
+  const activeJob = getActiveWorkJob(state);
   const readyUpgrade = readyUpgradeCandidate(state, availableUpgrades);
   const directive = currentDirective(state, availableUpgrades);
+  const lowFood = state.unlockedSections.includes("shelter")
+    && state.discoveredResources.includes("food")
+    && state.resources.food < upkeep.mealCost;
+  const lowWater = state.unlockedSections.includes("shelter")
+    && state.discoveredResources.includes("water")
+    && state.resources.water < upkeep.waterCost;
   const preview = state.expedition.selectedZone
     ? getExpeditionPreview(state, state.expedition.selectedZone, state.expedition.approach)
     : null;
   const highlightAction = (() => {
+    if (activeJob && lowFood) {
+      return actionButton({
+        action: "forage-food",
+        label: "Forage while it runs",
+        meta: "cover the meal clock",
+        variant: "primary compact",
+      });
+    }
+    if (activeJob && lowWater) {
+      const pantryOpen = availableSources.some((source) => source.id === "dead_pantries");
+      return actionButton({
+        action: pantryOpen ? "search-source" : "search-rubble",
+        label: pantryOpen ? "Find water" : "Search rubble",
+        meta: pantryOpen ? "pantries or clean lanes" : "pull bottles from the street",
+        data: pantryOpen ? { source: "dead_pantries" } : {},
+        variant: "primary compact",
+      });
+    }
+    if (directive.title === "Cut wood for the shelter") {
+      return actionButton({
+        action: "search-source",
+        label: "Chop tree line",
+        meta: "wood first / low noise",
+        data: { source: "tree_line" },
+        disabled: !availableSources.some((source) => source.id === "tree_line"),
+        variant: "primary compact",
+      });
+    }
+    if (directive.title === "Secure food stores") {
+      return actionButton({
+        action: "forage-food",
+        label: "Forage food",
+        meta: "1h / food first",
+        variant: "primary compact",
+      });
+    }
+    if (directive.title === "Refill drinkable water") {
+      const pantryOpen = availableSources.some((source) => source.id === "dead_pantries");
+      return actionButton({
+        action: pantryOpen ? "search-source" : "search-rubble",
+        label: pantryOpen ? "Check dead pantries" : "Search rubble",
+        meta: pantryOpen ? "food + water lane" : "look for bottles and tins",
+        data: pantryOpen ? { source: "dead_pantries" } : {},
+        variant: "primary compact",
+      });
+    }
     if (preview && preview.canLaunch && !state.combat) {
       return actionButton({
         action: "launch-prepared",
@@ -6920,7 +7093,7 @@ function renderInventoryItemCard(itemId, amount) {
   const item = ITEMS[itemId];
   let actionMarkup = "";
   const tooltip = itemTooltipText(item, amount);
-  if (item.type === "weapon" || item.type === "armor") {
+  if (item.type === "weapon" || item.type === "armor" || item.type === "backpack") {
     actionMarkup = actionButton({
       action: "equip-item",
       label: "Equip",
@@ -8703,11 +8876,11 @@ function renderOverviewActions(state) {
     }));
   }
 
-  if (state.upgrades.includes("food_search")) {
+  if (state.upgrades.includes("shelter_stash") || state.upgrades.includes("food_search")) {
     utilityButtons.push(actionButton({
       action: "forage-food",
-      label: "Fallback food search",
-      meta: "small gain, still noisy, useful when stores collapse",
+      label: "Forage food",
+      meta: "1h / modest food run / use during queue time",
       variant: "compact utility-trigger",
     }));
   }
@@ -9014,9 +9187,10 @@ function renderInventoryTab(state, derived, _isMobile = false) {
 
   const weaponName = state.equipped.weapon ? ITEMS[state.equipped.weapon]?.name : "Bare hands";
   const armorName = state.equipped.armor ? ITEMS[state.equipped.armor]?.name : "Street clothes";
-  const gearItems = items.filter(([itemId]) => ["weapon", "armor"].includes(ITEMS[itemId].type));
+  const backpackName = state.equipped.backpack ? ITEMS[state.equipped.backpack]?.name : "No pack";
+  const gearItems = items.filter(([itemId]) => ["weapon", "armor", "backpack"].includes(ITEMS[itemId].type));
   const fieldItems = items.filter(([itemId]) => ITEMS[itemId].type === "consumable");
-  const oddItems = items.filter(([itemId]) => !["weapon", "armor", "consumable"].includes(ITEMS[itemId].type));
+  const oddItems = items.filter(([itemId]) => !["weapon", "armor", "backpack", "consumable"].includes(ITEMS[itemId].type));
   const resourceGroups = ["core", "common", "uncommon", "rare", "social", "mythic"]
     .map((tier) => {
       const entries = state.discoveredResources
@@ -9058,6 +9232,7 @@ function renderInventoryTab(state, derived, _isMobile = false) {
           <div class="fact-grid">
             <div class="fact"><span>Weapon</span><strong>${weaponName}</strong></div>
             <div class="fact"><span>Armor</span><strong>${armorName}</strong></div>
+            <div class="fact"><span>Pack</span><strong>${backpackName}</strong></div>
             <div class="fact"><span>Items</span><strong>${items.length}</strong></div>
             <div class="fact"><span>Ammo</span><strong>${state.resources.ammo}</strong></div>
           </div>
@@ -9129,7 +9304,13 @@ function renderNightPlanner(state) {
             <span class="tag">${report.eventType}</span>
           </div>
           <p class="note">${report.summary}</p>
+          <div class="fact-grid">
+            <div class="fact"><span>Condition hit</span><strong>${report.conditionLoss}</strong></div>
+            <div class="fact"><span>Morale swing</span><strong>${report.moraleDelta}</strong></div>
+            <div class="fact"><span>Siege pressure</span><strong>${report.siegePressure}</strong></div>
+          </div>
           ${report.damagedStructures?.length ? `<div class="chip-row">${tagList(report.damagedStructures.map((target) => structureByKey(target).label || target))}</div>` : ""}
+          ${Object.values(report.stolen || {}).some((amount) => amount > 0) ? `<div class="chip-row">${tagList(Object.entries(report.stolen).filter(([, amount]) => amount > 0).map(([resourceId, amount]) => `${resourceLabel(resourceId)} -${amount}`))}</div>` : ""}
           ${report.crewHits?.length ? `<div class="chip-row">${tagList(report.crewHits)}</div>` : ""}
         </div>
       ` : `<p class="empty-state">No night report yet.</p>`}
@@ -9561,6 +9742,17 @@ function accordionSection(title, meta, body, open = false) {
 
 const PATCH_NOTES = [
   {
+    version: "v5.3",
+    title: "Early Survival Feel Pass",
+    points: [
+      "Backpack is now real equipment with a salvage bonus instead of a hidden passive upgrade.",
+      "Rubble pressure ramps cleaner and repeats fewer early infected contacts.",
+      "A dedicated tree line gives wood a real harvesting loop.",
+      "Food flow is stronger early, while drinkable water is less overabundant.",
+      "Night reports now explain the damage they caused more clearly.",
+    ],
+  },
+  {
     version: "v5.2",
     title: "Building / Crafting Overhaul",
     points: [
@@ -9697,6 +9889,9 @@ function playerGearRows(state) {
   const armor = Object.entries(state.inventory)
     .filter(([itemId, amount]) => amount > 0 && ITEMS[itemId]?.type === "armor")
     .map(([itemId, amount]) => renderInventoryItemCard(itemId, amount));
+  const backpacks = Object.entries(state.inventory)
+    .filter(([itemId, amount]) => amount > 0 && ITEMS[itemId]?.type === "backpack")
+    .map(([itemId, amount]) => renderInventoryItemCard(itemId, amount));
   const tools = Object.entries(state.inventory)
     .filter(([itemId, amount]) => amount > 0 && ITEMS[itemId]?.type === "tool")
     .map(([itemId, amount]) => renderInventoryItemCard(itemId, amount));
@@ -9707,6 +9902,7 @@ function playerGearRows(state) {
   return {
     weapons,
     armor,
+    backpacks,
     tools,
     consumables,
   };
@@ -9756,6 +9952,7 @@ function renderPlayerTab(state, derived, isMobile = false) {
   const gear = playerGearRows(state);
   const weaponName = state.equipped.weapon ? ITEMS[state.equipped.weapon]?.name : "Bare Hands";
   const armorName = state.equipped.armor ? ITEMS[state.equipped.armor]?.name : "Street Clothes";
+  const backpackName = state.equipped.backpack ? ITEMS[state.equipped.backpack]?.name : "No Pack";
   const stressedCount = state.survivors.roster.filter((survivor) => survivor.stress >= 4).length;
   const woundedCount = state.survivors.roster.filter((survivor) => survivor.wounded > 0).length;
   const statusCards = `
@@ -9778,8 +9975,10 @@ function renderPlayerTab(state, derived, isMobile = false) {
       <div class="fact-grid">
         <div class="fact"><span>Weapon</span><strong>${weaponName}</strong></div>
         <div class="fact"><span>Armor</span><strong>${armorName}</strong></div>
+        <div class="fact"><span>Backpack</span><strong>${backpackName}</strong></div>
         <div class="fact"><span>Food cost</span><strong>${upkeep.mealCost}/cycle</strong></div>
         <div class="fact"><span>Water cost</span><strong>${upkeep.waterCost}/cycle</strong></div>
+        <div class="fact"><span>Carry bonus</span><strong>${state.equipped.backpack ? "+1 loot roll" : "none"}</strong></div>
       </div>
     `,
   });
@@ -9797,11 +9996,12 @@ function renderPlayerTab(state, derived, isMobile = false) {
   });
   const gearCard = (className = "") => surfaceCard({
     title: "Equipment locker",
-    meta: `${gear.weapons.length + gear.armor.length} pieces`,
+    meta: `${gear.weapons.length + gear.armor.length + gear.backpacks.length} pieces`,
     className,
-    body: gear.weapons.length || gear.armor.length
+    body: gear.weapons.length || gear.armor.length || gear.backpacks.length
       ? `
         <div class="detail-list">
+          ${gear.backpacks.length ? `<div class="list-block compact-block"><div class="surface-head"><h4>Backpacks</h4><span class="tag">${gear.backpacks.length}</span></div><div class="inventory-card-grid">${gear.backpacks.join("")}</div></div>` : ""}
           ${gear.weapons.length ? `<div class="list-block compact-block"><div class="surface-head"><h4>Weapons</h4><span class="tag">${gear.weapons.length}</span></div><div class="inventory-card-grid">${gear.weapons.join("")}</div></div>` : ""}
           ${gear.armor.length ? `<div class="list-block compact-block"><div class="surface-head"><h4>Armor</h4><span class="tag">${gear.armor.length}</span></div><div class="inventory-card-grid">${gear.armor.join("")}</div></div>` : ""}
         </div>
@@ -11004,7 +11204,7 @@ function summarizeRoster(roster) {
 
 function createInitialState() {
   return {
-    version: 9,
+    version: 10,
     time: {
       day: 1,
       hour: 7,
@@ -11035,6 +11235,7 @@ function createInitialState() {
     equipped: {
       weapon: null,
       armor: null,
+      backpack: null,
     },
     survivors: {
       total: 0,

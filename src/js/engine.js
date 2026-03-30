@@ -794,11 +794,18 @@ export function getDerivedState(state) {
 
   const equippedWeapon = ITEMS[state.equipped.weapon];
   const equippedArmor = ITEMS[state.equipped.armor];
+  const equippedBackpack = ITEMS[state.equipped.backpack];
   if (equippedWeapon?.attack) {
     derived.attack += equippedWeapon.attack;
   }
   if (equippedArmor?.defense) {
     derived.defense += equippedArmor.defense;
+  }
+  if (equippedBackpack) {
+    derived.searchBonusRolls += equippedBackpack.searchBonusRolls || 0;
+    derived.searchScrapMin += equippedBackpack.searchScrapMin || 0;
+    derived.salvageYieldBonus += equippedBackpack.salvageYieldBonus || 0;
+    derived.expeditionLootBonus += equippedBackpack.expeditionLootBonus || 0;
   }
   if (hasItem(state, "pry_bar")) {
     derived.salvageYieldBonus += 0.08;
@@ -900,6 +907,7 @@ export function getNightForecast(state) {
   const guardBonus = guardStrength(state) * 0.34;
   const signalBonus = state.survivors.assigned.tuner * 0.05;
   const maintenancePenalty = Math.max(0, -systems.maintenanceBalance);
+  const firstNightRelief = state.stats.nightsSurvived === 0 ? 1.6 : 0;
   const dangerScore = clamp(
     state.shelter.threat * 1.5
       + adjustedNoise * 1.28
@@ -910,22 +918,24 @@ export function getNightForecast(state) {
       - state.shelter.warmth * 0.24
       - systems.coverage * 0.22
       - guardBonus
-      - signalBonus,
+      - signalBonus
+      - firstNightRelief,
     0,
     14,
   );
 
-  const infectedChance = clamp(
+  let infectedChance = clamp(
     0.16
       + state.shelter.threat * 0.08
       + adjustedNoise * 0.05
       + maintenancePenalty * 0.03
       - adjustedDefense * 0.018
-      - systems.coverage * 0.012,
+      - systems.coverage * 0.012
+      - firstNightRelief * 0.03,
     0.1,
     0.86,
   );
-  const raidChance = clamp(
+  let raidChance = clamp(
     (state.time.day >= 3 ? 0.1 : 0.03)
       + adjustedNoise * 0.06
       + state.resources.reputation * 0.01
@@ -934,11 +944,12 @@ export function getNightForecast(state) {
       + (faction.raidBias || 0)
       - (faction.raidMitigation || 0)
       - systems.coverage * 0.02
-      - adjustedDefense * 0.012,
+      - adjustedDefense * 0.012
+      - firstNightRelief * 0.02,
     0.04,
     0.7,
   );
-  const breachChance = clamp(
+  let breachChance = clamp(
     0.08
       + Math.max(0, dangerScore - 1.5) * 0.06
       + maintenancePenalty * 0.035
@@ -946,20 +957,28 @@ export function getNightForecast(state) {
       - (faction.breachMitigation || 0)
       - derived.siegeMitigation * 0.03
       - systems.coverage * 0.014
-      - adjustedDefense * 0.015,
+      - adjustedDefense * 0.015
+      - firstNightRelief * 0.04,
     0.03,
     0.64,
   );
-  const siegeChance = clamp(
+  let siegeChance = clamp(
     (state.time.day >= 4 ? 0.06 : 0.01)
       + Math.max(0, dangerScore - 4.2) * 0.05
       + breachChance * 0.32
       + raidChance * 0.14
       - adjustedDefense * 0.012
-      - derived.siegeMitigation * 0.03,
+      - derived.siegeMitigation * 0.03
+      - firstNightRelief * 0.06,
     0.01,
     0.56,
   );
+  if (state.stats.nightsSurvived === 0) {
+    infectedChance = Math.min(infectedChance, 0.62);
+    raidChance = Math.min(raidChance, 0.18);
+    breachChance = Math.min(breachChance, 0.24);
+    siegeChance = Math.min(siegeChance, 0.14);
+  }
   const quietChance = clamp(1 - (infectedChance * 0.46 + raidChance * 0.36 + breachChance * 0.32 + siegeChance * 0.28), 0.04, 0.58);
   const hoursUntilNight = state.time.hour < 21 ? 21 - state.time.hour : 24 - state.time.hour + 21;
 
@@ -1282,6 +1301,9 @@ function grantItem(state, itemId, amount = 1) {
   if (item.type === "armor" && !state.equipped.armor) {
     state.equipped.armor = itemId;
   }
+  if (item.type === "backpack" && !state.equipped.backpack) {
+    state.equipped.backpack = itemId;
+  }
 }
 
 function pickWeightedEntry(entries) {
@@ -1565,12 +1587,12 @@ export function getAvailableUpgrades(state) {
 
 export function evaluateProgression(state) {
   syncSurvivorRoster(state);
-  if (state.stats.searches >= 3 && !state.flags.burnUnlocked) {
+  if (state.stats.searches >= 2 && !state.flags.burnUnlocked) {
     state.flags.burnUnlocked = true;
     addLog(state, "Cold makes simple math persuasive. Twelve scrap for warmth suddenly sounds fair.");
   }
 
-  if ((state.stats.searches >= 4 || state.resources.scrap >= 8) && !state.unlockedSections.includes("upgrades")) {
+  if ((state.stats.searches >= 3 || state.resources.scrap >= 6) && !state.unlockedSections.includes("upgrades")) {
     unlockSection(state, "upgrades", "Plans start replacing panic. You can build.");
   }
 
@@ -1675,6 +1697,8 @@ function applyZoneRewards(state, zoneId, rewards) {
 
 function sourceEncounterProfile(sourceId) {
   switch (sourceId) {
+    case "tree_line":
+      return { zoneId: "ruined_street", enemies: ["walker"], rewards: { resources: { wood: 2 } } };
     case "vehicle_shells":
       return { zoneId: "abandoned_gas_station", enemies: ["walker", "screecher"], rewards: { resources: { parts: 1 } } };
     case "dead_pantries":
@@ -1692,14 +1716,15 @@ function sourceEncounterProfile(sourceId) {
 }
 
 function sourceEncounterChance(state, source) {
-  const searchPressure = Math.max(0, state.stats.searches - 2) * 0.018;
+  const searchPressure = Math.max(0, state.stats.searches - 3) * 0.014;
   const shelterPressure = state.shelter.threat * 0.022 + state.shelter.noise * 0.018;
   const lanePressure = (source.threat || 0.3) * 0.12 + (source.noise || 0.3) * 0.08;
+  const openingGrace = source.id === "rubble" ? Math.max(0, 5 - state.stats.searches) * 0.018 : 0;
 
   return clamp(
-    0.01 + searchPressure + shelterPressure + lanePressure,
-    0.03,
-    source.id === "rubble" ? 0.16 : 0.24,
+    0.008 + searchPressure + shelterPressure + lanePressure - openingGrace,
+    source.id === "rubble" ? 0.012 : 0.03,
+    source.id === "rubble" ? 0.1 : source.id === "tree_line" ? 0.12 : 0.22,
   );
 }
 
@@ -1999,6 +2024,13 @@ export function advanceTime(state, hours) {
       recoverSurvivorsAtDawn(state);
       maybeTriggerCrewConflict(state);
       addLog(state, "A grey dawn leaks over the shelter. You are still here.", "night");
+      if (state.night.lastReport) {
+        addLog(
+          state,
+          `Dawn report: ${state.night.lastReport.eventType} / condition -${state.night.lastReport.conditionLoss}${state.night.lastReport.damagedStructures?.length ? ` / damage ${state.night.lastReport.damagedStructures.map((target) => damageLabel(target)).join(", ")}` : ""}.`,
+          "night",
+        );
+      }
     }
   }
 }
@@ -2023,11 +2055,20 @@ export function runScavengeSource(state, sourceId = "rubble") {
   const lootBundle = createLootBundle();
   addResource(state, "scrap", directScrap);
   applySourceDirectResources(lootBundle, source);
-  if (hasItem(state, "salvage_hatchet") && ["rubble", "dead_pantries"].includes(source.id)) {
+  if (hasItem(state, "salvage_hatchet") && ["rubble", "dead_pantries", "tree_line"].includes(source.id)) {
     addDirectResourceFind(lootBundle, "wood", 1);
   }
   if (hasItem(state, "pry_bar") && ["vehicle_shells", "sealed_caches"].includes(source.id)) {
     addDirectResourceFind(lootBundle, "parts", 1);
+  }
+  if (chance(derived.searchFoodChance) && ["rubble", "dead_pantries"].includes(source.id)) {
+    addDirectResourceFind(lootBundle, "food", 1);
+  }
+  if (chance(derived.searchPartChance) && ["rubble", "vehicle_shells", "sealed_caches"].includes(source.id)) {
+    addDirectResourceFind(lootBundle, "parts", 1);
+  }
+  if (chance(derived.searchMedicineChance) && ["rubble", "clinic_drawers"].includes(source.id)) {
+    addDirectResourceFind(lootBundle, "medicine", 1);
   }
   rollSourceRarities(source, state, derived, lootBundle);
 
@@ -2086,19 +2127,23 @@ export function forageFood(state) {
   state.stats.foodSearches += 1;
   state.shelter.noise = clamp(state.shelter.noise + 0.3, 0, 10);
   state.shelter.threat = clamp(state.shelter.threat + 0.12, 0, 12);
-  addResource(state, "food", zoneRewardMultiplier(randInt(1, 2), derived.forageYieldBonus));
-  addResource(state, "water", zoneRewardMultiplier(randInt(0, 1), derived.forageYieldBonus));
+  addResource(state, "food", zoneRewardMultiplier(randInt(2, 3), derived.forageYieldBonus));
+  addResource(state, "water", zoneRewardMultiplier(randInt(0, 1), derived.forageYieldBonus * 0.5));
   if (chance(0.18)) {
     addResource(state, "medicine", 1);
   }
   if (chance(0.12)) {
     addResource(state, "cloth", 1);
   }
+  if (chance(0.2)) {
+    grantItem(state, "canned_beans", 1);
+  }
   addLog(state, "You search for food instead of useful things. Today, that is the useful thing.", "loot");
   if (chance(0.55)) {
     runEvent(state, "food");
   }
   evaluateProgression(state);
+  return true;
 }
 
 export function drinkWater(state) {
@@ -2515,6 +2560,11 @@ export function equipItem(state, itemId) {
   if (item.type === "armor") {
     state.equipped.armor = itemId;
     addLog(state, `Equipped: ${item.name}.`, "build");
+    return true;
+  }
+  if (item.type === "backpack") {
+    state.equipped.backpack = itemId;
+    addLog(state, `Packed: ${item.name}.`, "build");
     return true;
   }
 
