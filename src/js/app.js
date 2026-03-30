@@ -32,6 +32,7 @@ import {
   useItem,
 } from "./engine.js";
 import { renderGame } from "./render.js";
+import { builtPlaceableStructures, canPlaceShelterStructure } from "./shelter-layout.js";
 import { clearSave, createInitialState, loadState, saveState } from "./state.js";
 import {
   getLeaderboardState,
@@ -51,25 +52,42 @@ let state = loadState();
 evaluateProgression(state);
 
 const saveStatus = document.getElementById("autosave-status");
+const tooltipRoot = document.getElementById("ui-tooltip-root");
+let tooltipTarget = null;
 
 function isMobileViewport() {
   return typeof window !== "undefined" && Number(window.innerWidth || 0) <= 720;
 }
 
+function normalizeTabId(tabId) {
+  const legacyMap = {
+    overview: "ops",
+    player: "survivor",
+    inventory: "survivor",
+    craft: "workshop",
+    shelter: "base",
+    shelter_map: "base",
+    map: "routes",
+    survivors: "crew",
+  };
+  return legacyMap[tabId] || tabId;
+}
+
 function normalizeMobileTabTarget(tabId) {
+  const normalized = normalizeTabId(tabId);
   if (!isMobileViewport()) {
-    return { tabId, shelterMode: null };
+    return { tabId: normalized, shelterMode: null };
   }
 
   if (tabId === "shelter_map") {
-    return { tabId: "shelter", shelterMode: "map" };
+    return { tabId: "base", shelterMode: "map" };
   }
 
-  if (tabId === "shelter") {
-    return { tabId: "shelter", shelterMode: "ops" };
+  if (normalized === "base") {
+    return { tabId: "base", shelterMode: "ops" };
   }
 
-  return { tabId, shelterMode: null };
+  return { tabId: normalized, shelterMode: null };
 }
 
 function setSaveStatus(text) {
@@ -102,6 +120,55 @@ function syncUsernameWithLeaderboard({ save = false } = {}) {
   }
 }
 
+function clearTooltip() {
+  if (!tooltipRoot) {
+    return;
+  }
+  tooltipTarget = null;
+  tooltipRoot.innerHTML = "";
+  tooltipRoot.dataset.active = "false";
+}
+
+function tooltipSource(target) {
+  return target?.closest?.("[data-tooltip], [data-tooltip-body], [data-tooltip-title]") || null;
+}
+
+function placeTooltip(x, y) {
+  if (!tooltipRoot) {
+    return;
+  }
+  const width = Number(window.innerWidth || 0);
+  const rootWidth = 260;
+  const left = Math.max(16, Math.min(x + 16, width - rootWidth - 16));
+  const top = Math.max(16, y + 18);
+  tooltipRoot.style.left = `${left}px`;
+  tooltipRoot.style.top = `${top}px`;
+}
+
+function showTooltip(target, x = 0, y = 0) {
+  if (!tooltipRoot || isMobileViewport()) {
+    clearTooltip();
+    return;
+  }
+  const title = target.dataset.tooltipTitle || "";
+  const meta = target.dataset.tooltipMeta || "";
+  const body = target.dataset.tooltipBody || target.dataset.tooltip || target.getAttribute?.("title") || "";
+  if (!title && !body) {
+    clearTooltip();
+    return;
+  }
+  tooltipTarget = target;
+  tooltipRoot.dataset.active = "true";
+  tooltipRoot.innerHTML = `
+    <div class="ui-tooltip-panel">
+      ${meta ? `<span class="ui-tooltip-meta">${meta}</span>` : ""}
+      ${title ? `<h4>${title}</h4>` : ""}
+      ${body ? `<p>${body}</p>` : ""}
+    </div>
+  `;
+  placeTooltip(x, y);
+}
+
 initLeaderboard({ onChange: rerender });
 syncUsernameWithLeaderboard({ save: true });
 
@@ -128,16 +195,61 @@ function handleAction(action, button) {
       changed = startWorkJob(state, button.dataset.upgrade);
       break;
     case "inspect-structure":
-      if (state.ui.inspectedStructure !== button.dataset.structure) {
+      if (state.ui.selectedStructureId !== button.dataset.structure) {
+        state.ui.selectedStructureId = button.dataset.structure;
         state.ui.inspectedStructure = button.dataset.structure;
         changed = true;
       }
+      state.ui.pendingPlacementStructureId = null;
       if (isMobileViewport()) {
         state.ui.mobileInspectorStructure = button.dataset.structure;
         state.ui.mobileShelterMode = "map";
         changed = true;
       }
       break;
+    case "start-placing-structure":
+      if (button.dataset.structure && state.ui.pendingPlacementStructureId !== button.dataset.structure) {
+        state.ui.pendingPlacementStructureId = button.dataset.structure;
+        state.ui.selectedStructureId = button.dataset.structure;
+        state.ui.inspectedStructure = button.dataset.structure;
+        changed = true;
+      }
+      if (isMobileViewport()) {
+        state.ui.mobileShelterMode = "map";
+      }
+      break;
+    case "clear-placement":
+      if (state.ui.pendingPlacementStructureId) {
+        state.ui.pendingPlacementStructureId = null;
+        changed = true;
+      }
+      break;
+    case "place-structure": {
+      const structureId = button.dataset.structure;
+      const x = Number(button.dataset.x);
+      const y = Number(button.dataset.y);
+      const builtIds = builtPlaceableStructures(state.upgrades).map((structure) => structure.id);
+      if (
+        structureId
+        && Number.isFinite(x)
+        && Number.isFinite(y)
+        && canPlaceShelterStructure(state.shelter.layout.placed || {}, structureId, x, y, builtIds)
+      ) {
+        state.shelter.layout.placed = {
+          ...(state.shelter.layout?.placed || {}),
+          [structureId]: { x, y },
+        };
+        state.ui.pendingPlacementStructureId = null;
+        state.ui.selectedStructureId = structureId;
+        state.ui.inspectedStructure = structureId;
+        if (isMobileViewport()) {
+          state.ui.mobileInspectorStructure = structureId;
+          state.ui.mobileShelterMode = "map";
+        }
+        changed = true;
+      }
+      break;
+    }
     case "repair-structure":
       changed = repairStructure(state, button.dataset.structure);
       break;
@@ -278,7 +390,7 @@ function handleAction(action, button) {
 
         state.ui.mobileMoreOpen = false;
         state.ui.mobileResourceDrawerOpen = false;
-        if (nextTab !== "shelter") {
+        if (nextTab !== "base") {
           state.ui.mobileInspectorStructure = null;
         }
         if (nextShelterMode) {
@@ -403,6 +515,45 @@ document.body.addEventListener("click", (event) => {
   }
 
   handleAction(button.dataset.action, button);
+});
+
+document.body.addEventListener("mouseover", (event) => {
+  const nextTarget = tooltipSource(event.target);
+  if (!nextTarget) {
+    return;
+  }
+  showTooltip(nextTarget, event.clientX || 0, event.clientY || 0);
+});
+
+document.body.addEventListener("mousemove", (event) => {
+  if (!tooltipTarget || isMobileViewport()) {
+    return;
+  }
+  placeTooltip(event.clientX || 0, event.clientY || 0);
+});
+
+document.body.addEventListener("mouseout", (event) => {
+  const nextTarget = tooltipSource(event.target);
+  if (!nextTarget || tooltipTarget !== nextTarget) {
+    return;
+  }
+  clearTooltip();
+});
+
+document.body.addEventListener("focusin", (event) => {
+  const nextTarget = tooltipSource(event.target);
+  if (!nextTarget) {
+    return;
+  }
+  showTooltip(nextTarget, 220, 120);
+});
+
+document.body.addEventListener("focusout", (event) => {
+  const nextTarget = tooltipSource(event.target);
+  if (!nextTarget) {
+    return;
+  }
+  clearTooltip();
 });
 
 rerender();

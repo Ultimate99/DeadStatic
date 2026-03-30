@@ -1,608 +1,116 @@
-/* atmosphere pass */
-
-.tab-stage {
-  position: relative;
-  display: grid;
-  gap: 10px;
-  align-content: start;
+.brand-block,
+.utility-block,
+.hero-panel,
+.tabs-shell,
+.combat-banner,
+.surface-card,
+.base-board,
+.equipment-slot-card,
+.blueprint-card,
+.rack-card,
+.ops-source-card,
+.route-zone-card,
+.radio-node,
+.crew-card,
+.inventory-sprite-card {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.018),
+    0 16px 32px rgba(0, 0, 0, 0.36);
 }
 
-.stage-banner {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1.24fr) minmax(280px, 0.76fr);
-  gap: 8px;
-  padding: 10px;
-  overflow: hidden;
-  border: 1px solid rgba(210, 197, 166, 0.08);
-  border-radius: 16px;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.02), transparent 46%),
-    rgba(12, 15, 15, 0.82);
+.tab-stage-head,
+.base-board,
+.mannequin-figure,
+.surface-card,
+.summary-pill,
+.resource-pill,
+.rail-button,
+.mobile-nav-button,
+.action-button,
+.inventory-sprite-card,
+.blueprint-card,
+.rack-card,
+.crew-card,
+.radio-node,
+.route-zone-card,
+.ops-source-card {
+  backdrop-filter: blur(2px);
 }
 
-.stage-banner::before {
+.brand-block::after,
+.tabs-shell::before {
   content: "";
   position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(90deg, rgba(241, 203, 135, 0.07), transparent 30%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 26%);
   pointer-events: none;
 }
 
-.stage-banner::after {
-  content: "";
-  position: absolute;
-  right: -40px;
-  top: -40px;
+.brand-block {
+  position: relative;
+  overflow: hidden;
+}
+
+.brand-block::after {
+  inset: auto -40px -40px auto;
   width: 180px;
   height: 180px;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(241, 203, 135, 0.08), transparent 68%);
+  background: radial-gradient(circle, rgba(208, 164, 107, 0.08), transparent 72%);
+}
+
+.tabs-shell {
+  position: relative;
+  overflow: hidden;
+}
+
+.tabs-shell::before {
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.01), transparent 24%),
+    linear-gradient(90deg, rgba(208, 164, 107, 0.03), transparent 22%);
+}
+
+.base-board::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border-radius: 14px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: calc((100% - 4px) / 12) calc((100% - 4px) / 8);
+  opacity: 0.2;
   pointer-events: none;
 }
 
-.stage-copy,
-.stage-stat-strip {
-  position: relative;
-  z-index: 1;
-}
-
-.stage-copy {
-  display: grid;
-  gap: 7px;
-}
-
-.stage-copy h2 {
-  font-size: 1rem;
-  letter-spacing: 0.16em;
-}
-
-.stage-stat-strip {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.stage-stat {
-  display: grid;
-  gap: 3px;
-  min-height: 64px;
-  padding: 8px 10px;
-  border: 1px solid rgba(210, 197, 166, 0.07);
-  border-radius: 14px;
-  background: rgba(9, 11, 11, 0.46);
-}
-
-.stage-stat span {
-  color: var(--muted);
-  font-size: 0.6rem;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-
-.stage-stat strong {
-  color: var(--accent-strong);
-  font-size: 0.9rem;
-}
-
-.tab-stage-radio .stage-banner {
-  background:
-    linear-gradient(145deg, rgba(154, 125, 227, 0.11), transparent 46%),
-    rgba(12, 15, 15, 0.84);
-}
-
-.tab-stage-radio .stage-banner::after {
-  background: radial-gradient(circle, rgba(154, 125, 227, 0.12), transparent 68%);
-}
-
-.tab-stage-shelter_map .stage-banner,
-.tab-stage-map .stage-banner {
-  background:
-    linear-gradient(145deg, rgba(122, 162, 177, 0.08), transparent 44%),
-    rgba(12, 15, 15, 0.84);
-}
-
-.tab-stage-factions .stage-banner {
-  background:
-    linear-gradient(145deg, rgba(211, 165, 106, 0.1), transparent 44%),
-    rgba(12, 15, 15, 0.84);
-}
-
-.tab-stage-log .stage-banner {
-  background:
-    linear-gradient(145deg, rgba(134, 187, 130, 0.08), transparent 44%),
-    rgba(12, 15, 15, 0.84);
-}
-
-.anomaly-trace {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.trace-node {
-  display: block;
-  height: 54px;
-  border: 1px solid rgba(210, 197, 166, 0.08);
-  border-radius: 14px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 42%),
-    rgba(10, 12, 12, 0.56);
-  opacity: 0.38;
-}
-
-.trace-node.is-hot {
-  opacity: 1;
-  background:
-    linear-gradient(180deg, rgba(154, 125, 227, 0.24), transparent 42%),
-    linear-gradient(180deg, rgba(122, 162, 177, 0.1), transparent 78%),
-    rgba(12, 15, 15, 0.84);
-  box-shadow: inset 0 -18px 24px rgba(154, 125, 227, 0.1);
-}
-
-.anomaly-trace.is-open .trace-node.is-hot {
-  background:
-    linear-gradient(180deg, rgba(122, 162, 177, 0.22), transparent 42%),
-    linear-gradient(180deg, rgba(154, 125, 227, 0.18), transparent 70%),
-    rgba(12, 15, 15, 0.86);
-}
-
-.ghost-feed {
-  display: grid;
-  gap: 6px;
-}
-
-.ghost-line {
-  display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
-  gap: 8px;
-  padding: 6px 0;
-  border-bottom: 1px dotted rgba(210, 197, 166, 0.12);
-}
-
-.ghost-line span {
-  color: var(--muted);
-  font-size: 0.62rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.ghost-line p {
-  color: var(--text);
-  line-height: 1.45;
-}
-
-@keyframes signalHum {
-  0%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.92;
-  }
-  50% {
-    transform: translateY(-1px);
-    opacity: 1;
-  }
-}
-
-.signal-bar.is-hot,
-.trace-node.is-hot {
-  animation: signalHum 2.2s ease-in-out infinite;
-}
-
-.signal-bar.is-hot:nth-child(2),
-.trace-node.is-hot:nth-child(2) {
-  animation-delay: 0.15s;
-}
-
-.signal-bar.is-hot:nth-child(3),
-.trace-node.is-hot:nth-child(3) {
-  animation-delay: 0.3s;
-}
-
-.signal-bar.is-hot:nth-child(4),
-.trace-node.is-hot:nth-child(4) {
-  animation-delay: 0.45s;
-}
-
-.signal-bar.is-hot:nth-child(5),
-.trace-node.is-hot:nth-child(5) {
-  animation-delay: 0.6s;
-}
-
-.signal-bar.is-hot:nth-child(6),
-.trace-node.is-hot:nth-child(6) {
-  animation-delay: 0.75s;
-}
-
-@media (max-width: 1080px) {
-  .stage-banner {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 720px) {
-  .stage-stat-strip,
-  .anomaly-trace {
-    grid-template-columns: 1fr;
-  }
-
-  .ghost-line {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* structural anti-gap pass */
-
-.tab-columns {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 316px;
-  gap: 8px;
-  align-items: start;
-}
-
-.tab-main-column,
-.tab-side-column {
-  display: grid;
-  gap: 8px;
-  align-content: start;
-}
-
-.tab-inline-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.tab-columns-log {
-  grid-template-columns: minmax(0, 1fr) 292px;
-}
-
-.tab-columns-factions {
-  grid-template-columns: minmax(0, 1fr) 304px;
-}
-
-.faction-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.map-compound-floor {
-  position: absolute;
-  left: 72px;
-  right: 72px;
-  top: 58px;
-  bottom: 58px;
-  border: 1px solid rgba(210, 197, 166, 0.08);
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at center, rgba(255, 255, 255, 0.018), transparent 52%),
-    rgba(17, 22, 21, 0.42);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.015);
-}
-
-.shelter-map::before {
-  opacity: 0.2;
-}
-
-.gate-lane {
-  left: calc(50% - 10px);
-  width: 20px;
-  top: auto;
-  height: 88px;
-  bottom: 22px;
-}
-
-.surface-body,
-.detail-list,
-.action-stack,
-.mini-log,
-.full-log,
-.offer-grid,
-.crew-band-grid,
-.signal-spectrum {
-  align-content: start;
-}
-
-@media (max-width: 1180px) {
-  .tab-columns,
-  .tab-columns-log,
-  .tab-columns-factions {
-    grid-template-columns: 1fr;
-  }
-
-  .tab-inline-grid,
-  .faction-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 720px) {
-  .map-compound-floor {
-    left: 44px;
-    right: 44px;
-    top: 56px;
-    bottom: 54px;
-  }
-}
-
-body[data-mobile="true"] .tab-stage {
-  gap: 8px;
-}
-
-body[data-mobile="true"] .stage-banner {
-  grid-template-columns: 1fr;
-  gap: 8px;
-  padding: 9px 10px;
-  border-radius: 14px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.012), transparent 34%),
-    rgba(12, 15, 15, 0.8);
-}
-
-body[data-mobile="true"] .stage-banner::after,
-body[data-mobile="true"] .stage-banner::before {
-  opacity: 0.4;
-}
-
-body[data-mobile="true"] .stage-copy {
-  gap: 4px;
-}
-
-body[data-mobile="true"] .stage-copy h2 {
-  font-size: 0.84rem;
-  letter-spacing: 0.14em;
-}
-
-body[data-mobile="true"] .stage-stat-strip {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-}
-
-body[data-mobile="true"] .stage-stat {
-  min-height: 0;
-  padding: 7px 8px;
-  border-radius: 12px;
-}
-
-.mobile-stage-info {
-  display: grid;
-  gap: 6px;
-}
-
-.mobile-stage-info summary {
-  cursor: pointer;
-  list-style: none;
-  color: var(--muted);
-  font-size: 0.62rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.mobile-stage-info summary::-webkit-details-marker {
-  display: none;
-}
-
-body[data-mobile="true"] .shelter-map {
-  min-height: clamp(300px, 52vh, 420px);
-  border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.012), transparent 22%),
-    linear-gradient(180deg, #121615, #090b0b);
-}
-
-body[data-mobile="true"] .shelter-map::before {
-  background:
-    repeating-linear-gradient(90deg, transparent 0 66px, rgba(255, 255, 255, 0.01) 66px 67px),
-    repeating-linear-gradient(180deg, transparent 0 66px, rgba(255, 255, 255, 0.01) 66px 67px);
-  opacity: 0.22;
-}
-
-body[data-mobile="true"] .shelter-map::after {
-  background:
-    radial-gradient(circle at 50% 60%, rgba(255, 255, 255, 0.014), transparent 32%),
-    radial-gradient(circle at 22% 74%, rgba(74, 93, 79, 0.08), transparent 16%),
-    radial-gradient(circle at 76% 70%, rgba(74, 93, 79, 0.08), transparent 16%);
-}
-
-body[data-mobile="true"] .outpost-headline {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-body[data-mobile="true"] .outpost-headline > div {
-  min-height: 0;
-  padding: 7px;
-  border-radius: 12px;
-}
-
-body[data-mobile="true"] .map-compound-floor {
-  left: 34px;
-  right: 34px;
-  top: 42px;
-  bottom: 44px;
-  border-radius: 22px;
-  background: rgba(17, 22, 21, 0.32);
-}
-
-body[data-mobile="true"] .gate-lane {
-  width: 14px;
-  left: calc(50% - 7px);
-  height: 72px;
-  bottom: 18px;
-}
-
-body[data-mobile="true"] .fence-top,
-body[data-mobile="true"] .fence-bottom-left,
-body[data-mobile="true"] .fence-bottom-right,
-body[data-mobile="true"] .fence-gate span {
-  height: 8px;
-}
-
-body[data-mobile="true"] .fence-left,
-body[data-mobile="true"] .fence-right {
-  width: 8px;
-}
-
-body[data-mobile="true"] .map-structure {
-  width: 48px;
-}
-
-body[data-mobile="true"] .map-sprite {
-  width: 38px;
-  height: 30px;
-}
-
-body[data-mobile="true"] .map-structure.is-mobile-minimal .structure-name {
-  display: none;
-}
-
-body[data-mobile="true"] .map-perimeter-button {
-  bottom: 14px;
-  padding: 4px 8px;
-}
-
-body[data-mobile="true"] .mobile-structure-sheet {
-  bottom: calc(var(--mobile-nav-height) + 14px);
-}
-
-body[data-mobile="true"] .mobile-structure-sheet .mobile-sheet-body {
-  gap: 10px;
-  display: grid;
-}
-
-@media (max-width: 720px) {
-  body[data-mobile="true"] .stage-stat-strip,
-  body[data-mobile="true"] .anomaly-trace {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  body[data-mobile="true"] .ghost-line {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (min-width: 721px) {
-  body[data-mobile="false"]::after {
-    background:
-      radial-gradient(circle at 50% 0, rgba(239, 212, 159, 0.018), transparent 24%),
-      radial-gradient(circle at 50% 100%, rgba(0, 0, 0, 0.12), transparent 30%);
-  }
-
-  body[data-mobile="false"] .tab-stage {
-    gap: 12px;
-  }
-
-  body[data-mobile="false"] .stage-banner {
-    gap: 10px;
-    padding: 12px 14px;
-    border-color: rgba(205, 196, 174, 0.08);
-    border-radius: 12px;
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.008), transparent 18%),
-      rgba(12, 15, 15, 0.9);
-  }
-
-  body[data-mobile="false"] .stage-banner::before {
-    background:
-      linear-gradient(90deg, rgba(239, 212, 159, 0.04), transparent 26%),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.008), transparent 22%);
-  }
-
-  body[data-mobile="false"] .stage-banner::after {
-    display: none;
-  }
-
-  body[data-mobile="false"] .stage-copy {
-    gap: 6px;
-  }
-
-  body[data-mobile="false"] .stage-copy h2 {
-    font-size: 0.96rem;
-    letter-spacing: 0.15em;
-  }
-
-  body[data-mobile="false"] .stage-stat-strip {
-    gap: 8px;
-  }
-
-  body[data-mobile="false"] .stage-stat {
-    min-height: 66px;
-    padding: 9px 11px;
-    border-color: rgba(205, 196, 174, 0.07);
-    border-radius: 10px;
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.005), transparent 22%),
-      rgba(10, 12, 12, 0.82);
-  }
-
-  body[data-mobile="false"] .stage-stat strong {
-    color: var(--text);
-    font-size: 0.92rem;
-  }
-
-  body[data-mobile="false"] .tab-stage-radio .stage-banner {
-    background:
-      linear-gradient(180deg, rgba(153, 179, 165, 0.028), transparent 26%),
-      rgba(12, 15, 15, 0.92);
-  }
-
-  body[data-mobile="false"] .tab-stage-shelter_map .stage-banner,
-  body[data-mobile="false"] .tab-stage-map .stage-banner {
-    background:
-      linear-gradient(180deg, rgba(153, 179, 165, 0.024), transparent 24%),
-      rgba(12, 15, 15, 0.92);
-  }
-
-  body[data-mobile="false"] .tab-stage-factions .stage-banner {
-    background:
-      linear-gradient(180deg, rgba(198, 163, 109, 0.03), transparent 24%),
-      rgba(12, 15, 15, 0.92);
-  }
-
-  body[data-mobile="false"] .tab-stage-log .stage-banner {
-    background:
-      linear-gradient(180deg, rgba(153, 179, 165, 0.022), transparent 22%),
-      rgba(12, 15, 15, 0.92);
-  }
-
-  body[data-mobile="false"] .signal-bar,
-  body[data-mobile="false"] .trace-node {
-    border-color: rgba(205, 196, 174, 0.08);
-    border-radius: 10px;
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.008), transparent 28%),
-      rgba(10, 12, 12, 0.78);
-    opacity: 0.56;
-  }
-
-  body[data-mobile="false"] .signal-bar.is-hot {
-    background:
-      linear-gradient(180deg, rgba(153, 179, 165, 0.12), transparent 42%),
-      rgba(14, 17, 17, 0.9);
-    box-shadow: inset 0 -10px 16px rgba(153, 179, 165, 0.07);
-  }
-
-  body[data-mobile="false"] .trace-node.is-hot,
-  body[data-mobile="false"] .anomaly-trace.is-open .trace-node.is-hot {
-    background:
-      linear-gradient(180deg, rgba(198, 163, 109, 0.12), transparent 44%),
-      rgba(14, 17, 17, 0.9);
-    box-shadow: inset 0 -10px 16px rgba(198, 163, 109, 0.07);
-  }
-
-  body[data-mobile="false"] .ghost-line {
-    border-bottom: 1px solid rgba(205, 196, 174, 0.08);
-  }
-
-  body[data-mobile="false"] .tab-columns,
-  body[data-mobile="false"] .tab-columns-log,
-  body[data-mobile="false"] .tab-columns-factions {
-    gap: 10px;
-  }
-
-  body[data-mobile="false"] .map-compound-floor {
-    border-color: rgba(205, 196, 174, 0.06);
-    background: rgba(17, 22, 21, 0.26);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.008);
-  }
+.rail-button.is-active,
+.action-button.primary,
+.mobile-nav-button.is-active,
+.base-structure.is-selected,
+.blueprint-card.is-ready,
+.radio-node.is-active {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.025),
+    0 0 0 1px rgba(208, 164, 107, 0.08),
+    0 14px 28px rgba(0, 0, 0, 0.32);
+}
+
+.equipment-slot-shell,
+.inventory-sprite-wrap,
+.rack-sprite,
+.blueprint-sprite,
+.radio-node-glyph,
+.crew-portrait,
+.ops-source-icon,
+.route-zone-icon,
+.combat-banner-sprite,
+.base-inspector-sprite,
+.structure-sprite {
+  color: rgba(241, 237, 226, 0.92);
+}
+
+body[data-motion="reduced"] .rail-button,
+body[data-motion="reduced"] .action-button,
+body[data-motion="reduced"] .mobile-nav-button,
+body[data-motion="reduced"] .compact-stepper {
+  transition: none;
 }

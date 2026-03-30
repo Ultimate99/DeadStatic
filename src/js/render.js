@@ -13,50 +13,38 @@ import {
   renderTabBar,
 } from "./render/shared.js";
 import { renderTabStage } from "./render/stage.js";
-import { renderShelterMapTab } from "./render/shelter-map.js";
 import {
-  renderCraftTab,
-  renderInventoryTab,
-  renderMapTab,
-  renderOverviewTab,
-  renderShelterTab,
+  renderBaseTab,
+  renderOpsTab,
+  renderRoutesTab,
+  renderWorkshopTab,
 } from "./render/tabs-primary.js";
 import {
   renderCombatBanner,
-  renderFactionTab,
+  renderCrewTab,
   renderHelpTab,
   renderLeaderboardTab,
   renderLogTab,
-  renderPlayerTab,
   renderRadioTab,
   renderSettingsTab,
   renderSurvivorTab,
-  renderTradeTab,
 } from "./render/tabs-secondary.js";
 
 function renderTabContent(state, derived) {
   const isMobile = isMobileViewport();
   switch (state.ui.activeTab) {
-    case "player":
-      return renderPlayerTab(state, derived, isMobile);
-    case "craft":
-      return renderCraftTab(state, isMobile);
-    case "inventory":
-      return renderInventoryTab(state, derived, isMobile);
-    case "shelter":
-      return renderShelterTab(state, derived, isMobile);
-    case "shelter_map":
-      return renderShelterMapTab(state);
-    case "map":
-      return renderMapTab(state, isMobile);
-    case "survivors":
+    case "survivor":
       return renderSurvivorTab(state, derived, isMobile);
+    case "workshop":
+      return renderWorkshopTab(state, derived, isMobile);
+    case "base":
+      return renderBaseTab(state, derived, isMobile);
+    case "routes":
+      return renderRoutesTab(state, derived, isMobile);
     case "radio":
       return renderRadioTab(state, isMobile);
-    case "trade":
-      return renderTradeTab(state, isMobile);
-    case "factions":
-      return renderFactionTab(state, isMobile);
+    case "crew":
+      return renderCrewTab(state, derived, isMobile);
     case "leaderboard":
       return renderLeaderboardTab(state, isMobile);
     case "log":
@@ -65,16 +53,16 @@ function renderTabContent(state, derived) {
       return renderHelpTab(state, isMobile);
     case "settings":
       return renderSettingsTab(state, isMobile);
-    case "overview":
+    case "ops":
     default:
-      return renderOverviewTab(state, derived, isMobile);
+      return renderOpsTab(state, derived, isMobile);
   }
 }
 
 export function renderGame(state) {
   const derived = getDerivedState(state);
   const isMobile = isMobileViewport();
-  const tabs = ensureActiveTab(state, isMobile);
+  const tabs = ensureActiveTab(state);
   const tabContent = byId("tab-content");
 
   byId("day-clock").textContent = `Day ${state.time.day} / ${String(state.time.hour).padStart(2, "0")}:00`;
@@ -92,6 +80,7 @@ export function renderGame(state) {
     byId("mobile-bottom-nav").innerHTML = "";
     byId("mobile-sheet-layer").innerHTML = "";
   }
+
   tabContent.dataset.tab = state.ui.activeTab;
   tabContent.dataset.mobile = isMobile ? "true" : "false";
   document.body.dataset.activeTab = state.ui.activeTab;

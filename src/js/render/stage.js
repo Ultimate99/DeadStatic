@@ -1,246 +1,152 @@
-import {
-  canAfford,
-  getActiveWorkJob,
-  getAvailableScavengeSources,
-  getExpeditionPreview,
-  getStructureDamage,
-  getVisibleUpgrades,
-  hasRequiredTools,
-  hasMaterials,
-} from "../engine.js";
-import {
-  getBuiltShelterStructures,
-  getOutpostStage,
-  getShelterMapPerimeter,
-  SHELTER_MAP_ANNEXES,
-  structureKey,
-} from "./shelter-map.js";
+import { getActiveWorkJob, getNightForecast } from "../engine.js";
 import { renderTutorialBanner } from "./shared.js";
-import { getLeaderboardSnapshot, getLeaderboardState } from "../services/leaderboard.js";
 
-function tabStageMeta(state, derived) {
-  const visibleUpgrades = getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id));
+function stageMeta(state, derived) {
   const activeJob = getActiveWorkJob(state);
-  const readyUpgrades = activeJob
-    ? []
-    : visibleUpgrades.filter((upgrade) => canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials) && hasRequiredTools(state, upgrade.requiredTools));
-  const preview = state.expedition.selectedZone
-    ? getExpeditionPreview(state, state.expedition.selectedZone, state.expedition.approach)
-    : null;
-  const perimeter = getShelterMapPerimeter(state);
-  const builtStructures = getBuiltShelterStructures(state);
-  const activeCount = builtStructures.length + (perimeter ? 1 : 0);
+  const forecast = getNightForecast(state);
 
   switch (state.ui.activeTab) {
-    case "player":
+    case "survivor":
       return {
-        label: "Field profile",
-        title: "What you can carry into the dark",
-        detail: "Your weapon, armor, tools, and survival profile in one place.",
+        eyebrow: "Field profile",
+        title: state.player.username || "Unnamed Survivor",
+        detail: "Loadout, carried kit, and combat condition.",
         stats: [
           ["Attack", derived.attack],
           ["Defense", derived.defense],
-          ["Condition", state.condition],
-          ["Ammo", state.resources.ammo],
+          ["Carry", state.equipped.backpack ? "packed" : "light"],
         ],
       };
-    case "craft":
+    case "workshop":
       return {
-        label: "Build queue",
-        title: activeJob ? `Finish ${activeJob.label}` : "Convert salvage into systems",
-        detail: activeJob
-          ? `One shared work slot is active until ${activeJob.completesAt}. Let time pass and keep the shelter stable.`
-          : "Ready systems first. Blocked ones define the next hunt.",
+        eyebrow: "Production board",
+        title: activeJob ? activeJob.label : "Workshop",
+        detail: activeJob ? `${activeJob.hoursRemaining}h left. ${activeJob.kind}.` : "One queue. Build the shelter or craft the gear.",
         stats: [
-          ["Ready", readyUpgrades.length],
-          ["Blocked", Math.max(0, visibleUpgrades.length - readyUpgrades.length)],
-          ["Built", state.upgrades.length],
           ["Queue", activeJob ? `${activeJob.hoursRemaining}h` : "idle"],
+          ["Plans", state.upgrades.length],
+          ["Tools", Object.keys(state.inventory).filter((itemId) => itemId.includes("_kit") || itemId.includes("drill") || itemId.includes("meter") || itemId.includes("bar") || itemId.includes("hatchet") || itemId.includes("hammer")).length],
         ],
       };
-    case "inventory":
+    case "base":
       return {
-        label: "Stores",
-        title: "Everything you can still carry",
-        detail: "Loadout, kit, and strange salvage in one clean read.",
-        stats: [
-          ["Weapon", state.equipped.weapon ? "set" : "none"],
-          ["Armor", state.equipped.armor ? "set" : "none"],
-          ["Items", Object.values(state.inventory).reduce((sum, amount) => sum + amount, 0)],
-          ["Ammo", state.resources.ammo],
-        ],
-      };
-    case "shelter":
-      return {
-        label: "Survival board",
-        title: "Hold the room through another night",
-        detail: "Warmth, threat, noise, and food decide whether the room holds.",
+        eyebrow: "Compound board",
+        title: "Shelter layout",
+        detail: state.ui.pendingPlacementStructureId ? "Placement mode armed. Choose a valid tile." : "Place and inspect shelter modules on the board.",
         stats: [
           ["Warmth", state.shelter.warmth.toFixed(1)],
           ["Threat", state.shelter.threat.toFixed(1)],
           ["Noise", state.shelter.noise.toFixed(1)],
-          ["Defense", derived.defense],
         ],
       };
-    case "shelter_map":
+    case "routes":
       return {
-        label: "Compound view",
-        title: "Read the outpost like a living machine",
-        detail: "Compound footprint, live systems, and damage in one board.",
-        stats: [
-          ["Stage", getOutpostStage(activeCount)],
-          ["Built", activeCount],
-          ["Annexes", SHELTER_MAP_ANNEXES.filter((entry) => state.upgrades.includes(entry.upgrade)).length],
-          ["Integrity", builtStructures.filter((structure) => getStructureDamage(state, structureKey(structure)) >= 2).length || "stable"],
-        ],
-      };
-    case "map":
-      return {
-        label: "Route board",
-        title: "Stage the next push before you leave",
-        detail: "Pick a zone, set an objective, choose a route, then pay for it.",
+        eyebrow: "Route staging",
+        title: "Routes",
+        detail: "Choose the next push, objective, and risk.",
         stats: [
           ["Zones", state.unlockedZones.length],
-          ["Prepared", preview ? preview.zone.name : "none"],
-          ["Approach", preview ? preview.approach.label : "unset"],
           ["Runs", state.stats.expeditions],
-        ],
-      };
-    case "survivors":
-      return {
-        label: "Crew line",
-        title: "Every body in the shelter changes the equation",
-        detail: "Roster, traits, and staffing pressure all matter now.",
-        stats: [
-          ["Total", state.survivors.total],
-          ["Idle", state.survivors.idle],
-          ["Morale", state.resources.morale],
-          ["Cap", derived.survivorCap],
+          ["Food", state.resources.food],
         ],
       };
     case "radio":
       return {
-        label: "Signal board",
-        title: "The static is no longer background noise",
-        detail: "Choose a signal track and force it to give up routes and truth.",
+        eyebrow: "Receiver board",
+        title: "Radio",
+        detail: "Trace the signal without starving the shelter.",
         stats: [
           ["Signal", state.story.radioProgress],
           ["Secret", state.story.secretProgress],
-          ["Scans", state.stats.radioScans],
-          ["Reveal", state.flags.worldReveal ? "partial" : "unknown"],
-        ],
-      };
-    case "trade":
-      return {
-        label: "Market",
-        title: "What the wasteland will still trade for",
-        detail: "Open a channel. Buy only what solves the next pressure point.",
-        stats: [
-          ["Offers", state.trader.offers.length],
-          ["Scrap", state.resources.scrap],
-          ["Rep", state.resources.reputation],
           ["Fuel", state.resources.fuel],
         ],
       };
-    case "factions":
+    case "crew":
       return {
-        label: "Alignment",
-        title: "Choose who gets to shape the signal",
-        detail: "Permanent alignment. Real gains, real costs.",
+        eyebrow: "Shelter roster",
+        title: "Crew",
+        detail: "Assignments, wounds, stress, and capacity.",
         stats: [
-          ["Aligned", state.faction.aligned || "none"],
-          ["Rep", state.resources.reputation],
+          ["Total", state.survivors.total],
+          ["Idle", state.survivors.idle],
+          ["Cap", derived.survivorCap],
+        ],
+      };
+    case "leaderboard":
+      return {
+        eyebrow: "Hosted board",
+        title: "Leaderboard",
+        detail: "Public rank, current score, and save transfer.",
+        stats: [
+          ["Score", state.stats.searches + state.stats.expeditions + state.stats.nightsSurvived],
+          ["User", state.player.username || "unset"],
           ["Signal", state.story.radioProgress],
-          ["Relics", state.resources.relics],
         ],
       };
-    case "leaderboard": {
-      const board = getLeaderboardState();
-      const snapshot = getLeaderboardSnapshot(state);
-      return {
-        label: "Hosted board",
-        title: "Measure this run against the wasteland",
-        detail: "Username, hosted ranks, current score, and save transfer all live here.",
-        stats: [
-          ["Score", snapshot.summary.score],
-          ["Stage", snapshot.summary.stage],
-          ["Entries", board.entries.length || "empty"],
-          ["Sync", board.enabled ? "hosted" : "offline"],
-        ],
-      };
-    }
     case "log":
       return {
-        label: "Archive",
-        title: "Track what the static has already taken",
-        detail: "Pulse, archive, and recent feed.",
+        eyebrow: "Archive",
+        title: "Log",
+        detail: "Recent events, patch notes, and run history.",
         stats: [
           ["Entries", state.log.length],
-          ["Latest", state.log[0]?.category || "general"],
-          ["Night", state.log.filter((entry) => entry.category === "night").length],
-          ["Radio", state.log.filter((entry) => entry.category === "radio").length],
+          ["Night", state.stats.nightsSurvived],
+          ["Combat", state.stats.combatsWon],
         ],
       };
     case "help":
       return {
-        label: "Field guide",
-        title: "Learn the loop without drowning in text",
-        detail: "Use Help when you need orientation, not constant hand-holding.",
+        eyebrow: "Field guide",
+        title: "Help",
+        detail: "Compact guidance for the first run and beyond.",
         stats: [
-          ["Guided", state.settings.tutorialHints ? "yes" : "no"],
-          ["Username", state.player.username || "unset"],
-          ["Routes", state.stats.expeditions],
-          ["Signal", state.story.radioProgress],
+          ["Hints", state.settings.tutorialHints ? "on" : "off"],
+          ["User", state.player.username || "unset"],
+          ["Clock", `${state.time.day}/${String(state.time.hour).padStart(2, "0")}:00`],
         ],
       };
     case "settings":
       return {
-        label: "Preferences",
-        title: "Tune the run to your taste",
-        detail: "Settings control onboarding, motion, stage copy, and reset safety.",
+        eyebrow: "Preferences",
+        title: "Settings",
+        detail: "Tune the run, then get back to the shelter.",
         stats: [
-          ["Tutorial", state.settings.tutorialHints ? "on" : "off"],
           ["Motion", state.settings.reducedMotion ? "reduced" : "full"],
           ["Copy", state.settings.briefStageCopy ? "brief" : "full"],
-          ["Reset", state.settings.confirmReset ? "confirm" : "instant"],
+          ["Reset", state.settings.confirmReset ? "confirm" : "direct"],
         ],
       };
-    case "overview":
+    case "ops":
     default:
       return {
-        label: "Control layer",
-        title: "Everything important in one scan",
-        detail: "Pressure, next action, route state, and growth in one scan.",
+        eyebrow: "Command deck",
+        title: "Ops",
+        detail: forecast.siege
+          ? "Siege pressure is building. Hold the base."
+          : "Directive, routes, queue, and shelter pressure in one scan.",
         stats: [
-          ["Lanes", getAvailableScavengeSources(state).length],
-          ["Builds", readyUpgrades.length],
-          ["Signal", state.story.radioProgress],
-          ["Crew", `${state.survivors.total}/${derived.survivorCap}`],
+          ["Day", state.time.day],
+          ["Night", forecast.siege ? "siege" : "watch"],
+          ["Queue", activeJob ? `${activeJob.hoursRemaining}h` : "idle"],
         ],
       };
   }
 }
 
 export function renderTabStage(state, derived, bodyMarkup, isMobile = false) {
-  const meta = tabStageMeta(state, derived);
-  const visibleStats = isMobile ? meta.stats.slice(0, 2) : meta.stats;
+  const meta = stageMeta(state, derived);
+  const stats = isMobile ? meta.stats.slice(0, 2) : meta.stats;
+
   return `
     <div class="tab-stage tab-stage-${state.ui.activeTab}">
-      <section class="stage-banner ${isMobile ? "stage-banner-mobile" : ""}">
-        <div class="stage-copy">
-          <span class="note-label">${meta.label}</span>
+      <section class="tab-stage-head">
+        <div class="tab-stage-copy">
+          <span class="note-label">${meta.eyebrow}</span>
           <h2>${meta.title}</h2>
-          ${isMobile
-            ? `
-              <details class="mobile-stage-info">
-                <summary>Info</summary>
-                <p class="note">${meta.detail}</p>
-              </details>
-            `
-            : state.settings.briefStageCopy ? "" : `<p class="note">${meta.detail}</p>`}
+          ${isMobile ? "" : `<p class="note">${meta.detail}</p>`}
         </div>
-        <div class="stage-stat-strip">
-          ${visibleStats.map(([label, value]) => `
+        <div class="tab-stage-stats">
+          ${stats.map(([label, value]) => `
             <div class="stage-stat">
               <span>${label}</span>
               <strong>${value}</strong>

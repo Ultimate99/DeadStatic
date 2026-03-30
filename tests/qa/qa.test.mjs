@@ -112,6 +112,7 @@ function createBundleHarness(randomValues, options = {}) {
     "combat-banner",
     "tab-bar",
     "tab-content",
+    "ui-tooltip-root",
   ];
   const elements = new Map(ids.map((id) => [id, new MockElement(id)]));
   const bodyListeners = new Map();
@@ -438,7 +439,7 @@ run("prepared expeditions store route events and route outcomes", () => {
   assert.ok(state.resources.water >= 10);
 });
 
-run("save migration fills new night, expedition, and inspector defaults", () => {
+run("save migration fills v6 defaults, migrates tabs, and seeds shelter layout", () => {
   const originalWindow = globalThis.window;
   globalThis.window = {
     localStorage: {
@@ -448,6 +449,8 @@ run("save migration fills new night, expedition, and inspector defaults", () => 
         }
         return JSON.stringify({
           version: 1,
+          upgrades: ["shelter_stash", "campfire"],
+          ui: { activeTab: "shelter_map" },
           resources: { scrap: 5 },
           shelter: { warmth: 2 },
           log: [{ stamp: "D1 07:00", text: "old save line" }],
@@ -462,16 +465,21 @@ run("save migration fills new night, expedition, and inspector defaults", () => 
     const state = loadState();
     assert.equal(state.night.plan, "hold_fast");
     assert.equal(state.expedition.approach, "standard");
+    assert.equal(state.ui.activeTab, "base");
     assert.equal(state.ui.inspectedStructure, "shelter_core");
+    assert.equal(state.ui.selectedStructureId, "shelter_core");
+    assert.equal(state.ui.pendingPlacementStructureId, null);
     assert.equal(state.ui.notableFind, null);
     assert.equal(state.ui.mobileMoreOpen, false);
     assert.equal(state.ui.mobileResourceDrawerOpen, false);
-    assert.equal(state.ui.mobileShelterMode, "ops");
+    assert.equal(state.ui.mobileShelterMode, "map");
     assert.equal(state.ui.mobileInspectorStructure, null);
     assert.equal(state.work.activeJob, null);
     assert.equal(state.equipped.backpack, null);
     assert.equal(state.resources.wood, 0);
     assert.deepEqual(state.shelter.damage, {});
+    assert.ok(state.shelter.layout.placed.shelter_stash);
+    assert.ok(state.shelter.layout.placed.campfire);
     assert.equal(state.settings.tutorialHints, true);
     assert.equal(state.player.username, "");
   } finally {
@@ -556,6 +564,24 @@ run("expedition objectives change preview pressure and can add signal traces", (
   } else {
     assert.ok((state.radio.traces.tower_grid || 0) > 0);
   }
+});
+
+run("base placement mode rejects overlap and exposes valid placement actions", () => {
+  const bundle = readFileSync(path.join(projectRoot, "dist", "js", "game.js"), "utf8");
+  const state = createInitialState();
+  state.upgrades = ["shelter_stash", "campfire", "basic_barricade"];
+  state.unlockedSections = ["shelter"];
+  state.ui.activeTab = "base";
+  state.ui.pendingPlacementStructureId = "campfire";
+  state.shelter.layout.placed = { shelter_stash: { x: 4, y: 5 } };
+
+  const harness = createBundleHarness(SEARCH_PATTERN, { initialSave: state });
+  vm.runInNewContext(bundle, harness.context, { filename: "game.js" });
+  const markup = harness.elements.get("tab-content").innerHTML;
+
+  assert.match(markup, /data-action="place-structure"/);
+  assert.match(markup, /data-structure="campfire"/);
+  assert.match(markup, /disabled/);
 });
 
 run("survivor recruitment now creates a roster with traited members", () => {
@@ -779,20 +805,21 @@ run("standalone build stays inline and bundled runtime renders tabs and actions"
   vm.runInNewContext(bundle, harness.context, { filename: "game.js" });
 
   assert.match(html, /tabs-layout/);
-  assert.match(harness.elements.get("tab-bar").innerHTML, /Overview/);
-  assert.match(harness.elements.get("tab-bar").innerHTML, /Player/);
+  assert.match(harness.elements.get("tab-bar").innerHTML, /Ops/);
+  assert.match(harness.elements.get("tab-bar").innerHTML, /Survivor/);
   assert.match(harness.elements.get("tab-bar").innerHTML, /Log/);
   assert.match(harness.elements.get("tab-bar").innerHTML, /Help/);
   assert.match(harness.elements.get("tab-bar").innerHTML, /Settings/);
-  assert.match(harness.elements.get("tab-content").innerHTML, /Operations desk/);
   assert.match(harness.elements.get("tab-content").innerHTML, /Current directive/);
-  assert.match(harness.elements.get("tab-content").innerHTML, /stage-banner/);
+  assert.match(harness.elements.get("tab-content").innerHTML, /Field lanes/);
+  assert.match(harness.elements.get("tab-content").innerHTML, /Current directive/);
+  assert.match(harness.elements.get("tab-content").innerHTML, /tab-stage-head/);
   assert.match(harness.elements.get("tab-content").innerHTML, /Search rubble/);
-  assert.match(harness.elements.get("summary-strip").innerHTML, /Heat line/);
-  assert.match(harness.elements.get("summary-strip").innerHTML, /Outside threat/);
+  assert.match(harness.elements.get("summary-strip").innerHTML, /Warmth/);
+  assert.match(harness.elements.get("summary-strip").innerHTML, /Threat/);
   assert.match(harness.elements.get("tab-content").innerHTML, /New player guide/);
   assert.match(harness.elements.get("tab-content").innerHTML, /Set Username/);
-  assert.match(harness.elements.get("tab-content").innerHTML, /Skip tutorial/);
+  assert.match(harness.elements.get("tab-content").innerHTML, /Skip/);
 
   const clickHandler = harness.bodyListeners.get("click");
   assert.ok(clickHandler);
@@ -809,11 +836,11 @@ run("standalone build stays inline and bundled runtime renders tabs and actions"
 
   assert.match(harness.elements.get("resource-bar").innerHTML, /Cloth/);
   assert.match(harness.elements.get("resource-bar").innerHTML, /Wire/);
-  assert.match(harness.elements.get("tab-bar").innerHTML, /Craft/);
-  assert.match(harness.elements.get("tab-content").innerHTML, /Strip vehicle shells/);
+  assert.match(harness.elements.get("tab-bar").innerHTML, /Workshop/);
+  assert.match(harness.elements.get("tab-content").innerHTML, /Field lanes/);
 });
 
-run("shelter map tab renders a visual outpost that upgrades with built structures", () => {
+run("base tab renders placement board, structure rack, and inspector", () => {
   const bundle = readFileSync(path.join(projectRoot, "dist", "js", "game.js"), "utf8");
   const state = createInitialState();
   state.upgrades = [
@@ -827,31 +854,25 @@ run("shelter map tab renders a visual outpost that upgrades with built structure
     "smokehouse",
   ];
   evaluateProgression(state);
-  state.ui.activeTab = "shelter_map";
+  state.ui.activeTab = "base";
 
   const harness = createBundleHarness(SEARCH_PATTERN, { initialSave: state });
   vm.runInNewContext(bundle, harness.context, { filename: "game.js" });
 
   const tabMarkup = harness.elements.get("tab-content").innerHTML;
-  assert.match(harness.elements.get("tab-bar").innerHTML, /Shelter Map/);
-  assert.match(tabMarkup, /Shelter map/);
-  assert.match(tabMarkup, /shelter-map/);
+  assert.match(harness.elements.get("tab-bar").innerHTML, /Base/);
+  assert.match(tabMarkup, /Placement board/);
+  assert.match(tabMarkup, /base-board/);
   assert.match(tabMarkup, /Structure inspector/);
-  assert.match(tabMarkup, /District ledger/);
+  assert.match(tabMarkup, /Structure rack/);
   assert.match(tabMarkup, /Working Outpost/);
-  assert.match(tabMarkup, /Perimeter Fence/);
+  assert.match(tabMarkup, /Gate/);
   assert.match(tabMarkup, /Watch Post/);
   assert.match(tabMarkup, /Smokehouse/);
-  assert.match(tabMarkup, /map-compound-floor/);
-  assert.match(tabMarkup, /fence-segment/);
+  assert.match(tabMarkup, /base-grid-frame/);
+  assert.match(tabMarkup, /base-grid-fence/);
   assert.match(tabMarkup, /inspect-structure/);
-  assert.doesNotMatch(tabMarkup, /map-legend/);
-  assert.doesNotMatch(tabMarkup, /sector-core/);
-  assert.doesNotMatch(tabMarkup, /map-road/);
   assert.doesNotMatch(tabMarkup, /not built/);
-  assert.doesNotMatch(tabMarkup, /is-empty/);
-  assert.doesNotMatch(tabMarkup, /Living row/);
-  assert.doesNotMatch(tabMarkup, /Yard line/);
 });
 
 run("log tab renders compact pulse rows instead of stretched tiles", () => {
@@ -869,13 +890,11 @@ run("log tab renders compact pulse rows instead of stretched tiles", () => {
   vm.runInNewContext(bundle, harness.context, { filename: "game.js" });
 
   const tabMarkup = harness.elements.get("tab-content").innerHTML;
-  assert.match(tabMarkup, /Event pulse/);
+  assert.match(tabMarkup, /Archive/);
   assert.match(tabMarkup, /Patch notes/);
-  assert.match(tabMarkup, /v5\.3/);
-  assert.match(tabMarkup, /log-pulse-stack/);
-  assert.match(tabMarkup, /log-pulse-row/);
-  assert.doesNotMatch(tabMarkup, /log-pulse-grid/);
-  assert.doesNotMatch(tabMarkup, /log-pulse-card/);
+  assert.match(tabMarkup, /v6\.0/);
+  assert.match(tabMarkup, /full-log/);
+  assert.match(tabMarkup, /mini-log-line/);
 });
 
 run("radio tab renders the new receiver board and spectrum", () => {
@@ -893,11 +912,10 @@ run("radio tab renders the new receiver board and spectrum", () => {
   vm.runInNewContext(bundle, harness.context, { filename: "game.js" });
 
   const tabMarkup = harness.elements.get("tab-content").innerHTML;
-  assert.match(tabMarkup, /Receiver board/);
-  assert.match(tabMarkup, /signal-spectrum/);
-  assert.match(tabMarkup, /Anomaly trace/);
-  assert.match(tabMarkup, /trace-node/);
-  assert.match(tabMarkup, /Investigations/);
+  assert.match(tabMarkup, /Investigation wall/);
+  assert.match(tabMarkup, /radio-node-grid/);
+  assert.match(tabMarkup, /Sweep signal/);
+  assert.match(tabMarkup, /tower_grid|Tower Grid/i);
   assert.match(tabMarkup, /set-radio-investigation/);
 });
 
@@ -911,7 +929,7 @@ run("help and settings tabs render onboarding support surfaces", () => {
   assert.match(helpMarkup, /First 10 minutes/);
   assert.match(helpMarkup, /Core loop/);
   assert.match(helpMarkup, /build base/i);
-  assert.match(helpMarkup, /Combat quick guide/);
+  assert.match(helpMarkup, /Workshop/);
 
   const settingsState = createInitialState();
   settingsState.ui.activeTab = "settings";
@@ -943,17 +961,16 @@ run("mobile shell renders bottom nav, compact tutorial, and sticky survival stri
   const mobileStrip = harness.elements.get("mobile-survival-strip").innerHTML;
   const tabMarkup = harness.elements.get("tab-content").innerHTML;
 
-  assert.match(mobileNav, /Overview/);
-  assert.match(mobileNav, /Craft/);
-  assert.match(mobileNav, /Shelter/);
-  assert.match(mobileNav, /Map/);
+  assert.match(mobileNav, /Ops/);
+  assert.match(mobileNav, /Workshop/);
+  assert.match(mobileNav, /Base/);
+  assert.match(mobileNav, /Routes/);
   assert.match(mobileNav, /More/);
-  assert.doesNotMatch(mobileNav, /Shelter Map/);
   assert.match(mobileStrip, /Condition/);
   assert.match(mobileStrip, /More/);
-  assert.match(tabMarkup, /tutorial-strip-mobile/);
+  assert.match(tabMarkup, /tutorial-strip/);
   assert.match(tabMarkup, /Skip/);
-  assert.match(tabMarkup, /mobile-stage-info/);
+  assert.match(tabMarkup, /tab-stage-head/);
 });
 
 run("mobile more sheet exposes secondary screens without shelter map", () => {
@@ -966,27 +983,24 @@ run("mobile more sheet exposes secondary screens without shelter map", () => {
   vm.runInNewContext(bundle, harness.context, { filename: "game.js" });
 
   const sheetMarkup = harness.elements.get("mobile-sheet-layer").innerHTML;
-  assert.match(sheetMarkup, /Inventory/);
-  assert.match(sheetMarkup, /Player/);
+  assert.match(sheetMarkup, /Survivor/);
   assert.match(sheetMarkup, /Crew/);
   assert.match(sheetMarkup, /Radio/);
-  assert.match(sheetMarkup, /Leaderboard/);
+  assert.match(sheetMarkup, /Board/);
   assert.match(sheetMarkup, /Log/);
   assert.match(sheetMarkup, /Help/);
   assert.match(sheetMarkup, /Settings/);
-  assert.doesNotMatch(sheetMarkup, /Trade/);
-  assert.doesNotMatch(sheetMarkup, /Factions/);
-  assert.doesNotMatch(sheetMarkup, /Shelter Map/);
 });
 
-run("mobile shelter view folds shelter map into segmented ops and map modes", () => {
+run("mobile base view keeps segmented ops and grid modes", () => {
   const bundle = readFileSync(path.join(projectRoot, "dist", "js", "game.js"), "utf8");
   const state = createInitialState();
   state.upgrades = ["shelter_stash", "campfire", "basic_barricade", "watch_post"];
   state.unlockedSections = ["shelter"];
-  state.ui.activeTab = "shelter_map";
+  state.ui.activeTab = "base";
   state.ui.mobileShelterMode = "map";
   state.ui.mobileInspectorStructure = "campfire";
+  state.ui.selectedStructureId = "campfire";
   state.shelter.damage = { campfire: 2 };
   state.resources.scrap = 20;
 
@@ -996,18 +1010,17 @@ run("mobile shelter view folds shelter map into segmented ops and map modes", ()
   const tabMarkup = harness.elements.get("tab-content").innerHTML;
   assert.match(tabMarkup, /mobile-segmented-control/);
   assert.match(tabMarkup, /Ops/);
-  assert.match(tabMarkup, /Map/);
-  assert.match(tabMarkup, /Shelter map/);
-  assert.match(tabMarkup, /Tap a structure/);
-  assert.match(tabMarkup, /mobile-structure-sheet/);
+  assert.match(tabMarkup, /Grid/);
+  assert.match(tabMarkup, /Placement board/);
+  assert.match(tabMarkup, /Structure inspector/);
   assert.match(tabMarkup, /Campfire/);
-  assert.equal(harness.elements.get("tab-content").dataset.tab, "shelter");
+  assert.equal(harness.elements.get("tab-content").dataset.tab, "base");
 });
 
-run("player tab renders loadout, field stats, and tools", () => {
+run("survivor tab renders loadout, field stats, and compact inventory grids", () => {
   const bundle = readFileSync(path.join(projectRoot, "dist", "js", "game.js"), "utf8");
   const state = createInitialState();
-  state.ui.activeTab = "player";
+  state.ui.activeTab = "survivor";
   state.unlockedSections = ["inventory", "shelter", "survivors"];
   state.inventory.rusty_knife = 1;
   state.inventory.backpack = 1;
@@ -1021,21 +1034,21 @@ run("player tab renders loadout, field stats, and tools", () => {
   vm.runInNewContext(bundle, harness.context, { filename: "game.js" });
   const markup = harness.elements.get("tab-content").innerHTML;
 
-  assert.match(markup, /Current loadout/);
+  assert.match(markup, /Loadout/);
   assert.match(markup, /Field stats/);
-  assert.match(markup, /Tool belt/);
-  assert.match(markup, /Equipment locker/);
+  assert.match(markup, /Tool Belt/);
+  assert.match(markup, /Weapons/);
+  assert.match(markup, /Tools/);
   assert.match(markup, /Rusty Knife/);
   assert.match(markup, /Backpack/);
-  assert.match(markup, /Carry bonus/);
   assert.match(markup, /Pry Bar/);
   assert.match(markup, /data-tooltip=/);
 });
 
-run("craft tab renders work queue, categories, time, tool, and tier", () => {
+run("workshop tab renders work queue, categories, time, tool, and tier", () => {
   const bundle = readFileSync(path.join(projectRoot, "dist", "js", "game.js"), "utf8");
   const state = createInitialState();
-  state.ui.activeTab = "craft";
+  state.ui.activeTab = "workshop";
   state.stats.searches = 5;
   state.resources.scrap = 26;
   state.resources.cloth = 6;
@@ -1059,7 +1072,6 @@ run("craft tab renders work queue, categories, time, tool, and tier", () => {
   assert.match(markup, /Backpack/);
   assert.match(markup, /Sewing Kit/);
   assert.match(markup, /data-tooltip=/);
-  assert.match(markup, /upgrade-costline/);
   assert.match(markup, /time 1h/);
   assert.match(markup, /tool Sewing Kit/);
   assert.match(markup, /tier field/);

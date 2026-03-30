@@ -5,6 +5,20 @@ import {
   SURVIVOR_ROLES,
   SURVIVOR_TRAITS,
 } from "./data.js";
+import { seedShelterPlacedLayout } from "./shelter-layout.js";
+
+const CURRENT_VERSION = 11;
+
+const LEGACY_TAB_MAP = {
+  overview: "ops",
+  player: "survivor",
+  inventory: "survivor",
+  craft: "workshop",
+  shelter: "base",
+  shelter_map: "base",
+  map: "routes",
+  survivors: "crew",
+};
 
 function defaultAssignedRoles() {
   return Object.fromEntries(Object.keys(SURVIVOR_ROLES).map((roleId) => [roleId, 0]));
@@ -110,7 +124,7 @@ function summarizeRoster(roster) {
 
 export function createInitialState() {
   return {
-    version: 10,
+    version: CURRENT_VERSION,
     time: {
       day: 1,
       hour: 7,
@@ -154,6 +168,9 @@ export function createInitialState() {
       threat: 0,
       noise: 0,
       damage: {},
+      layout: {
+        placed: {},
+      },
     },
     story: {
       radioProgress: 0,
@@ -211,8 +228,10 @@ export function createInitialState() {
       lastOutcome: null,
     },
     ui: {
-      activeTab: "overview",
+      activeTab: "ops",
       inspectedStructure: "shelter_core",
+      selectedStructureId: "shelter_core",
+      pendingPlacementStructureId: null,
       notableFind: null,
       mobileMoreOpen: false,
       mobileResourceDrawerOpen: false,
@@ -236,6 +255,33 @@ export function createInitialState() {
   };
 }
 
+function normalizeActiveTab(rawTab) {
+  if (!rawTab || typeof rawTab !== "string") {
+    return "ops";
+  }
+  return LEGACY_TAB_MAP[rawTab] || rawTab;
+}
+
+function normalizePlacedLayout(state, fresh) {
+  const rawPlaced = state.shelter?.layout?.placed && typeof state.shelter.layout.placed === "object"
+    ? state.shelter.layout.placed
+    : {};
+  const normalizedExisting = Object.fromEntries(
+    Object.entries(rawPlaced)
+      .filter(([, position]) => position && Number.isFinite(position.x) && Number.isFinite(position.y))
+      .map(([structureId, position]) => [structureId, { x: Number(position.x), y: Number(position.y) }]),
+  );
+
+  if ((state.version || 0) < CURRENT_VERSION) {
+    return seedShelterPlacedLayout(
+      Array.isArray(state.upgrades) ? state.upgrades : fresh.upgrades,
+      normalizedExisting,
+    );
+  }
+
+  return normalizedExisting;
+}
+
 function normalizeState(rawState) {
   const fresh = createInitialState();
   const state = rawState && typeof rawState === "object" ? rawState : {};
@@ -250,6 +296,7 @@ function normalizeState(rawState) {
   return {
     ...fresh,
     ...state,
+    version: CURRENT_VERSION,
     time: { ...fresh.time, ...state.time },
     resources: { ...fresh.resources, ...state.resources },
     discoveredResources: Array.isArray(state.discoveredResources)
@@ -270,7 +317,14 @@ function normalizeState(rawState) {
       ...survivorSummary,
       roster,
     },
-    shelter: { ...fresh.shelter, ...state.shelter },
+    shelter: {
+      ...fresh.shelter,
+      ...state.shelter,
+      damage: { ...fresh.shelter.damage, ...(state.shelter?.damage || {}) },
+      layout: {
+        placed: normalizePlacedLayout(state, fresh),
+      },
+    },
     story: { ...fresh.story, ...state.story },
     stats: { ...fresh.stats, ...state.stats },
     flags: { ...fresh.flags, ...state.flags },
@@ -293,7 +347,19 @@ function normalizeState(rawState) {
         ? { ...state.work.activeJob }
         : null,
     },
-    ui: { ...fresh.ui, ...state.ui },
+    ui: {
+      ...fresh.ui,
+      ...state.ui,
+      activeTab: normalizeActiveTab(state.ui?.activeTab),
+      inspectedStructure: state.ui?.selectedStructureId || state.ui?.inspectedStructure || fresh.ui.inspectedStructure,
+      selectedStructureId: state.ui?.selectedStructureId || state.ui?.inspectedStructure || fresh.ui.selectedStructureId,
+      pendingPlacementStructureId: typeof state.ui?.pendingPlacementStructureId === "string"
+        ? state.ui.pendingPlacementStructureId
+        : null,
+      mobileShelterMode: state.ui?.activeTab === "shelter_map"
+        ? "map"
+        : (state.ui?.mobileShelterMode || fresh.ui.mobileShelterMode),
+    },
     settings: { ...fresh.settings, ...state.settings },
     night: { ...fresh.night, ...state.night },
     expedition: { ...fresh.expedition, ...state.expedition },
