@@ -17,6 +17,7 @@ import {
   getAvailableScavengeSources,
   getExpeditionPreview,
   getNightForecast,
+  getShelterSystems,
   getShelterUpkeep,
   getVisibleUpgrades,
   hasMaterials,
@@ -55,9 +56,14 @@ const BUILD_UPGRADE_IDS = new Set([
   "weapon_rack",
   "armor_hooks",
   "watch_post",
+  "tripwire_grid",
   "ammo_press",
+  "repair_rig",
   "rain_collector",
+  "water_still",
   "radio_rig",
+  "battery_bank",
+  "flood_lights",
   "map_board",
   "survivor_cots",
   "smokehouse",
@@ -541,6 +547,7 @@ export function renderInventoryTab(state, derived, _isMobile = false) {
 
 export function renderNightPlanner(state) {
   const forecast = getNightForecast(state);
+  const systems = forecast.systems;
   const report = state.night.lastReport;
   const planButtons = Object.values(NIGHT_PLANS).map((plan) => actionButton({
     action: "set-night-plan",
@@ -556,11 +563,18 @@ export function renderNightPlanner(state) {
       <div class="fact-grid">
         <div class="fact"><span>Forecast</span><strong>${forecast.severity}</strong></div>
         <div class="fact"><span>Night in</span><strong>${forecast.hoursUntilNight}h</strong></div>
+        <div class="fact"><span>Siege</span><strong>${Math.round(forecast.siegeChance * 100)}%</strong></div>
         <div class="fact"><span>Infected</span><strong>${Math.round(forecast.infectedChance * 100)}%</strong></div>
         <div class="fact"><span>Raid</span><strong>${Math.round(forecast.raidChance * 100)}%</strong></div>
         <div class="fact"><span>Breach</span><strong>${Math.round(forecast.breachChance * 100)}%</strong></div>
         <div class="fact"><span>Plan</span><strong>${forecast.plan.label}</strong></div>
+        <div class="fact"><span>Coverage</span><strong>${systems.coverage.toFixed(1)}</strong></div>
       </div>
+      <div class="chip-row">${tagList([
+        `power ${systems.powerState}`,
+        `maintenance ${systems.maintenanceState}`,
+        `siege pressure ${state.night.siegePressure}`,
+      ])}</div>
       <div class="action-stack">${planButtons.join("")}</div>
       ${report ? `
         <div class="list-block compact-block">
@@ -570,6 +584,7 @@ export function renderNightPlanner(state) {
           </div>
           <p class="note">${report.summary}</p>
           ${report.damagedStructures?.length ? `<div class="chip-row">${tagList(report.damagedStructures.map((target) => structureByKey(target).label || target))}</div>` : ""}
+          ${report.crewHits?.length ? `<div class="chip-row">${tagList(report.crewHits)}</div>` : ""}
         </div>
       ` : `<p class="empty-state">No night report yet.</p>`}
     </div>
@@ -601,6 +616,10 @@ export function renderExpeditionPlanner(state) {
           <div class="fact"><span>Loot bias</span><strong>${preview.lootBonus >= 0 ? "+" : ""}${Math.round(preview.lootBonus * 100)}%</strong></div>
           <div class="fact"><span>Noise</span><strong>${preview.noise.toFixed(1)}</strong></div>
         </div>
+        ${state.expedition.lastRouteEvent ? `<div class="chip-row">${tagList([
+          `last route event: ${state.expedition.lastRouteEvent.label}`,
+          state.expedition.lastRouteEvent.stamp,
+        ])}</div>` : ""}
         <div class="chip-row">${tagList([
           preview.objective.short,
           ...(Object.keys(preview.cost).length ? [formatCost(preview.cost)] : ["No prep cost"]),
@@ -621,7 +640,11 @@ export function renderExpeditionPlanner(state) {
                 <div><span>Noise</span><strong>${objectivePreview.noise.toFixed(1)}</strong></div>
                 <div><span>Bias</span><strong>${objective.tags[0]}</strong></div>
               </div>
-              <div class="chip-row">${tagList(objective.tags)}</div>
+              <div class="chip-row">${tagList([
+                ...objective.tags,
+                objective.traceGain ? "trace gain" : "",
+                objective.combatBonus ? "combat edge" : "",
+              ].filter(Boolean))}</div>
               ${actionButton({
                 action: "set-objective",
                 label: objective.label,
@@ -652,6 +675,7 @@ export function renderExpeditionPlanner(state) {
               <div class="chip-row">${tagList([
                 approach.short,
                 Object.keys(approach.cost).length ? formatCost(approach.cost) : "no extra cost",
+                approach.travelEventChance >= 0.5 ? "more route events" : "lighter route variance",
               ])}</div>
               ${actionButton({
                 action: "set-approach",
@@ -672,12 +696,26 @@ export function renderExpeditionPlanner(state) {
         disabled: !preview.canLaunch || Boolean(state.combat),
         variant: "primary",
       })}
+      ${state.expedition.lastOutcome ? `
+        <div class="list-block compact-block">
+          <div class="surface-head">
+            <h4>Last route result</h4>
+            <span class="tag">${state.expedition.lastOutcome.stamp}</span>
+          </div>
+          <div class="chip-row">${tagList([
+            state.expedition.lastOutcome.routeEventId ? `event ${state.expedition.lastOutcome.routeEventId}` : "clean route",
+            `encounter ${Math.round(state.expedition.lastOutcome.encounterChance * 100)}%`,
+            `loot ${state.expedition.lastOutcome.lootBonus >= 0 ? "+" : ""}${Math.round(state.expedition.lastOutcome.lootBonus * 100)}%`,
+          ])}</div>
+        </div>
+      ` : ""}
     </div>
   `;
 }
 
 export function renderShelterTab(state, derived, isMobile = false) {
   const upkeep = getShelterUpkeep(state);
+  const systems = getShelterSystems(state, derived);
   const actions = [
     actionButton({
       action: "eat-ration",
@@ -716,6 +754,8 @@ export function renderShelterTab(state, derived, isMobile = false) {
     derived.forageYieldBonus > 0 ? `forage +${Math.round(derived.forageYieldBonus * 100)}%` : "",
     derived.signalGain > 0 ? `signal +${derived.signalGain.toFixed(2)}` : "",
     derived.nightMitigation > 0 ? `night shield ${derived.nightMitigation.toFixed(1)}` : "",
+    derived.siegeMitigation > 0 ? `siege guard ${derived.siegeMitigation.toFixed(1)}` : "",
+    derived.repairPower > 0 ? `repair ${derived.repairPower.toFixed(1)}` : "",
   ].filter(Boolean);
   const perimeter = getShelterMapPerimeter(state);
   const liveStructures = getBuiltShelterStructures(state).map((structure) => structure.label);
@@ -764,6 +804,29 @@ export function renderShelterTab(state, derived, isMobile = false) {
           <div class="chip-row">${tagList([
             `${upkeep.mealCost} food every ${upkeep.mealHours}h`,
             `${upkeep.waterCost} water every ${upkeep.waterHours}h`,
+            upkeep.maintenanceWood || upkeep.maintenanceParts
+              ? `${upkeep.maintenanceWood} wood${upkeep.maintenanceParts ? ` / ${upkeep.maintenanceParts} parts` : ""} every ${upkeep.maintenanceHours}h`
+              : "maintenance light",
+          ])}</div>
+        `,
+      })}
+      ${surfaceCard({
+        title: "Base systems",
+        meta: `${systems.maintenanceState} / ${systems.powerState}`,
+        className: "span-4",
+        body: `
+          <div class="fact-grid">
+            <div class="fact"><span>Power</span><strong>${systems.powerSupply}/${systems.powerDemand}</strong></div>
+            <div class="fact"><span>Coverage</span><strong>${systems.coverage.toFixed(1)}</strong></div>
+            <div class="fact"><span>Maintenance</span><strong>${systems.maintenanceSupport.toFixed(1)}</strong></div>
+            <div class="fact"><span>Load</span><strong>${systems.maintenanceLoad.toFixed(1)}</strong></div>
+            <div class="fact"><span>Food flow</span><strong>${systems.foodFlow >= 0 ? "+" : ""}${systems.foodFlow.toFixed(2)}</strong></div>
+            <div class="fact"><span>Water flow</span><strong>${systems.waterFlow >= 0 ? "+" : ""}${systems.waterFlow.toFixed(2)}</strong></div>
+          </div>
+          <div class="chip-row">${tagList([
+            `power ${systems.powerState}`,
+            `maintenance ${systems.maintenanceState}`,
+            ...systems.adjacency.map((entry) => entry.label),
           ])}</div>
         `,
       })}
@@ -818,10 +881,13 @@ export function renderShelterTab(state, derived, isMobile = false) {
         body: `
           <div class="detail-list">
             <div class="list-block compact-block">
-              <p class="note">Warmth falls. Threat rises. Noise paints a target on the fence. Crew now eats and drinks on a timed cycle.</p>
+              <p class="note">Warmth falls. Threat rises. Noise paints a target on the fence. Crew eats, drinks, and now drags maintenance behind them if the base outgrows its repair line.</p>
             </div>
             <div class="list-block compact-block">
               <p class="note">${mapGuidance}</p>
+            </div>
+            <div class="list-block compact-block">
+              <p class="note">Power gaps darken signal tools. Weak maintenance means damage snowballs into worse nights.</p>
             </div>
           </div>
         `,
@@ -862,6 +928,9 @@ export function renderShelterTab(state, derived, isMobile = false) {
 
 export function renderMapTab(state, _isMobile = false) {
   const zones = ZONES.filter((zone) => state.unlockedZones.includes(zone.id));
+  const preview = state.expedition.selectedZone
+    ? getExpeditionPreview(state, state.expedition.selectedZone, state.expedition.approach, state.expedition.objective)
+    : null;
   return `
     <div class="tab-grid">
       ${surfaceCard({
@@ -870,6 +939,26 @@ export function renderMapTab(state, _isMobile = false) {
         className: "span-12 route-command",
         body: renderExpeditionPlanner(state),
       })}
+      ${preview ? surfaceCard({
+        title: "Route pressure",
+        meta: preview.zone.name,
+        className: "span-12",
+        body: `
+          <div class="fact-grid">
+            <div class="fact"><span>Objective</span><strong>${preview.objective.label}</strong></div>
+            <div class="fact"><span>Approach</span><strong>${preview.approach.label}</strong></div>
+            <div class="fact"><span>Travel</span><strong>${preview.hours}h</strong></div>
+            <div class="fact"><span>Encounter</span><strong>${Math.round(preview.encounterChance * 100)}%</strong></div>
+            <div class="fact"><span>Threat</span><strong>${preview.threat.toFixed(1)}</strong></div>
+            <div class="fact"><span>Noise</span><strong>${preview.noise.toFixed(1)}</strong></div>
+          </div>
+          <div class="chip-row">${tagList([
+            ...preview.objective.tags,
+            preview.approach.travelEventChance >= 0.5 ? "route likely to swing" : "route more stable",
+          ])}</div>
+          ${state.expedition.lastRouteEvent ? `<p class="note">Last route event: ${state.expedition.lastRouteEvent.text}</p>` : ""}
+        `,
+      }) : ""}
       ${zones.length ? zones.map((zone) => surfaceCard({
         title: zone.name,
         meta: state.expedition.selectedZone === zone.id ? `selected / risk ${zone.risk}` : `risk ${zone.risk}`,

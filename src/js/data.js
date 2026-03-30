@@ -198,12 +198,37 @@ export const ITEMS = {
     type: "tool",
     description: "Splits timber, bites into weak boards, and keeps the fence honest.",
   },
+  carpenter_kit: {
+    id: "carpenter_kit",
+    name: "Carpenter Kit",
+    type: "tool",
+    description: "Squares, clamps, spikes, and the discipline to keep the shelter from rotting loose.",
+  },
+  hand_drill: {
+    id: "hand_drill",
+    name: "Hand Drill",
+    type: "tool",
+    description: "Slow, clean leverage for repair work, power rigs, and careful salvage.",
+  },
+  signal_meter: {
+    id: "signal_meter",
+    name: "Signal Meter",
+    type: "tool",
+    description: "A tuned meter that separates real signal from ambient static and bad hope.",
+  },
   nail_bat: {
     id: "nail_bat",
     name: "Nail Bat",
     type: "weapon",
     attack: 5,
     description: "No subtlety. Good weight.",
+  },
+  hunting_spear: {
+    id: "hunting_spear",
+    name: "Hunting Spear",
+    type: "weapon",
+    attack: 6,
+    description: "Long reach, clean thrusts, and less need to let the dead get close.",
   },
   transit_pistol: {
     id: "transit_pistol",

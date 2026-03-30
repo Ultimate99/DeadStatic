@@ -5,6 +5,7 @@ import {
   formatMaterials,
   getAvailableScavengeSources,
   getDerivedState,
+  getShelterSystems,
   getRepairCost,
   getStructureDamage,
   getVisibleUpgrades,
@@ -26,11 +27,16 @@ export const SHELTER_MAP_STRUCTURES = [
   { id: "survivor_cots", label: "Cots", short: "CT", detail: "sleep line", kind: "support", sprite: "cots", col: 3, row: 5, upgrade: "survivor_cots" },
   { id: "smokehouse", label: "Smokehouse", short: "SH", detail: "food cure", kind: "support", sprite: "smokehouse", col: 2, row: 7, upgrade: "smokehouse" },
   { id: "rain_collector", label: "Collector", short: "RC", detail: "rain catch", kind: "utility", sprite: "collector", col: 2, row: 3, upgrade: "rain_collector" },
+  { id: "water_still", label: "Water Still", short: "WS", detail: "clean flow", kind: "support", sprite: "collector", col: 3, row: 3, upgrade: "water_still" },
   { id: "crafting_bench", label: "Workbench", short: "WB", detail: "build line", kind: "utility", sprite: "bench", col: 8, row: 5, upgrade: "crafting_bench" },
   { id: "ammo_press", label: "Ammo Press", short: "AP", detail: "round press", kind: "utility", sprite: "press", col: 9, row: 5, upgrade: "ammo_press" },
+  { id: "repair_rig", label: "Repair Rig", short: "RR", detail: "line repair", kind: "utility", sprite: "press", col: 8, row: 7, upgrade: "repair_rig" },
   { id: "watch_post", label: "Watch Post", short: "WT", detail: "tower eyes", kind: "defense", sprite: "tower", col: 11, row: 2, upgrade: "watch_post" },
+  { id: "tripwire_grid", label: "Tripwire Grid", short: "TW", detail: "outer snare", kind: "defense", sprite: "mesh", col: 10, row: 6, upgrade: "tripwire_grid" },
+  { id: "flood_lights", label: "Flood Lights", short: "FL", detail: "hard light", kind: "defense", sprite: "beacon", col: 10, row: 3, upgrade: "flood_lights" },
   { id: "radio_rig", label: "Radio", short: "RD", detail: "receiver", kind: "signal", sprite: "radio", col: 6, row: 2, upgrade: "radio_rig" },
   { id: "signal_decoder", label: "Decoder", short: "SD", detail: "signal parse", kind: "signal", sprite: "decoder", col: 7, row: 2, upgrade: "signal_decoder" },
+  { id: "battery_bank", label: "Battery Bank", short: "BB", detail: "reserve cells", kind: "signal", sprite: "decoder", col: 8, row: 3, upgrade: "battery_bank" },
   { id: "trader_beacon", label: "Signal Beacon", short: "SB", detail: "tower mark", kind: "signal", sprite: "beacon", col: 8, row: 2, upgrade: "trader_beacon" },
   { id: "faraday_mesh", label: "Mesh Node", short: "FM", detail: "shield anchor", kind: "signal", sprite: "mesh", col: 2, row: 1, upgrade: "faraday_mesh" },
   { id: "relay_tap", label: "Relay Tap", short: "RT", detail: "stolen feed", kind: "signal", sprite: "relay", col: 10, row: 1, upgrade: "relay_tap" },
@@ -43,6 +49,9 @@ export const SHELTER_MAP_ANNEXES = [
   { upgrade: "armor_hooks", label: "Armor Hooks", kind: "utility", sprite: "hooks" },
   { upgrade: "auto_scavenger", label: "Auto Scavenger", kind: "utility", sprite: "crawler" },
   { upgrade: "scout_bike", label: "Scout Bike", kind: "support", sprite: "bike" },
+  { upgrade: "carpenter_kit", label: "Carpenter Kit", kind: "utility", sprite: "bench" },
+  { upgrade: "hand_drill", label: "Hand Drill", kind: "utility", sprite: "press" },
+  { upgrade: "signal_meter", label: "Signal Meter", kind: "signal", sprite: "decoder" },
 ];
 
 export const SHELTER_MAP_PERIMETER = {
@@ -67,10 +76,15 @@ export function structureByKey(structureId) {
 function structureCrewNote(structureId) {
   const map = {
     watch_post: "guards amplify it",
+    tripwire_grid: "guards reset and read it",
+    flood_lights: "guards and fuel keep it useful",
     radio_rig: "tuners feed it",
     signal_decoder: "tuners sharpen it",
     trader_beacon: "tuners and fuel keep it useful",
+    battery_bank: "repair crew keeps it charged",
     smokehouse: "scavengers keep it stocked",
+    repair_rig: "medics and builders stabilize it",
+    water_still: "support line keeps it fed",
     survivor_cots: "crew capacity anchor",
   };
   return map[structureId] || "self-run once built";
@@ -96,6 +110,18 @@ function structureSignals(structureId, state, derived) {
   if (effects.radioDepth) {
     tags.push(`SIG +${effects.radioDepth.toFixed(1)}`);
   }
+  if (effects.power) {
+    tags.push(`PWR +${effects.power}`);
+  }
+  if (effects.coverage) {
+    tags.push(`CVR +${effects.coverage.toFixed(1)}`);
+  }
+  if (effects.repairPower) {
+    tags.push(`REP +${effects.repairPower}`);
+  }
+  if (effects.maintenance) {
+    tags.push(`MNT +${effects.maintenance}`);
+  }
   if (effects.survivorCap) {
     tags.push(`Crew +${effects.survivorCap}`);
   }
@@ -110,31 +136,42 @@ function structureSignals(structureId, state, derived) {
 }
 
 function structureStatus(structureId, state, derived) {
+  const systems = getShelterSystems(state, derived);
   const damage = getStructureDamage(state, structureId);
   const built = structureId === "shelter_core" || state.upgrades.includes(structureId);
-  const isSignal = ["radio_rig", "signal_decoder", "trader_beacon", "faraday_mesh", "relay_tap"].includes(structureId);
-  const isUtility = ["crafting_bench", "ammo_press", "bunker_drill"].includes(structureId);
+  const isSignal = ["radio_rig", "signal_decoder", "battery_bank", "trader_beacon", "faraday_mesh", "relay_tap"].includes(structureId);
+  const isUtility = ["crafting_bench", "ammo_press", "bunker_drill", "repair_rig"].includes(structureId);
   let powered = built;
   let active = built;
 
   if (structureId === "campfire") {
     powered = state.shelter.warmth > 0.4;
     active = powered;
+  } else if (structureId === "flood_lights") {
+    powered = built && systems.powerGap <= 0;
+    active = powered && state.survivors.assigned.guard > 0;
   } else if (isSignal) {
-    powered = built && (state.resources.fuel > 0 || state.resources.electronics > 0 || state.story.radioProgress > 0);
+    powered = built && (systems.powerGap <= 0 || state.resources.fuel > 0 || state.resources.electronics > 0 || state.story.radioProgress > 0);
     active = powered && (state.story.radioProgress > 0 || state.unlockedSections.includes("radio"));
   } else if (structureId === "watch_post") {
     active = built && (state.survivors.assigned.guard > 0 || derived.defense >= 3);
+  } else if (structureId === "tripwire_grid") {
+    active = built && (state.survivors.assigned.guard > 0 || state.resources.wire > 0);
   } else if (structureId === "smokehouse") {
     active = built && (state.resources.food > 0 || derived.passive.food > 0);
+  } else if (structureId === "water_still") {
+    active = built && (state.resources.fuel > 0 || derived.waterSecurity > 0);
   } else if (structureId === "ammo_press") {
     powered = built && state.resources.parts > 0;
     active = powered && state.resources.chemicals > 0;
+  } else if (structureId === "battery_bank") {
+    powered = built;
+    active = built && state.resources.fuel > 0;
   } else if (structureId === "bunker_drill") {
     powered = built && state.resources.fuel > 0;
     active = powered && state.flags.bunkerRouteKnown;
   } else if (isUtility) {
-    active = built && damage < 2;
+    active = built && damage < 2 && systems.maintenanceState !== "failing";
   }
 
   let label = "active";

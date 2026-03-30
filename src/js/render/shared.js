@@ -16,6 +16,7 @@ import {
   formatMaterials,
   getExpeditionPreview,
   getNightForecast,
+  getShelterSystems,
   getShelterUpkeep,
   getVisibleUpgrades,
   hasMaterials,
@@ -292,6 +293,7 @@ export function renderCondition(state, derived) {
 
 export function renderSummaryStrip(state, derived) {
   const upkeep = getShelterUpkeep(state);
+  const systems = getShelterSystems(state, derived);
   const pills = [
     {
       label: "Heat line",
@@ -353,6 +355,24 @@ export function renderSummaryStrip(state, derived) {
       note: "milestones cracked",
       tone: "neutral",
       tip: "Signal progress tracks how far you have pushed the investigations and major radio milestones.",
+    });
+  }
+  if (state.upgrades.includes("radio_rig") || state.upgrades.includes("battery_bank")) {
+    pills.push({
+      label: "Power",
+      value: `${systems.powerSupply}/${systems.powerDemand || 0}`,
+      note: systems.powerState === "stable" ? "systems covered" : systems.powerState === "thin" ? "tight reserve" : "modules going dark",
+      tone: systems.powerState === "stable" ? "good" : systems.powerState === "thin" ? "warn" : "danger",
+      tip: "Power supply keeps radio, lights, and utility systems alive. When demand exceeds supply, coverage and signal systems start going dark.",
+    });
+  }
+  if (state.upgrades.includes("repair_rig") || Object.keys(state.shelter.damage || {}).length) {
+    pills.push({
+      label: "Maintenance",
+      value: `${systems.maintenanceSupport.toFixed(1)}/${systems.maintenanceLoad.toFixed(1)}`,
+      note: systems.maintenanceState === "stable" ? "repairs keeping up" : systems.maintenanceState === "strained" ? "line under strain" : "base falling behind",
+      tone: systems.maintenanceState === "stable" ? "good" : systems.maintenanceState === "strained" ? "warn" : "danger",
+      tip: "Maintenance compares repair capacity to the amount of shelter, crew, and damage you are trying to hold together.",
     });
   }
 
@@ -569,6 +589,7 @@ function readyUpgradeCandidate(state, upgrades) {
 function currentDirective(state, upgrades) {
   const readyUpgrade = readyUpgradeCandidate(state, upgrades);
   const upkeep = getShelterUpkeep(state);
+  const systems = getShelterSystems(state);
   const lowFood = state.unlockedSections.includes("shelter")
     && state.discoveredResources.includes("food")
     && state.resources.food < upkeep.mealCost;
@@ -592,6 +613,18 @@ function currentDirective(state, upgrades) {
     return {
       title: "Refill drinkable water",
       detail: `The shelter needs ${upkeep.waterCost} drinkable water every ${upkeep.waterHours}h. Dehydration now hits the whole room.`,
+    };
+  }
+  if (systems.maintenanceState === "failing") {
+    return {
+      title: "Stabilize maintenance",
+      detail: "The base is outrunning its repair line. Bank wood, scrap, and parts before the next night tears open more weak seams.",
+    };
+  }
+  if (systems.powerState === "dark") {
+    return {
+      title: "Cover the power gap",
+      detail: "Signal and utility systems are going dark. Feed the base fuel or build reserve power before chasing deeper routes.",
     };
   }
   if (!state.flags.burnUnlocked) {
@@ -869,6 +902,7 @@ export function renderTutorialBanner(state) {
 export function renderCommandDesk(state, derived, availableSources, availableUpgrades) {
   const forecast = getNightForecast(state);
   const upkeep = getShelterUpkeep(state);
+  const systems = getShelterSystems(state, derived);
   const readyUpgrade = readyUpgradeCandidate(state, availableUpgrades);
   const directive = currentDirective(state, availableUpgrades);
   const preview = state.expedition.selectedZone
@@ -925,6 +959,7 @@ export function renderCommandDesk(state, derived, availableSources, availableUpg
           <div><span>Threat</span><strong>${state.shelter.threat.toFixed(1)}</strong></div>
           <div><span>Noise</span><strong>${state.shelter.noise.toFixed(1)}</strong></div>
           <div><span>Defense</span><strong>${derived.defense}</strong></div>
+          <div><span>Siege</span><strong>${Math.round(forecast.siegeChance * 100)}%</strong></div>
         </div>
       </div>
       <div class="command-card">
@@ -944,6 +979,8 @@ export function renderCommandDesk(state, derived, availableSources, availableUpg
           <div><span>Builds</span><strong>${availableUpgrades.length}</strong></div>
           <div><span>Crew</span><strong>${state.survivors.total}/${derived.survivorCap}</strong></div>
           <div><span>Stores</span><strong>${state.resources.food}/${state.resources.water}</strong></div>
+          <div><span>PWR</span><strong>${systems.powerSupply}/${systems.powerDemand}</strong></div>
+          <div><span>MNT</span><strong>${systems.maintenanceState}</strong></div>
         </div>
       </div>
     </div>
@@ -995,12 +1032,16 @@ export function renderSignalSpectrum(state) {
 }
 
 export function renderCrewPressure(state) {
+  const wounded = state.survivors.roster.filter((survivor) => survivor.wounded > 0).length;
+  const stressed = state.survivors.roster.filter((survivor) => survivor.stress >= 4).length;
   const bands = [
     { label: "Scavengers", value: state.survivors.assigned.scavenger, note: "salvage yield" },
     { label: "Guards", value: state.survivors.assigned.guard, note: "night defense" },
     { label: "Medics", value: state.survivors.assigned.medic, note: "condition mitigation" },
     { label: "Scouts", value: state.survivors.assigned.scout, note: "route yield and escape" },
     { label: "Tuners", value: state.survivors.assigned.tuner, note: "radio depth and pathing" },
+    { label: "Wounded", value: wounded, note: "reduced output" },
+    { label: "Stressed", value: stressed, note: "conflict risk" },
   ];
 
   return `

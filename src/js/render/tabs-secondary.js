@@ -4,6 +4,7 @@ import {
   canAfford,
   formatCost,
   getAvailableRadioInvestigations,
+  getRadioBoard,
   getAvailableTraderChannels,
   getTraderOfferCost,
   hasItem,
@@ -37,6 +38,17 @@ function accordionSection(title, meta, body, open = false) {
 }
 
 const PATCH_NOTES = [
+  {
+    version: "v5.1",
+    title: "Base Pressure Overhaul",
+    points: [
+      "Siege pressure, breach escalation, and deeper night reports added.",
+      "Base systems now track power, coverage, maintenance, food flow, and water flow.",
+      "Expeditions can trigger authored route events with stronger risk and payoff swings.",
+      "New tool and weapon tiers push repair, signal, and defense progression forward.",
+      "Survivors now carry wounds and stress that affect the run.",
+    ],
+  },
   {
     version: "v5.0",
     title: "Survival Foundation Overhaul",
@@ -151,6 +163,8 @@ export function renderSurvivorTab(state, derived, _isMobile = false) {
     const rightRole = right.role === "idle" ? "zz-idle" : right.role;
     return `${leftRole}-${left.name}`.localeCompare(`${rightRole}-${right.name}`);
   });
+  const woundedCount = roster.filter((survivor) => survivor.wounded > 0).length;
+  const stressedCount = roster.filter((survivor) => survivor.stress >= 4).length;
   return renderSplitPane(
     [
       surfaceCard({
@@ -184,6 +198,8 @@ export function renderSurvivorTab(state, derived, _isMobile = false) {
           <div class="fact-grid">
             <div class="fact"><span>Total</span><strong>${state.survivors.total}</strong></div>
             <div class="fact"><span>Idle</span><strong>${state.survivors.idle}</strong></div>
+            <div class="fact"><span>Wounded</span><strong>${woundedCount}</strong></div>
+            <div class="fact"><span>Stressed</span><strong>${stressedCount}</strong></div>
             <div class="fact"><span>Morale</span><strong>${state.resources.morale}</strong></div>
             <div class="fact"><span>Rep</span><strong>${state.resources.reputation}</strong></div>
           </div>
@@ -217,6 +233,8 @@ export function renderSurvivorTab(state, derived, _isMobile = false) {
                   <div class="chip-row">${tagList([
                     SURVIVOR_TRAITS[survivor.traitId]?.label || survivor.traitId,
                     SURVIVOR_TRAITS[survivor.traitId]?.summary || "trait",
+                    survivor.wounded > 0 ? `wounded ${survivor.wounded}` : "unhurt",
+                    survivor.stress > 0 ? `stress ${survivor.stress}` : "steady",
                   ])}</div>
                 </div>
               `).join("")}
@@ -231,6 +249,7 @@ export function renderSurvivorTab(state, derived, _isMobile = false) {
 
 export function renderRadioTab(state, isMobile = false) {
   const availableInvestigations = getAvailableRadioInvestigations(state);
+  const board = getRadioBoard(state);
   const notes = [];
   const lastSweep = state.radio.lastSweep;
   if (state.story.radioProgress === 0) notes.push("Band mostly dead.");
@@ -266,13 +285,18 @@ export function renderRadioTab(state, isMobile = false) {
           title: "Investigations",
           meta: `${availableInvestigations.length} tracks`,
           body: availableInvestigations.length
-            ? `<div class="detail-list">${availableInvestigations.map((investigation) => `
+            ? `<div class="detail-list">${board.map((investigation) => `
                 <div class="list-block compact-block ${state.radio.investigation === investigation.id ? "is-selected-plan" : ""}">
                   <div class="surface-head">
                     <h4>${investigation.label}</h4>
-                    <span class="tag">${state.radio.traces[investigation.id] || 0}</span>
+                    <span class="tag">${investigation.trace}</span>
                   </div>
-                  <div class="chip-row">${tagList([investigation.short, `milestones ${investigation.milestones.length}`])}</div>
+                  <div class="chip-row">${tagList([
+                    investigation.short,
+                    `${investigation.resolvedCount}/${investigation.totalMilestones} cracked`,
+                    investigation.nextAt ? `next ${investigation.nextAt}` : "track exhausted",
+                  ])}</div>
+                  <p class="note">${investigation.nextText}</p>
                   ${actionButton({
                     action: "set-radio-investigation",
                     label: investigation.label,
@@ -292,6 +316,19 @@ export function renderRadioTab(state, isMobile = false) {
             </div>
           </div>
         `, true)}
+        ${accordionSection("Mystery board", `${board.reduce((sum, investigation) => sum + investigation.resolvedCount, 0)} clues`, `
+          <div class="detail-list">
+            ${board.map((investigation) => `
+              <div class="list-block compact-block">
+                <div class="surface-head">
+                  <h4>${investigation.label}</h4>
+                  <span class="tag">${investigation.resolvedCount}/${investigation.totalMilestones}</span>
+                </div>
+                <p class="note">${investigation.nextText}</p>
+              </div>
+            `).join("")}
+          </div>
+        `)}
         ${accordionSection("Anomaly trace", state.flags.worldReveal ? "exposed" : "partial", renderAnomalyTrace(state))}
       </div>
     `;
@@ -305,16 +342,18 @@ export function renderRadioTab(state, isMobile = false) {
         body: availableInvestigations.length
           ? `
             <div class="detail-list">
-              ${availableInvestigations.map((investigation) => `
+              ${board.map((investigation) => `
                 <div class="list-block compact-block ${state.radio.investigation === investigation.id ? "is-selected-plan" : ""}">
                   <div class="surface-head">
                     <h4>${investigation.label}</h4>
-                    <span class="tag">${state.radio.traces[investigation.id] || 0}</span>
+                    <span class="tag">${investigation.trace}</span>
                   </div>
                   <div class="chip-row">${tagList([
                     investigation.short,
-                    ...investigation.milestones.map((milestone) => state.radio.resolved.includes(milestone.id) ? `locked ${milestone.at}` : `at ${milestone.at}`),
+                    `${investigation.resolvedCount}/${investigation.totalMilestones} cracked`,
+                    investigation.nextAt ? `next ${investigation.nextAt}` : "track exhausted",
                   ])}</div>
+                  <p class="note">${investigation.nextText}</p>
                   ${actionButton({
                     action: "set-radio-investigation",
                     label: investigation.label,
@@ -347,6 +386,13 @@ export function renderRadioTab(state, isMobile = false) {
                 <span class="tag">${state.flags.bunkerRouteKnown ? "marked" : "hidden"}</span>
               </div>
               <p class="note">${state.flags.bunkerRouteKnown ? "Bunker route threaded." : "Keep scanning sublevel and anomaly traces."}</p>
+            </div>
+            <div class="list-block">
+              <div class="surface-head">
+                <h4>Mystery board</h4>
+                <span class="tag">${board.reduce((sum, investigation) => sum + investigation.resolvedCount, 0)} clues</span>
+              </div>
+              <div class="chip-row">${tagList(board.map((investigation) => `${investigation.label} ${investigation.resolvedCount}/${investigation.totalMilestones}`))}</div>
             </div>
           </div>
         `,

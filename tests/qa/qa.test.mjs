@@ -9,14 +9,18 @@ import { createInitialState, loadState } from "../../src/js/state.js";
 import { SEARCH_LOOT_TABLE } from "../../src/js/content.js";
 import {
   attackCombat,
+  advanceTime,
   braceCombat,
   buyUpgrade,
   chooseFaction,
   evaluateProgression,
   getAvailableScavengeSources,
   getAvailableTraderChannels,
+  getDerivedState,
   getExpeditionPreview,
   getNightForecast,
+  getRadioBoard,
+  getShelterSystems,
   launchPreparedExpedition,
   prepareExpedition,
   recruitSurvivor,
@@ -255,6 +259,106 @@ run("source-based scavenging lanes unlock and record distinct runs", () => {
   assert.ok(state.resources.parts >= 1);
 });
 
+run("shelter systems track power maintenance coverage and adjacency bonuses", () => {
+  const state = createInitialState();
+  state.upgrades = [
+    "basic_barricade",
+    "watch_post",
+    "tripwire_grid",
+    "crafting_bench",
+    "repair_rig",
+    "food_crate",
+    "smokehouse",
+    "rain_collector",
+    "water_still",
+    "radio_rig",
+    "battery_bank",
+    "flood_lights",
+  ];
+  state.shelter.damage = { basic_barricade: 1 };
+  state.resources.wood = 12;
+  state.resources.parts = 8;
+
+  const derived = getDerivedState(state);
+  const systems = getShelterSystems(state, derived);
+
+  assert.ok(systems.powerSupply >= systems.powerDemand);
+  assert.equal(systems.powerState, "stable");
+  assert.ok(systems.coverage > 0.9);
+  assert.ok(systems.maintenanceSupport >= 2);
+  assert.ok(systems.maintenanceLoad > 0);
+  assert.equal(systems.maintenanceState, "failing");
+  assert.ok(systems.foodFlow > 0);
+  assert.ok(systems.waterFlow > 0);
+  assert.ok(systems.adjacency.some((entry) => entry.id === "food_line"));
+  assert.ok(systems.adjacency.some((entry) => entry.id === "water_loop"));
+  assert.ok(systems.adjacency.some((entry) => entry.id === "repair_line"));
+  assert.ok(systems.adjacency.some((entry) => entry.id === "fence_watch"));
+  assert.ok(systems.adjacency.some((entry) => entry.id === "lit_perimeter"));
+  assert.ok(systems.adjacency.some((entry) => entry.id === "powered_signal"));
+});
+
+run("fortified shelter systems reduce siege and breach pressure", () => {
+  const weakState = createInitialState();
+  weakState.time.day = 6;
+  weakState.time.hour = 18;
+  weakState.shelter.threat = 8.8;
+  weakState.shelter.noise = 7.6;
+  weakState.shelter.warmth = 1;
+
+  const strongState = createInitialState();
+  strongState.time.day = 6;
+  strongState.time.hour = 18;
+  strongState.shelter.threat = 8.8;
+  strongState.shelter.noise = 7.6;
+  strongState.shelter.warmth = 3;
+  strongState.upgrades = [
+    "basic_barricade",
+    "watch_post",
+    "tripwire_grid",
+    "flood_lights",
+    "radio_rig",
+    "battery_bank",
+    "crafting_bench",
+    "repair_rig",
+  ];
+
+  const weakForecast = getNightForecast(weakState);
+  const strongForecast = getNightForecast(strongState);
+
+  assert.ok(strongForecast.adjustedDefense > weakForecast.adjustedDefense);
+  assert.ok(strongForecast.raidChance < weakForecast.raidChance);
+  assert.ok(strongForecast.breachChance < weakForecast.breachChance);
+  assert.ok(strongForecast.quietChance > weakForecast.quietChance);
+});
+
+run("prepared expeditions store route events and route outcomes", () => {
+  const state = createInitialState();
+  state.time.day = 2;
+  state.unlockedZones = ["ruined_street"];
+  state.resources.food = 10;
+  state.resources.water = 10;
+  state.resources.scrap = 20;
+  state.resources.parts = 8;
+  state.resources.fuel = 6;
+  state.resources.medicine = 2;
+
+  prepareExpedition(state, "ruined_street");
+  setExpeditionApproach(state, "cautious");
+  setExpeditionObjective(state, "provisions");
+
+  withRandomSequence([0.1, 0.9, 0.99, 0.35, 0.45, 0.7, 0.4, 0.8], () => {
+    assert.equal(launchPreparedExpedition(state), true);
+  });
+
+  assert.equal(state.expedition.lastRouteEvent?.id, "cold_pantry");
+  assert.equal(state.expedition.lastOutcome?.zoneId, "ruined_street");
+  assert.equal(state.expedition.lastOutcome?.routeEventId, "cold_pantry");
+  assert.equal(state.expedition.lastOutcome?.objectiveId, "provisions");
+  assert.ok(state.resources.food >= 10);
+  assert.ok(state.resources.water >= 10);
+});
+
 run("save migration fills new night, expedition, and inspector defaults", () => {
   const originalWindow = globalThis.window;
   globalThis.window = {
@@ -320,7 +424,7 @@ run("night forecast creates a report when time crosses into night", () => {
   });
 
   assert.ok(state.night.lastReport);
-  assert.ok(["quiet", "infected", "raiders", "breach"].includes(state.night.lastReport.eventType));
+  assert.ok(["quiet", "infected", "raiders", "breach", "siege"].includes(state.night.lastReport.eventType));
 });
 
 run("expedition planner previews and launches prepared routes", () => {
@@ -366,7 +470,11 @@ run("expedition objectives change preview pressure and can add signal traces", (
     launchPreparedExpedition(state);
   });
 
-  assert.ok((state.radio.traces.tower_grid || 0) > 0);
+  if (state.combat) {
+    assert.ok((state.combat.rewards.radioTrace?.tower_grid || 0) > 0);
+  } else {
+    assert.ok((state.radio.traces.tower_grid || 0) > 0);
+  }
 });
 
 run("survivor recruitment now creates a roster with traited members", () => {
@@ -406,6 +514,48 @@ run("crew upkeep consumes shelter food and drinkable water over time", () => {
   assert.ok(state.log.some((entry) => /drinkable water|food/i.test(entry.text)));
 });
 
+run("shelter systems calculate power, maintenance, and adjacency for deeper base play", () => {
+  const state = createInitialState();
+  state.upgrades = [
+    "shelter_stash",
+    "campfire",
+    "basic_barricade",
+    "crafting_bench",
+    "repair_rig",
+    "watch_post",
+    "tripwire_grid",
+    "radio_rig",
+    "battery_bank",
+    "food_crate",
+    "smokehouse",
+    "rain_collector",
+    "water_still",
+    "survivor_cots",
+  ];
+  state.unlockedSections = ["shelter", "survivors", "radio"];
+  state.survivors.total = 3;
+  state.survivors.idle = 1;
+  state.survivors.assigned.guard = 1;
+  state.survivors.assigned.medic = 1;
+  state.survivors.assigned.tuner = 1;
+  state.survivors.roster = [
+    { id: "a", name: "A", role: "guard", traitId: "hard_case", wounded: 0, stress: 1 },
+    { id: "b", name: "B", role: "medic", traitId: "patch_saint", wounded: 0, stress: 0 },
+    { id: "c", name: "C", role: "tuner", traitId: "ghost_ear", wounded: 0, stress: 0 },
+  ];
+  evaluateProgression(state);
+
+  const derived = getDerivedState(state);
+  const systems = getShelterSystems(state, derived);
+
+  assert.ok(systems.powerSupply >= systems.powerDemand);
+  assert.ok(systems.coverage > 1);
+  assert.ok(systems.maintenanceSupport > 0);
+  assert.ok(systems.adjacency.some((entry) => entry.id === "repair_line"));
+  assert.ok(systems.adjacency.some((entry) => entry.id === "food_line"));
+  assert.ok(systems.adjacency.some((entry) => entry.id === "water_loop"));
+});
+
 run("directed radio investigations resolve milestones without relying on random key events", () => {
   const state = createInitialState();
   state.upgrades = ["radio_rig", "signal_decoder"];
@@ -425,6 +575,51 @@ run("directed radio investigations resolve milestones without relying on random 
   assert.ok(state.story.secretProgress >= 1);
 });
 
+run("radio board exposes resolved and next milestones for each investigation", () => {
+  const state = createInitialState();
+  state.upgrades = ["radio_rig", "signal_decoder"];
+  state.unlockedSections = ["radio"];
+  state.resources.fuel = 10;
+  state.resources.parts = 10;
+  state.story.radioProgress = 2;
+  state.radio.investigation = "tower_grid";
+
+  withRandomSequence([0.1, 0.2, 0.3, 0.4], () => {
+    scanRadio(state);
+    scanRadio(state);
+  });
+
+  const board = getRadioBoard(state);
+  const tower = board.find((investigation) => investigation.id === "tower_grid");
+  assert.ok(tower);
+  assert.ok(tower.trace > 0);
+  assert.ok(tower.totalMilestones >= 3);
+  assert.ok(tower.resolvedCount >= 1);
+});
+
+run("expedition route events can modify outcomes and record last route pressure", () => {
+  const state = createInitialState();
+  state.unlockedSections = ["map", "radio"];
+  state.unlockedZones = ["ruined_street"];
+  state.resources.food = 4;
+  state.resources.water = 5;
+  state.resources.fuel = 4;
+  state.resources.parts = 4;
+  state.story.radioProgress = 2;
+
+  prepareExpedition(state, "ruined_street");
+  setExpeditionObjective(state, "signal");
+  setExpeditionApproach(state, "standard");
+
+  withRandomSequence([0.1, 0, 0.95, 0.4, 0.2, 0.3], () => {
+    launchPreparedExpedition(state);
+  });
+
+  assert.ok(state.expedition.lastOutcome);
+  assert.ok(state.expedition.lastRouteEvent);
+  assert.ok((state.radio.traces.tower_grid || 0) > 0);
+});
+
 run("trade shifts from generic refreshes to faction channels", () => {
   const state = createInitialState();
   state.upgrades = ["trader_beacon"];
@@ -436,6 +631,35 @@ run("trade shifts from generic refreshes to faction channels", () => {
   assert.ok(getAvailableTraderChannels(state).some((channel) => channel.id === "hunter_exchange"));
   assert.equal(requestTraderChannel(state, "hunter_exchange"), true);
   assert.ok(state.trader.offers.length > 0);
+});
+
+run("night escalation can injure or stress the crew when the shelter takes a siege", () => {
+  const state = createInitialState();
+  state.upgrades = ["shelter_stash", "campfire", "basic_barricade", "watch_post", "survivor_cots"];
+  state.unlockedSections = ["shelter", "survivors"];
+  state.survivors.total = 2;
+  state.survivors.idle = 1;
+  state.survivors.assigned.guard = 1;
+  state.survivors.roster = [
+    { id: "g", name: "Guard", role: "guard", traitId: "hard_case", wounded: 0, stress: 0 },
+    { id: "i", name: "Idle", role: "idle", traitId: "quiet_hands", wounded: 0, stress: 0 },
+  ];
+  state.resources.scrap = 30;
+  state.resources.wood = 10;
+  state.resources.food = 6;
+  state.resources.water = 6;
+  state.shelter.threat = 9;
+  state.shelter.noise = 6;
+  state.shelter.warmth = 1;
+  state.time.hour = 20;
+
+  withRandomSequence([0.01, 0.01, 0.2, 0.3, 0.4, 0.5], () => {
+    searchRubble(state);
+  });
+
+  assert.ok(state.night.lastReport);
+  assert.ok(["siege", "breach", "raiders", "infected", "quiet"].includes(state.night.lastReport.eventType));
+  assert.ok(state.survivors.roster.some((survivor) => survivor.wounded > 0 || survivor.stress > 0));
 });
 
 run("combat uses enemy intents and brace keeps the turn alive", () => {

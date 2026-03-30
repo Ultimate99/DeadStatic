@@ -104,7 +104,7 @@ function summarizeRoster(roster) {
 
 export function createInitialState() {
   return {
-    version: 7,
+    version: 8,
     time: {
       day: 1,
       hour: 7,
@@ -187,15 +187,20 @@ export function createInitialState() {
     clocks: {
       hunger: 0,
       thirst: 0,
+      maintenance: 0,
     },
     night: {
       plan: "hold_fast",
+      siegePressure: 0,
+      breachCount: 0,
       lastReport: null,
     },
     expedition: {
       selectedZone: null,
       approach: "standard",
       objective: "salvage",
+      lastRouteEvent: null,
+      lastOutcome: null,
     },
     ui: {
       activeTab: "overview",
