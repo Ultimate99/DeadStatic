@@ -401,15 +401,17 @@ export function renderBaseScreen(state, derived, isMobile = false) {
   if (isMobile) {
     const mapMode = state.ui.mobileShelterMode === "map";
     return `
-      <div class="tab-mobile-flow tab-mobile-flow-base">
+      <div class="tab-mobile-flow tab-mobile-flow-base mobile-base-screen">
         <div class="mobile-segmented-control">
           <button type="button" class="${!mapMode ? "is-active" : ""}" data-action="set-mobile-shelter-mode" data-mode="ops">Ops</button>
           <button type="button" class="${mapMode ? "is-active" : ""}" data-action="set-mobile-shelter-mode" data-mode="map">Grid</button>
         </div>
         ${renderSystemsStrip(state, derived)}
-        ${mapMode ? boardCard : renderOpsSummary(state, derived)}
-        ${mapMode ? inspectorCard : rackCard}
-        ${mapMode ? rackCard : blueprintCard}
+        <div class="mobile-base-mode-panel ${mapMode ? "is-map" : "is-ops"}">
+          ${mapMode ? boardCard : renderOpsSummary(state, derived)}
+          ${mapMode ? inspectorCard : rackCard}
+          ${mapMode ? rackCard : blueprintCard}
+        </div>
       </div>
     `;
   }

@@ -14,6 +14,15 @@ import {
 
 const PATCH_NOTES = [
   {
+    version: "v6.2",
+    title: "Mobile Surface Overhaul",
+    points: [
+      "Phone screens now use dedicated layouts for Ops, Survivor, Workshop, Base, and Routes.",
+      "The mobile shell was compressed into a denser command band with a stronger survival strip and improved bottom sheets.",
+      "Survivor, workshop plans, and route controls now use mobile-first stacks instead of collapsed desktop columns.",
+    ],
+  },
+  {
     version: "v6.0",
     title: "Visual Identity Overhaul",
     points: [
@@ -171,6 +180,23 @@ function paperDollMarkup(state, groups) {
 }
 
 function inventorySection(title, entries, state, isMobile = false) {
+  if (isMobile) {
+    return `
+      <details class="inventory-section mobile-inventory-section" ${entries.length ? "open" : ""}>
+        <summary class="inventory-section-head mobile-inventory-summary">
+          <h4>${title}</h4>
+          <span class="tag">${entries.length}</span>
+        </summary>
+        ${entries.length
+          ? `<div class="inventory-card-grid">${entries.map(([itemId, amount]) => renderInventoryItemCard(itemId, amount, {
+            showAction: true,
+            enableDrag: false,
+            equipped: state.equipped.weapon === itemId || state.equipped.armor === itemId || state.equipped.backpack === itemId,
+          })).join("")}</div>`
+          : `<p class="empty-state">No ${title.toLowerCase()} packed.</p>`}
+      </details>
+    `;
+  }
   return `
     <div class="inventory-section">
       <div class="surface-head inventory-section-head">
@@ -257,7 +283,18 @@ export function renderSurvivorTab(state, derived, isMobile = false) {
   `;
 
   return isMobile
-    ? `<div class="tab-mobile-flow tab-mobile-flow-survivor">${layout}</div>`
+    ? `
+      <div class="tab-mobile-flow tab-mobile-flow-survivor mobile-survivor-screen">
+        <div class="mobile-survivor-hero">
+          ${mannequinCard}
+          ${statsCard}
+        </div>
+        <div class="mobile-survivor-lockers">
+          ${gearLocker}
+          ${suppliesLocker}
+        </div>
+      </div>
+    `
     : `<div class="survivor-screen">${layout}</div>`;
 }
 

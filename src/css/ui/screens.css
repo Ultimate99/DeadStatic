@@ -211,40 +211,43 @@
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 18px;
   background:
-    radial-gradient(circle at 50% 18%, rgba(208, 164, 107, 0.08), transparent 22%),
-    radial-gradient(circle at 50% 82%, rgba(152, 177, 162, 0.045), transparent 26%),
+    radial-gradient(circle at 50% 18%, rgba(208, 164, 107, 0.06), transparent 22%),
+    radial-gradient(circle at 50% 88%, rgba(152, 177, 162, 0.04), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.01), transparent 22%),
     rgba(9, 11, 11, 0.9);
 }
 
 .paper-doll-hero {
-  display: grid;
-  place-items: center;
-  min-height: 290px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 308px;
 }
 
 .paper-doll-sprite {
-  width: min(100%, 280px);
+  width: min(100%, 296px);
   height: auto;
   color: rgba(255, 255, 255, 0.82);
   --paper-gear: #f1cb87;
   --paper-trim: #98b1a2;
   --paper-pack: rgba(152, 177, 162, 0.92);
   --paper-pack-shadow: rgba(152, 177, 162, 0.24);
+  filter: drop-shadow(0 22px 28px rgba(0, 0, 0, 0.22));
 }
 
 .paper-doll-zone {
-  opacity: 0.86;
+  opacity: 0.94;
   transition: opacity 120ms ease, filter 120ms ease, transform 120ms ease;
 }
 
 .paper-doll-clothes-base {
-  opacity: 0.95;
+  opacity: 1;
 }
 
 .paper-doll-weapon-shape,
 .paper-doll-armor-shape,
 .paper-doll-backpack-shape {
-  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.24));
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.2));
 }
 
 body[data-hover-slot="weapon"] .paper-doll-zone-weapon,
@@ -1132,6 +1135,65 @@ body[data-drag-type="backpack"] .equipment-slot-card[data-slot="backpack"] {
   gap: 10px;
 }
 
+.mobile-survivor-screen,
+.mobile-workshop-screen,
+.mobile-routes-screen {
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-survivor-hero,
+.mobile-survivor-lockers,
+.mobile-ops-priority,
+.mobile-routes-priority,
+.mobile-workshop-stack,
+.mobile-base-mode-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-workshop-section,
+.mobile-inventory-section {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  background: rgba(12, 15, 15, 0.92);
+}
+
+.mobile-workshop-section summary,
+.mobile-inventory-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.mobile-workshop-section summary::-webkit-details-marker,
+.mobile-inventory-summary::-webkit-details-marker {
+  display: none;
+}
+
+.mobile-workshop-section[open] summary,
+.mobile-inventory-section[open] .mobile-inventory-summary {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mobile-workshop-summary div {
+  display: grid;
+  gap: 2px;
+}
+
+.mobile-workshop-section .empty-state,
+.mobile-inventory-section .empty-state {
+  padding: 0 12px 12px;
+}
+
+.mobile-blueprint-grid {
+  padding: 10px;
+}
+
 .mobile-segmented-control {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1196,6 +1258,177 @@ body[data-drag-type="backpack"] .equipment-slot-card[data-slot="backpack"] {
 
   .paper-doll-hero {
     min-height: 220px;
+  }
+
+  .tab-stage-head {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .tab-stage-copy h2 {
+    font-size: 1.1rem;
+    letter-spacing: 0.08em;
+  }
+
+  .tab-mobile-flow {
+    gap: 8px;
+  }
+
+  .ops-directive-card .surface-body,
+  .ops-watch-card .surface-body,
+  .route-preview-card .surface-body,
+  .route-controls-card .surface-body,
+  .workshop-queue-card .surface-body,
+  .survivor-mannequin-card .surface-body,
+  .survivor-stats-card .surface-body,
+  .survivor-storage-card .surface-body {
+    gap: 8px;
+  }
+
+  .directive-compact-mobile {
+    gap: 8px;
+  }
+
+  .directive-support-row-mobile {
+    gap: 8px;
+  }
+
+  .mobile-ops-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .mobile-ops-actions .action-button {
+    min-height: 38px;
+    padding-inline: 6px;
+  }
+
+  .ops-source-grid,
+  .route-zone-grid,
+  .blueprint-grid,
+  .inventory-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .route-zone-grid {
+    gap: 8px;
+  }
+
+  .route-briefing-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .route-toggle-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .workshop-queue-main strong {
+    font-size: 16px;
+  }
+
+  .mobile-workshop-section {
+    overflow: hidden;
+  }
+
+  .mobile-workshop-section .blueprint-grid,
+  .mobile-inventory-section .inventory-card-grid {
+    padding: 10px;
+  }
+
+  .mobile-survivor-hero .surface-card,
+  .mobile-survivor-lockers .surface-card {
+    margin: 0;
+  }
+
+  .survivor-mannequin-card .surface-body {
+    gap: 10px;
+  }
+
+  .paper-doll-stage {
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .paper-doll-sprite {
+    width: min(100%, 220px);
+  }
+
+  .mannequin-slots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .survivor-utility-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .survivor-fact-grid {
+    margin-bottom: 0;
+  }
+
+  .equipment-slot-card {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .equipment-slot-card .slot-frame {
+    width: 72px;
+    height: 72px;
+  }
+
+  .survivor-storage-card .surface-body {
+    gap: 6px;
+  }
+
+  .inventory-section {
+    border: 0;
+    background: transparent;
+  }
+
+  .mobile-inventory-summary {
+    margin: 0;
+  }
+
+  .inventory-sprite-card {
+    min-height: 0;
+    padding: 10px;
+  }
+
+  .inventory-sprite-top {
+    align-items: center;
+  }
+
+  .inventory-sprite-wrap {
+    width: 32px;
+    height: 32px;
+  }
+
+  .inventory-sprite-card .action-button {
+    width: auto;
+  }
+
+  .tab-mobile-flow-base .base-board-card .surface-body {
+    padding: 0;
+  }
+
+  .tab-mobile-flow-base .base-board {
+    border-radius: 14px;
+  }
+
+  .tab-mobile-flow-base .base-inspector-card,
+  .tab-mobile-flow-base .base-rack-card,
+  .tab-mobile-flow-base .base-blueprint-card {
+    border-radius: 16px;
+  }
+
+  .base-inspector-grid {
+    gap: 8px;
+  }
+
+  .route-preview-card .route-launch-row .action-button {
+    width: 100%;
   }
 
   .base-board {

@@ -350,17 +350,31 @@ export function renderMobileSurvivalStrip(state, derived) {
   if (!mobileStrip) {
     return;
   }
+  const activeJob = getActiveWorkJob(state);
+  const forecast = getNightForecast(state);
+  const upkeep = getShelterUpkeep(state);
   const percent = Math.max(0, Math.min(100, Math.round((state.condition / derived.maxCondition) * 100)));
   const resourceIds = sortedDiscoveredResources(state);
   const topResources = resourceIds.slice(0, 4);
   const overflowCount = Math.max(0, resourceIds.length - topResources.length);
   mobileStrip.innerHTML = `
     <div class="mobile-survival-head">
-      <span class="mobile-condition-label">Condition</span>
-      <strong>${state.condition}/${derived.maxCondition}</strong>
+      <div>
+        <span class="mobile-condition-label">Condition</span>
+        <strong>${state.condition}/${derived.maxCondition}</strong>
+      </div>
+      <div class="mobile-pressure-row">
+        <span class="mobile-pressure-chip">${activeJob ? `${activeJob.hoursRemaining}h queue` : "queue open"}</span>
+        <span class="mobile-pressure-chip">${forecast.siege ? "siege" : forecast.breachChance >= 0.34 ? "hard night" : "watch line"}</span>
+      </div>
     </div>
     <div class="mobile-condition-meter">
       <div class="meter-fill ${conditionClass(percent)}" style="width:${percent}%"></div>
+    </div>
+    <div class="mobile-pressure-row mobile-pressure-row-secondary">
+      <span class="mobile-pressure-chip">meal ${upkeep.mealHoursLeft}h</span>
+      <span class="mobile-pressure-chip">water ${upkeep.waterHoursLeft}h</span>
+      <span class="mobile-pressure-chip">threat ${state.shelter.threat.toFixed(1)}</span>
     </div>
     <div class="mobile-resource-row">
       ${topResources.map((resourceId) => resourcePillMarkup(state, resourceId, true)).join("")}
@@ -463,7 +477,10 @@ export function renderMobileSheets(state, tabs) {
           ${secondaryTabs.map((tab) => `
             <button type="button" class="mobile-more-button ${state.ui.activeTab === tab.id ? "is-active" : ""}" data-action="set-tab" data-tab="${tab.id}">
               <span class="mobile-nav-icon">${navSprite(tab.icon || "generic")}</span>
-              <span>${tab.label}</span>
+              <span class="mobile-more-copy">
+                <strong>${tab.label}</strong>
+                <small>${tab.hint || "section"}</small>
+              </span>
             </button>
           `).join("")}
         </div>

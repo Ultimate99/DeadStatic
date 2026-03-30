@@ -822,6 +822,10 @@ h4 {
   gap: 8px;
 }
 
+.mobile-more-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .mobile-more-button {
   display: flex;
   align-items: center;
@@ -832,6 +836,19 @@ h4 {
   border-radius: 12px;
   background: rgba(15, 18, 18, 0.92);
   color: var(--text);
+}
+
+.mobile-more-copy {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.mobile-more-copy small {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .mobile-bottom-nav {
@@ -888,6 +905,41 @@ h4 {
   flex-wrap: wrap;
 }
 
+.mobile-survival-head {
+  align-items: flex-start;
+}
+
+.mobile-survival-head > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.mobile-pressure-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mobile-pressure-row-secondary {
+  justify-content: flex-start;
+}
+
+.mobile-pressure-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 999px;
+  background: rgba(12, 15, 15, 0.96);
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .mobile-condition-meter {
   position: relative;
   height: 10px;
@@ -914,22 +966,37 @@ h4 {
 
 @media (max-width: 720px) {
   .app-shell {
-    padding: 10px 10px calc(var(--mobile-nav-height) + 14px);
+    padding: 8px 8px calc(var(--mobile-nav-height) + 12px);
   }
 
   .brand-block,
   .hero-panel,
   .tabs-shell,
   .utility-block {
-    padding: 10px 12px;
+    padding: 8px 10px;
+  }
+
+  .masthead {
+    gap: 6px;
   }
 
   .brand-block {
     min-height: auto;
+    padding-bottom: 6px;
+  }
+
+  .brand-copy {
+    gap: 1px;
+  }
+
+  .brand-copy .eyebrow,
+  .subtitle {
+    display: none;
   }
 
   .brand-copy h1 {
-    font-size: 2rem;
+    font-size: 1.35rem;
+    letter-spacing: 0.18em;
   }
 
   .resource-bar,
@@ -938,8 +1005,23 @@ h4 {
     display: none;
   }
 
+  .utility-block {
+    gap: 4px;
+  }
+
+  .utility-row-top {
+    min-height: 30px;
+  }
+
+  .clock,
+  .save-status {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
   .utility-cluster {
-    gap: 6px;
+    gap: 4px;
   }
 
   .hero-strip {
@@ -963,8 +1045,41 @@ h4 {
     display: grid;
   }
 
+  .mobile-survival-strip {
+    gap: 8px;
+    padding-top: 2px;
+  }
+
   .tabs-shell {
+    padding: 8px;
+  }
+
+  .mobile-sheet {
+    left: 8px;
+    right: 8px;
+    bottom: calc(var(--mobile-nav-height) + 8px);
+    border-radius: 16px;
     padding: 10px;
+  }
+
+  .mobile-bottom-nav {
+    gap: 4px;
+    padding: 6px 8px 8px;
+  }
+
+  .mobile-nav-button {
+    min-height: 50px;
+    padding: 6px 2px;
+    border-radius: 10px;
+  }
+
+  .mobile-nav-button span:last-child {
+    font-size: 10px;
+  }
+
+  .mobile-more-grid,
+  .mobile-resource-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1181,40 +1296,43 @@ h4 {
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 18px;
   background:
-    radial-gradient(circle at 50% 18%, rgba(208, 164, 107, 0.08), transparent 22%),
-    radial-gradient(circle at 50% 82%, rgba(152, 177, 162, 0.045), transparent 26%),
+    radial-gradient(circle at 50% 18%, rgba(208, 164, 107, 0.06), transparent 22%),
+    radial-gradient(circle at 50% 88%, rgba(152, 177, 162, 0.04), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.01), transparent 22%),
     rgba(9, 11, 11, 0.9);
 }
 
 .paper-doll-hero {
-  display: grid;
-  place-items: center;
-  min-height: 290px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 308px;
 }
 
 .paper-doll-sprite {
-  width: min(100%, 280px);
+  width: min(100%, 296px);
   height: auto;
   color: rgba(255, 255, 255, 0.82);
   --paper-gear: #f1cb87;
   --paper-trim: #98b1a2;
   --paper-pack: rgba(152, 177, 162, 0.92);
   --paper-pack-shadow: rgba(152, 177, 162, 0.24);
+  filter: drop-shadow(0 22px 28px rgba(0, 0, 0, 0.22));
 }
 
 .paper-doll-zone {
-  opacity: 0.86;
+  opacity: 0.94;
   transition: opacity 120ms ease, filter 120ms ease, transform 120ms ease;
 }
 
 .paper-doll-clothes-base {
-  opacity: 0.95;
+  opacity: 1;
 }
 
 .paper-doll-weapon-shape,
 .paper-doll-armor-shape,
 .paper-doll-backpack-shape {
-  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.24));
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.2));
 }
 
 body[data-hover-slot="weapon"] .paper-doll-zone-weapon,
@@ -2102,6 +2220,65 @@ body[data-drag-type="backpack"] .equipment-slot-card[data-slot="backpack"] {
   gap: 10px;
 }
 
+.mobile-survivor-screen,
+.mobile-workshop-screen,
+.mobile-routes-screen {
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-survivor-hero,
+.mobile-survivor-lockers,
+.mobile-ops-priority,
+.mobile-routes-priority,
+.mobile-workshop-stack,
+.mobile-base-mode-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-workshop-section,
+.mobile-inventory-section {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  background: rgba(12, 15, 15, 0.92);
+}
+
+.mobile-workshop-section summary,
+.mobile-inventory-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.mobile-workshop-section summary::-webkit-details-marker,
+.mobile-inventory-summary::-webkit-details-marker {
+  display: none;
+}
+
+.mobile-workshop-section[open] summary,
+.mobile-inventory-section[open] .mobile-inventory-summary {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mobile-workshop-summary div {
+  display: grid;
+  gap: 2px;
+}
+
+.mobile-workshop-section .empty-state,
+.mobile-inventory-section .empty-state {
+  padding: 0 12px 12px;
+}
+
+.mobile-blueprint-grid {
+  padding: 10px;
+}
+
 .mobile-segmented-control {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2166,6 +2343,177 @@ body[data-drag-type="backpack"] .equipment-slot-card[data-slot="backpack"] {
 
   .paper-doll-hero {
     min-height: 220px;
+  }
+
+  .tab-stage-head {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .tab-stage-copy h2 {
+    font-size: 1.1rem;
+    letter-spacing: 0.08em;
+  }
+
+  .tab-mobile-flow {
+    gap: 8px;
+  }
+
+  .ops-directive-card .surface-body,
+  .ops-watch-card .surface-body,
+  .route-preview-card .surface-body,
+  .route-controls-card .surface-body,
+  .workshop-queue-card .surface-body,
+  .survivor-mannequin-card .surface-body,
+  .survivor-stats-card .surface-body,
+  .survivor-storage-card .surface-body {
+    gap: 8px;
+  }
+
+  .directive-compact-mobile {
+    gap: 8px;
+  }
+
+  .directive-support-row-mobile {
+    gap: 8px;
+  }
+
+  .mobile-ops-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .mobile-ops-actions .action-button {
+    min-height: 38px;
+    padding-inline: 6px;
+  }
+
+  .ops-source-grid,
+  .route-zone-grid,
+  .blueprint-grid,
+  .inventory-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .route-zone-grid {
+    gap: 8px;
+  }
+
+  .route-briefing-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .route-toggle-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .workshop-queue-main strong {
+    font-size: 16px;
+  }
+
+  .mobile-workshop-section {
+    overflow: hidden;
+  }
+
+  .mobile-workshop-section .blueprint-grid,
+  .mobile-inventory-section .inventory-card-grid {
+    padding: 10px;
+  }
+
+  .mobile-survivor-hero .surface-card,
+  .mobile-survivor-lockers .surface-card {
+    margin: 0;
+  }
+
+  .survivor-mannequin-card .surface-body {
+    gap: 10px;
+  }
+
+  .paper-doll-stage {
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .paper-doll-sprite {
+    width: min(100%, 220px);
+  }
+
+  .mannequin-slots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .survivor-utility-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .survivor-fact-grid {
+    margin-bottom: 0;
+  }
+
+  .equipment-slot-card {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .equipment-slot-card .slot-frame {
+    width: 72px;
+    height: 72px;
+  }
+
+  .survivor-storage-card .surface-body {
+    gap: 6px;
+  }
+
+  .inventory-section {
+    border: 0;
+    background: transparent;
+  }
+
+  .mobile-inventory-summary {
+    margin: 0;
+  }
+
+  .inventory-sprite-card {
+    min-height: 0;
+    padding: 10px;
+  }
+
+  .inventory-sprite-top {
+    align-items: center;
+  }
+
+  .inventory-sprite-wrap {
+    width: 32px;
+    height: 32px;
+  }
+
+  .inventory-sprite-card .action-button {
+    width: auto;
+  }
+
+  .tab-mobile-flow-base .base-board-card .surface-body {
+    padding: 0;
+  }
+
+  .tab-mobile-flow-base .base-board {
+    border-radius: 14px;
+  }
+
+  .tab-mobile-flow-base .base-inspector-card,
+  .tab-mobile-flow-base .base-rack-card,
+  .tab-mobile-flow-base .base-blueprint-card {
+    border-radius: 16px;
+  }
+
+  .base-inspector-grid {
+    gap: 8px;
+  }
+
+  .route-preview-card .route-launch-row .action-button {
+    width: 100%;
   }
 
   .base-board {
@@ -9336,17 +9684,31 @@ function renderMobileSurvivalStrip(state, derived) {
   if (!mobileStrip) {
     return;
   }
+  const activeJob = getActiveWorkJob(state);
+  const forecast = getNightForecast(state);
+  const upkeep = getShelterUpkeep(state);
   const percent = Math.max(0, Math.min(100, Math.round((state.condition / derived.maxCondition) * 100)));
   const resourceIds = sortedDiscoveredResources(state);
   const topResources = resourceIds.slice(0, 4);
   const overflowCount = Math.max(0, resourceIds.length - topResources.length);
   mobileStrip.innerHTML = `
     <div class="mobile-survival-head">
-      <span class="mobile-condition-label">Condition</span>
-      <strong>${state.condition}/${derived.maxCondition}</strong>
+      <div>
+        <span class="mobile-condition-label">Condition</span>
+        <strong>${state.condition}/${derived.maxCondition}</strong>
+      </div>
+      <div class="mobile-pressure-row">
+        <span class="mobile-pressure-chip">${activeJob ? `${activeJob.hoursRemaining}h queue` : "queue open"}</span>
+        <span class="mobile-pressure-chip">${forecast.siege ? "siege" : forecast.breachChance >= 0.34 ? "hard night" : "watch line"}</span>
+      </div>
     </div>
     <div class="mobile-condition-meter">
       <div class="meter-fill ${conditionClass(percent)}" style="width:${percent}%"></div>
+    </div>
+    <div class="mobile-pressure-row mobile-pressure-row-secondary">
+      <span class="mobile-pressure-chip">meal ${upkeep.mealHoursLeft}h</span>
+      <span class="mobile-pressure-chip">water ${upkeep.waterHoursLeft}h</span>
+      <span class="mobile-pressure-chip">threat ${state.shelter.threat.toFixed(1)}</span>
     </div>
     <div class="mobile-resource-row">
       ${topResources.map((resourceId) => resourcePillMarkup(state, resourceId, true)).join("")}
@@ -9449,7 +9811,10 @@ function renderMobileSheets(state, tabs) {
           ${secondaryTabs.map((tab) => `
             <button type="button" class="mobile-more-button ${state.ui.activeTab === tab.id ? "is-active" : ""}" data-action="set-tab" data-tab="${tab.id}">
               <span class="mobile-nav-icon">${navSprite(tab.icon || "generic")}</span>
-              <span>${tab.label}</span>
+              <span class="mobile-more-copy">
+                <strong>${tab.label}</strong>
+                <small>${tab.hint || "section"}</small>
+              </span>
             </button>
           `).join("")}
         </div>
@@ -10573,15 +10938,17 @@ function renderBaseScreen(state, derived, isMobile = false) {
   if (isMobile) {
     const mapMode = state.ui.mobileShelterMode === "map";
     return `
-      <div class="tab-mobile-flow tab-mobile-flow-base">
+      <div class="tab-mobile-flow tab-mobile-flow-base mobile-base-screen">
         <div class="mobile-segmented-control">
           <button type="button" class="${!mapMode ? "is-active" : ""}" data-action="set-mobile-shelter-mode" data-mode="ops">Ops</button>
           <button type="button" class="${mapMode ? "is-active" : ""}" data-action="set-mobile-shelter-mode" data-mode="map">Grid</button>
         </div>
         ${renderSystemsStrip(state, derived)}
-        ${mapMode ? boardCard : renderOpsSummary(state, derived)}
-        ${mapMode ? inspectorCard : rackCard}
-        ${mapMode ? rackCard : blueprintCard}
+        <div class="mobile-base-mode-panel ${mapMode ? "is-map" : "is-ops"}">
+          ${mapMode ? boardCard : renderOpsSummary(state, derived)}
+          ${mapMode ? inspectorCard : rackCard}
+          ${mapMode ? rackCard : blueprintCard}
+        </div>
       </div>
     `;
   }
@@ -10718,7 +11085,7 @@ function watchThreatTone(forecast) {
   return "good";
 }
 
-function renderOpsBoard(state, derived) {
+function renderOpsBoard(state, derived, isMobile = false) {
   const sources = getAvailableScavengeSources(state);
   const activeJob = getActiveWorkJob(state);
   const forecast = getNightForecast(state);
@@ -10760,7 +11127,7 @@ function renderOpsBoard(state, derived) {
     meta: activeJob ? activeJob.kind : "ops",
     className: "ops-directive-card",
     body: `
-      <div class="directive-compact">
+      <div class="directive-compact ${isMobile ? "directive-compact-mobile" : ""}">
         <div class="directive-stack">
           <p class="directive-line">${directiveText(state)}</p>
           <div class="chip-row compact-chip-row">${tagList([
@@ -10769,14 +11136,14 @@ function renderOpsBoard(state, derived) {
             activeJob ? activeJob.kind : "queue open",
           ])}</div>
         </div>
-        <div class="directive-support-row">
+        <div class="directive-support-row ${isMobile ? "directive-support-row-mobile" : ""}">
           <div class="chip-row compact-chip-row">${tagList([
             activeJob ? `${activeJob.label} ${activeJob.hoursRemaining}h` : "queue open",
             `meal ${upkeep.mealHoursLeft}h`,
             `water ${upkeep.waterHoursLeft}h`,
             forecast.siege ? "siege risk" : "watch line",
           ])}</div>
-          <div class="action-row action-row-wrap ops-directive-actions">${mainActions.join("")}</div>
+          <div class="action-row action-row-wrap ops-directive-actions ${isMobile ? "mobile-ops-actions" : ""}">${mainActions.join("")}</div>
         </div>
       </div>
     `,
@@ -10850,6 +11217,19 @@ function renderOpsBoard(state, derived) {
       ${renderMiniLog(state, 5)}
     `,
   });
+
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-ops">
+        <div class="mobile-ops-priority">
+          ${directive}
+          ${watch}
+        </div>
+        ${sourcesCard}
+        ${logCard}
+      </div>
+    `;
+  }
 
   return `
     <div class="ops-screen">
@@ -11049,7 +11429,24 @@ function renderWorkshopQueue(state) {
   });
 }
 
-function renderWorkshopTab(state) {
+function renderMobileWorkshopSection(state, title, upgrades) {
+  return `
+    <details class="mobile-workshop-section" ${upgrades.length ? "open" : ""}>
+      <summary class="mobile-workshop-summary">
+        <div>
+          <span class="note-label">Plans</span>
+          <strong>${title}</strong>
+        </div>
+        <span class="tag">${upgrades.length}</span>
+      </summary>
+      ${upgrades.length
+        ? `<div class="blueprint-grid mobile-blueprint-grid">${upgrades.map((upgrade) => renderBlueprintCard(state, upgrade)).join("")}</div>`
+        : `<p class="empty-state">No ${title.toLowerCase()} ready on the board yet.</p>`}
+    </details>
+  `;
+}
+
+function renderWorkshopTab(state, _derived, isMobile = false) {
   const visible = getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id));
   const sections = {
     "Base Builds": [],
@@ -11061,6 +11458,17 @@ function renderWorkshopTab(state) {
   visible.forEach((upgrade) => {
     sections[upgradeSection(upgrade)].push(upgrade);
   });
+
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-workshop mobile-workshop-screen">
+        ${renderWorkshopQueue(state)}
+        <div class="mobile-workshop-stack">
+          ${Object.entries(sections).map(([title, upgrades]) => renderMobileWorkshopSection(state, title, upgrades)).join("")}
+        </div>
+      </div>
+    `;
+  }
 
   return `
     <div class="workshop-screen">
@@ -11218,7 +11626,15 @@ function renderRoutesTab(state, _derived, isMobile = false) {
   });
 
   if (isMobile) {
-    return `<div class="tab-mobile-flow tab-mobile-flow-routes">${previewCard}${controlsCard}${zonesCard}</div>`;
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-routes mobile-routes-screen">
+        <div class="mobile-routes-priority">
+          ${previewCard}
+          ${controlsCard}
+        </div>
+        ${zonesCard}
+      </div>
+    `;
   }
 
   return `
@@ -11232,8 +11648,8 @@ function renderRoutesTab(state, _derived, isMobile = false) {
   `;
 }
 
-function renderOpsTab(state, derived) {
-  return renderOpsBoard(state, derived);
+function renderOpsTab(state, derived, isMobile = false) {
+  return renderOpsBoard(state, derived, isMobile);
 }
 
 function renderBaseTab(state, derived, isMobile = false) {
@@ -11663,6 +12079,15 @@ async function submitLeaderboardScore(state) {
 // render/tabs-secondary.js
 const PATCH_NOTES = [
   {
+    version: "v6.2",
+    title: "Mobile Surface Overhaul",
+    points: [
+      "Phone screens now use dedicated layouts for Ops, Survivor, Workshop, Base, and Routes.",
+      "The mobile shell was compressed into a denser command band with a stronger survival strip and improved bottom sheets.",
+      "Survivor, workshop plans, and route controls now use mobile-first stacks instead of collapsed desktop columns.",
+    ],
+  },
+  {
     version: "v6.0",
     title: "Visual Identity Overhaul",
     points: [
@@ -11820,6 +12245,23 @@ function paperDollMarkup(state, groups) {
 }
 
 function inventorySection(title, entries, state, isMobile = false) {
+  if (isMobile) {
+    return `
+      <details class="inventory-section mobile-inventory-section" ${entries.length ? "open" : ""}>
+        <summary class="inventory-section-head mobile-inventory-summary">
+          <h4>${title}</h4>
+          <span class="tag">${entries.length}</span>
+        </summary>
+        ${entries.length
+          ? `<div class="inventory-card-grid">${entries.map(([itemId, amount]) => renderInventoryItemCard(itemId, amount, {
+            showAction: true,
+            enableDrag: false,
+            equipped: state.equipped.weapon === itemId || state.equipped.armor === itemId || state.equipped.backpack === itemId,
+          })).join("")}</div>`
+          : `<p class="empty-state">No ${title.toLowerCase()} packed.</p>`}
+      </details>
+    `;
+  }
   return `
     <div class="inventory-section">
       <div class="surface-head inventory-section-head">
@@ -11906,7 +12348,18 @@ function renderSurvivorTab(state, derived, isMobile = false) {
   `;
 
   return isMobile
-    ? `<div class="tab-mobile-flow tab-mobile-flow-survivor">${layout}</div>`
+    ? `
+      <div class="tab-mobile-flow tab-mobile-flow-survivor mobile-survivor-screen">
+        <div class="mobile-survivor-hero">
+          ${mannequinCard}
+          ${statsCard}
+        </div>
+        <div class="mobile-survivor-lockers">
+          ${gearLocker}
+          ${suppliesLocker}
+        </div>
+      </div>
+    `
     : `<div class="survivor-screen">${layout}</div>`;
 }
 

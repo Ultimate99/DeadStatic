@@ -6961,17 +6961,31 @@ function renderMobileSurvivalStrip(state, derived) {
   if (!mobileStrip) {
     return;
   }
+  const activeJob = getActiveWorkJob(state);
+  const forecast = getNightForecast(state);
+  const upkeep = getShelterUpkeep(state);
   const percent = Math.max(0, Math.min(100, Math.round((state.condition / derived.maxCondition) * 100)));
   const resourceIds = sortedDiscoveredResources(state);
   const topResources = resourceIds.slice(0, 4);
   const overflowCount = Math.max(0, resourceIds.length - topResources.length);
   mobileStrip.innerHTML = `
     <div class="mobile-survival-head">
-      <span class="mobile-condition-label">Condition</span>
-      <strong>${state.condition}/${derived.maxCondition}</strong>
+      <div>
+        <span class="mobile-condition-label">Condition</span>
+        <strong>${state.condition}/${derived.maxCondition}</strong>
+      </div>
+      <div class="mobile-pressure-row">
+        <span class="mobile-pressure-chip">${activeJob ? `${activeJob.hoursRemaining}h queue` : "queue open"}</span>
+        <span class="mobile-pressure-chip">${forecast.siege ? "siege" : forecast.breachChance >= 0.34 ? "hard night" : "watch line"}</span>
+      </div>
     </div>
     <div class="mobile-condition-meter">
       <div class="meter-fill ${conditionClass(percent)}" style="width:${percent}%"></div>
+    </div>
+    <div class="mobile-pressure-row mobile-pressure-row-secondary">
+      <span class="mobile-pressure-chip">meal ${upkeep.mealHoursLeft}h</span>
+      <span class="mobile-pressure-chip">water ${upkeep.waterHoursLeft}h</span>
+      <span class="mobile-pressure-chip">threat ${state.shelter.threat.toFixed(1)}</span>
     </div>
     <div class="mobile-resource-row">
       ${topResources.map((resourceId) => resourcePillMarkup(state, resourceId, true)).join("")}
@@ -7074,7 +7088,10 @@ function renderMobileSheets(state, tabs) {
           ${secondaryTabs.map((tab) => `
             <button type="button" class="mobile-more-button ${state.ui.activeTab === tab.id ? "is-active" : ""}" data-action="set-tab" data-tab="${tab.id}">
               <span class="mobile-nav-icon">${navSprite(tab.icon || "generic")}</span>
-              <span>${tab.label}</span>
+              <span class="mobile-more-copy">
+                <strong>${tab.label}</strong>
+                <small>${tab.hint || "section"}</small>
+              </span>
             </button>
           `).join("")}
         </div>
@@ -8198,15 +8215,17 @@ function renderBaseScreen(state, derived, isMobile = false) {
   if (isMobile) {
     const mapMode = state.ui.mobileShelterMode === "map";
     return `
-      <div class="tab-mobile-flow tab-mobile-flow-base">
+      <div class="tab-mobile-flow tab-mobile-flow-base mobile-base-screen">
         <div class="mobile-segmented-control">
           <button type="button" class="${!mapMode ? "is-active" : ""}" data-action="set-mobile-shelter-mode" data-mode="ops">Ops</button>
           <button type="button" class="${mapMode ? "is-active" : ""}" data-action="set-mobile-shelter-mode" data-mode="map">Grid</button>
         </div>
         ${renderSystemsStrip(state, derived)}
-        ${mapMode ? boardCard : renderOpsSummary(state, derived)}
-        ${mapMode ? inspectorCard : rackCard}
-        ${mapMode ? rackCard : blueprintCard}
+        <div class="mobile-base-mode-panel ${mapMode ? "is-map" : "is-ops"}">
+          ${mapMode ? boardCard : renderOpsSummary(state, derived)}
+          ${mapMode ? inspectorCard : rackCard}
+          ${mapMode ? rackCard : blueprintCard}
+        </div>
       </div>
     `;
   }
@@ -8343,7 +8362,7 @@ function watchThreatTone(forecast) {
   return "good";
 }
 
-function renderOpsBoard(state, derived) {
+function renderOpsBoard(state, derived, isMobile = false) {
   const sources = getAvailableScavengeSources(state);
   const activeJob = getActiveWorkJob(state);
   const forecast = getNightForecast(state);
@@ -8385,7 +8404,7 @@ function renderOpsBoard(state, derived) {
     meta: activeJob ? activeJob.kind : "ops",
     className: "ops-directive-card",
     body: `
-      <div class="directive-compact">
+      <div class="directive-compact ${isMobile ? "directive-compact-mobile" : ""}">
         <div class="directive-stack">
           <p class="directive-line">${directiveText(state)}</p>
           <div class="chip-row compact-chip-row">${tagList([
@@ -8394,14 +8413,14 @@ function renderOpsBoard(state, derived) {
             activeJob ? activeJob.kind : "queue open",
           ])}</div>
         </div>
-        <div class="directive-support-row">
+        <div class="directive-support-row ${isMobile ? "directive-support-row-mobile" : ""}">
           <div class="chip-row compact-chip-row">${tagList([
             activeJob ? `${activeJob.label} ${activeJob.hoursRemaining}h` : "queue open",
             `meal ${upkeep.mealHoursLeft}h`,
             `water ${upkeep.waterHoursLeft}h`,
             forecast.siege ? "siege risk" : "watch line",
           ])}</div>
-          <div class="action-row action-row-wrap ops-directive-actions">${mainActions.join("")}</div>
+          <div class="action-row action-row-wrap ops-directive-actions ${isMobile ? "mobile-ops-actions" : ""}">${mainActions.join("")}</div>
         </div>
       </div>
     `,
@@ -8475,6 +8494,19 @@ function renderOpsBoard(state, derived) {
       ${renderMiniLog(state, 5)}
     `,
   });
+
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-ops">
+        <div class="mobile-ops-priority">
+          ${directive}
+          ${watch}
+        </div>
+        ${sourcesCard}
+        ${logCard}
+      </div>
+    `;
+  }
 
   return `
     <div class="ops-screen">
@@ -8674,7 +8706,24 @@ function renderWorkshopQueue(state) {
   });
 }
 
-function renderWorkshopTab(state) {
+function renderMobileWorkshopSection(state, title, upgrades) {
+  return `
+    <details class="mobile-workshop-section" ${upgrades.length ? "open" : ""}>
+      <summary class="mobile-workshop-summary">
+        <div>
+          <span class="note-label">Plans</span>
+          <strong>${title}</strong>
+        </div>
+        <span class="tag">${upgrades.length}</span>
+      </summary>
+      ${upgrades.length
+        ? `<div class="blueprint-grid mobile-blueprint-grid">${upgrades.map((upgrade) => renderBlueprintCard(state, upgrade)).join("")}</div>`
+        : `<p class="empty-state">No ${title.toLowerCase()} ready on the board yet.</p>`}
+    </details>
+  `;
+}
+
+function renderWorkshopTab(state, _derived, isMobile = false) {
   const visible = getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id));
   const sections = {
     "Base Builds": [],
@@ -8686,6 +8735,17 @@ function renderWorkshopTab(state) {
   visible.forEach((upgrade) => {
     sections[upgradeSection(upgrade)].push(upgrade);
   });
+
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-workshop mobile-workshop-screen">
+        ${renderWorkshopQueue(state)}
+        <div class="mobile-workshop-stack">
+          ${Object.entries(sections).map(([title, upgrades]) => renderMobileWorkshopSection(state, title, upgrades)).join("")}
+        </div>
+      </div>
+    `;
+  }
 
   return `
     <div class="workshop-screen">
@@ -8843,7 +8903,15 @@ function renderRoutesTab(state, _derived, isMobile = false) {
   });
 
   if (isMobile) {
-    return `<div class="tab-mobile-flow tab-mobile-flow-routes">${previewCard}${controlsCard}${zonesCard}</div>`;
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-routes mobile-routes-screen">
+        <div class="mobile-routes-priority">
+          ${previewCard}
+          ${controlsCard}
+        </div>
+        ${zonesCard}
+      </div>
+    `;
   }
 
   return `
@@ -8857,8 +8925,8 @@ function renderRoutesTab(state, _derived, isMobile = false) {
   `;
 }
 
-function renderOpsTab(state, derived) {
-  return renderOpsBoard(state, derived);
+function renderOpsTab(state, derived, isMobile = false) {
+  return renderOpsBoard(state, derived, isMobile);
 }
 
 function renderBaseTab(state, derived, isMobile = false) {
@@ -9288,6 +9356,15 @@ async function submitLeaderboardScore(state) {
 // render/tabs-secondary.js
 const PATCH_NOTES = [
   {
+    version: "v6.2",
+    title: "Mobile Surface Overhaul",
+    points: [
+      "Phone screens now use dedicated layouts for Ops, Survivor, Workshop, Base, and Routes.",
+      "The mobile shell was compressed into a denser command band with a stronger survival strip and improved bottom sheets.",
+      "Survivor, workshop plans, and route controls now use mobile-first stacks instead of collapsed desktop columns.",
+    ],
+  },
+  {
     version: "v6.0",
     title: "Visual Identity Overhaul",
     points: [
@@ -9445,6 +9522,23 @@ function paperDollMarkup(state, groups) {
 }
 
 function inventorySection(title, entries, state, isMobile = false) {
+  if (isMobile) {
+    return `
+      <details class="inventory-section mobile-inventory-section" ${entries.length ? "open" : ""}>
+        <summary class="inventory-section-head mobile-inventory-summary">
+          <h4>${title}</h4>
+          <span class="tag">${entries.length}</span>
+        </summary>
+        ${entries.length
+          ? `<div class="inventory-card-grid">${entries.map(([itemId, amount]) => renderInventoryItemCard(itemId, amount, {
+            showAction: true,
+            enableDrag: false,
+            equipped: state.equipped.weapon === itemId || state.equipped.armor === itemId || state.equipped.backpack === itemId,
+          })).join("")}</div>`
+          : `<p class="empty-state">No ${title.toLowerCase()} packed.</p>`}
+      </details>
+    `;
+  }
   return `
     <div class="inventory-section">
       <div class="surface-head inventory-section-head">
@@ -9531,7 +9625,18 @@ function renderSurvivorTab(state, derived, isMobile = false) {
   `;
 
   return isMobile
-    ? `<div class="tab-mobile-flow tab-mobile-flow-survivor">${layout}</div>`
+    ? `
+      <div class="tab-mobile-flow tab-mobile-flow-survivor mobile-survivor-screen">
+        <div class="mobile-survivor-hero">
+          ${mannequinCard}
+          ${statsCard}
+        </div>
+        <div class="mobile-survivor-lockers">
+          ${gearLocker}
+          ${suppliesLocker}
+        </div>
+      </div>
+    `
     : `<div class="survivor-screen">${layout}</div>`;
 }
 

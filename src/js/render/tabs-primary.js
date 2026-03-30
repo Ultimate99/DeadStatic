@@ -140,7 +140,7 @@ function watchThreatTone(forecast) {
   return "good";
 }
 
-function renderOpsBoard(state, derived) {
+function renderOpsBoard(state, derived, isMobile = false) {
   const sources = getAvailableScavengeSources(state);
   const activeJob = getActiveWorkJob(state);
   const forecast = getNightForecast(state);
@@ -182,7 +182,7 @@ function renderOpsBoard(state, derived) {
     meta: activeJob ? activeJob.kind : "ops",
     className: "ops-directive-card",
     body: `
-      <div class="directive-compact">
+      <div class="directive-compact ${isMobile ? "directive-compact-mobile" : ""}">
         <div class="directive-stack">
           <p class="directive-line">${directiveText(state)}</p>
           <div class="chip-row compact-chip-row">${tagList([
@@ -191,14 +191,14 @@ function renderOpsBoard(state, derived) {
             activeJob ? activeJob.kind : "queue open",
           ])}</div>
         </div>
-        <div class="directive-support-row">
+        <div class="directive-support-row ${isMobile ? "directive-support-row-mobile" : ""}">
           <div class="chip-row compact-chip-row">${tagList([
             activeJob ? `${activeJob.label} ${activeJob.hoursRemaining}h` : "queue open",
             `meal ${upkeep.mealHoursLeft}h`,
             `water ${upkeep.waterHoursLeft}h`,
             forecast.siege ? "siege risk" : "watch line",
           ])}</div>
-          <div class="action-row action-row-wrap ops-directive-actions">${mainActions.join("")}</div>
+          <div class="action-row action-row-wrap ops-directive-actions ${isMobile ? "mobile-ops-actions" : ""}">${mainActions.join("")}</div>
         </div>
       </div>
     `,
@@ -272,6 +272,19 @@ function renderOpsBoard(state, derived) {
       ${renderMiniLog(state, 5)}
     `,
   });
+
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-ops">
+        <div class="mobile-ops-priority">
+          ${directive}
+          ${watch}
+        </div>
+        ${sourcesCard}
+        ${logCard}
+      </div>
+    `;
+  }
 
   return `
     <div class="ops-screen">
@@ -471,7 +484,24 @@ function renderWorkshopQueue(state) {
   });
 }
 
-export function renderWorkshopTab(state) {
+function renderMobileWorkshopSection(state, title, upgrades) {
+  return `
+    <details class="mobile-workshop-section" ${upgrades.length ? "open" : ""}>
+      <summary class="mobile-workshop-summary">
+        <div>
+          <span class="note-label">Plans</span>
+          <strong>${title}</strong>
+        </div>
+        <span class="tag">${upgrades.length}</span>
+      </summary>
+      ${upgrades.length
+        ? `<div class="blueprint-grid mobile-blueprint-grid">${upgrades.map((upgrade) => renderBlueprintCard(state, upgrade)).join("")}</div>`
+        : `<p class="empty-state">No ${title.toLowerCase()} ready on the board yet.</p>`}
+    </details>
+  `;
+}
+
+export function renderWorkshopTab(state, _derived, isMobile = false) {
   const visible = getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id));
   const sections = {
     "Base Builds": [],
@@ -483,6 +513,17 @@ export function renderWorkshopTab(state) {
   visible.forEach((upgrade) => {
     sections[upgradeSection(upgrade)].push(upgrade);
   });
+
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-workshop mobile-workshop-screen">
+        ${renderWorkshopQueue(state)}
+        <div class="mobile-workshop-stack">
+          ${Object.entries(sections).map(([title, upgrades]) => renderMobileWorkshopSection(state, title, upgrades)).join("")}
+        </div>
+      </div>
+    `;
+  }
 
   return `
     <div class="workshop-screen">
@@ -640,7 +681,15 @@ export function renderRoutesTab(state, _derived, isMobile = false) {
   });
 
   if (isMobile) {
-    return `<div class="tab-mobile-flow tab-mobile-flow-routes">${previewCard}${controlsCard}${zonesCard}</div>`;
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-routes mobile-routes-screen">
+        <div class="mobile-routes-priority">
+          ${previewCard}
+          ${controlsCard}
+        </div>
+        ${zonesCard}
+      </div>
+    `;
   }
 
   return `
@@ -654,8 +703,8 @@ export function renderRoutesTab(state, _derived, isMobile = false) {
   `;
 }
 
-export function renderOpsTab(state, derived) {
-  return renderOpsBoard(state, derived);
+export function renderOpsTab(state, derived, isMobile = false) {
+  return renderOpsBoard(state, derived, isMobile);
 }
 
 export function renderBaseTab(state, derived, isMobile = false) {
