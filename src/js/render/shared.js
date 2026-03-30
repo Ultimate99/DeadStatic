@@ -14,11 +14,13 @@ import {
   canAfford,
   formatCost,
   formatMaterials,
+  getActiveWorkJob,
   getExpeditionPreview,
   getNightForecast,
   getShelterSystems,
   getShelterUpkeep,
   getVisibleUpgrades,
+  hasRequiredTools,
   hasMaterials,
   hasItem,
 } from "../engine.js";
@@ -141,6 +143,10 @@ function renderResourceChange(resourceId, amount) {
 function itemSummaryChips(item) {
   const chips = [item.type];
 
+  if (item.tier) {
+    chips.push(`tier ${item.tier}`);
+  }
+
   if (item.attack) {
     chips.push(`atk ${item.attack}`);
   }
@@ -167,7 +173,10 @@ function itemSummaryChips(item) {
 
   const toolChips = {
     pry_bar: ["sealed caches", "parts salvage"],
+    hammer: ["structural builds", "blunt assembly"],
+    sewing_kit: ["packs", "cloth repair"],
     salvage_hatchet: ["wood salvage", "shelter work"],
+    sharpening_stone: ["blade prep", "spear prep"],
     carpenter_kit: ["repairs +1", "maintenance +1"],
     hand_drill: ["repairs +1", "parts salvage"],
     signal_meter: ["signal trace", "anomaly trace"],
@@ -186,6 +195,9 @@ function itemSummaryChips(item) {
 
 function itemTooltipText(item, amount) {
   const lines = [`${item.name} x${amount}`, `Type: ${item.type}`];
+  if (item.tier) {
+    lines.push(`Tier: ${item.tier}`);
+  }
   const summary = itemSummaryChips(item).filter((chip) => chip !== item.type);
 
   if (summary.length) {
@@ -212,7 +224,7 @@ function itemPrimaryLine(item) {
     return `COND +${item.condition}`;
   }
   if (item.type === "tool") {
-    return "TOOL";
+    return `${(item.toolRole || "tool").replace(/_/g, " ").toUpperCase()} TOOL`;
   }
   if (item.type === "key") {
     return "KEY ITEM";
@@ -700,10 +712,18 @@ export function lootBandMarkup(state, sourceId = null) {
 }
 
 function readyUpgradeCandidate(state, upgrades) {
-  return upgrades.find((upgrade) => canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials)) || null;
+  if (getActiveWorkJob(state)) {
+    return null;
+  }
+  return upgrades.find((upgrade) => (
+    canAfford(state, upgrade.cost)
+    && hasMaterials(state, upgrade.materials)
+    && hasRequiredTools(state, upgrade.requiredTools)
+  )) || null;
 }
 
 function currentDirective(state, upgrades) {
+  const activeJob = getActiveWorkJob(state);
   const readyUpgrade = readyUpgradeCandidate(state, upgrades);
   const upkeep = getShelterUpkeep(state);
   const systems = getShelterSystems(state);
@@ -718,6 +738,12 @@ function currentDirective(state, upgrades) {
     return {
       title: "Combat contact",
       detail: "Resolve the current encounter before you push any other operation.",
+    };
+  }
+  if (activeJob) {
+    return {
+      title: `Finish ${activeJob.label}`,
+      detail: `${activeJob.kind === "build" ? "Base work" : "Fieldcraft"} is running. Let time pass and keep the shelter steady until ${activeJob.completesAt}.`,
     };
   }
   if (lowFood) {
@@ -861,7 +887,10 @@ export function getTutorialStep(state) {
   }
 
   if (state.unlockedSections.includes("upgrades") && !state.upgrades.includes("shelter_stash")) {
-    const stashReady = canAfford(state, UPGRADES_BY_ID.shelter_stash.cost) && hasMaterials(state, UPGRADES_BY_ID.shelter_stash.materials);
+    const stashReady = !getActiveWorkJob(state)
+      && canAfford(state, UPGRADES_BY_ID.shelter_stash.cost)
+      && hasMaterials(state, UPGRADES_BY_ID.shelter_stash.materials)
+      && hasRequiredTools(state, UPGRADES_BY_ID.shelter_stash.requiredTools);
     return {
       id: "stash",
       title: "Build Shelter Stash first",
@@ -870,7 +899,7 @@ export function getTutorialStep(state) {
       tabs: ["overview", "craft"],
       action: state.ui.activeTab === "craft" && stashReady
         ? {
-            action: "buy-upgrade",
+            action: "start-work-job",
             label: "Build Shelter Stash",
             meta: "first shelter upgrade",
             data: { upgrade: "shelter_stash" },
@@ -887,7 +916,10 @@ export function getTutorialStep(state) {
   }
 
   if (state.upgrades.includes("shelter_stash") && !state.upgrades.includes("food_search")) {
-    const foodReady = canAfford(state, UPGRADES_BY_ID.food_search.cost) && hasMaterials(state, UPGRADES_BY_ID.food_search.materials);
+    const foodReady = !getActiveWorkJob(state)
+      && canAfford(state, UPGRADES_BY_ID.food_search.cost)
+      && hasMaterials(state, UPGRADES_BY_ID.food_search.materials)
+      && hasRequiredTools(state, UPGRADES_BY_ID.food_search.requiredTools);
     return {
       id: "food_loop",
       title: "Secure food next",
@@ -896,7 +928,7 @@ export function getTutorialStep(state) {
       tabs: ["overview", "craft"],
       action: state.ui.activeTab === "craft" && foodReady
         ? {
-            action: "buy-upgrade",
+            action: "start-work-job",
             label: "Build Simple Food Search",
             meta: "unlock provisions",
             data: { upgrade: "food_search" },
@@ -1036,7 +1068,7 @@ export function renderCommandDesk(state, derived, availableSources, availableUpg
     }
     if (readyUpgrade) {
       return actionButton({
-        action: "buy-upgrade",
+        action: "start-work-job",
         label: `${readyUpgrade.verb || "Build"} ${readyUpgrade.name}`,
         meta: "priority build",
         data: { upgrade: readyUpgrade.id },

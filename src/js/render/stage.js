@@ -1,9 +1,11 @@
 import {
   canAfford,
+  getActiveWorkJob,
   getAvailableScavengeSources,
   getExpeditionPreview,
   getStructureDamage,
   getVisibleUpgrades,
+  hasRequiredTools,
   hasMaterials,
 } from "../engine.js";
 import {
@@ -18,7 +20,10 @@ import { getLeaderboardSnapshot, getLeaderboardState } from "../services/leaderb
 
 function tabStageMeta(state, derived) {
   const visibleUpgrades = getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id));
-  const readyUpgrades = visibleUpgrades.filter((upgrade) => canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials));
+  const activeJob = getActiveWorkJob(state);
+  const readyUpgrades = activeJob
+    ? []
+    : visibleUpgrades.filter((upgrade) => canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials) && hasRequiredTools(state, upgrade.requiredTools));
   const preview = state.expedition.selectedZone
     ? getExpeditionPreview(state, state.expedition.selectedZone, state.expedition.approach)
     : null;
@@ -35,20 +40,22 @@ function tabStageMeta(state, derived) {
         stats: [
           ["Attack", derived.attack],
           ["Defense", derived.defense],
-          ["Condition", state.resources.condition],
+          ["Condition", state.condition],
           ["Ammo", state.resources.ammo],
         ],
       };
     case "craft":
       return {
         label: "Build queue",
-        title: "Convert salvage into systems",
-        detail: "Ready systems first. Blocked ones define the next hunt.",
+        title: activeJob ? `Finish ${activeJob.label}` : "Convert salvage into systems",
+        detail: activeJob
+          ? `One shared work slot is active until ${activeJob.completesAt}. Let time pass and keep the shelter stable.`
+          : "Ready systems first. Blocked ones define the next hunt.",
         stats: [
           ["Ready", readyUpgrades.length],
           ["Blocked", Math.max(0, visibleUpgrades.length - readyUpgrades.length)],
           ["Built", state.upgrades.length],
-          ["Lanes", getAvailableScavengeSources(state).length],
+          ["Queue", activeJob ? `${activeJob.hoursRemaining}h` : "idle"],
         ],
       };
     case "inventory":

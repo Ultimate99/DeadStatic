@@ -40,6 +40,17 @@ function accordionSection(title, meta, body, open = false) {
 
 const PATCH_NOTES = [
   {
+    version: "v5.2",
+    title: "Building / Crafting Overhaul",
+    points: [
+      "Builds and crafts now run through one timed work queue.",
+      "Advanced shelter jobs require the right tools strictly.",
+      "Hammer, Sewing Kit, and Sharpening Stone join the permanent tool ladder.",
+      "Craft is split into Base Builds, Tools, Weapons, Armor, and Consumables.",
+      "Player loadout now surfaces baseline gear and a more deliberate tool belt.",
+    ],
+  },
+  {
     version: "v5.1",
     title: "Base Pressure Overhaul",
     points: [
@@ -180,21 +191,60 @@ function playerGearRows(state) {
   };
 }
 
+function groupedToolMarkup(state) {
+  const roleDefs = [
+    { id: "salvage", label: "Salvage" },
+    { id: "build", label: "Build" },
+    { id: "clothwork", label: "Clothwork" },
+    { id: "edgework", label: "Edgework" },
+    { id: "repair", label: "Repair" },
+    { id: "signal", label: "Signal" },
+  ];
+
+  const toolEntries = Object.entries(state.inventory)
+    .filter(([itemId, amount]) => amount > 0 && ITEMS[itemId]?.type === "tool");
+
+  const groups = roleDefs.map((role) => {
+    const tools = toolEntries
+      .filter(([itemId]) => ITEMS[itemId]?.toolRole === role.id)
+      .map(([itemId, amount]) => renderInventoryItemCard(itemId, amount));
+    return { ...role, tools };
+  }).filter((group) => group.tools.length);
+
+  if (!groups.length) {
+    return `<p class="empty-state">No field tools packed yet.</p>`;
+  }
+
+  return `
+    <div class="detail-list">
+      ${groups.map((group) => `
+        <div class="list-block compact-block">
+          <div class="surface-head">
+            <h4>${group.label}</h4>
+            <span class="tag">${group.tools.length}</span>
+          </div>
+          <div class="inventory-card-grid">${group.tools.join("")}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
 export function renderPlayerTab(state, derived, isMobile = false) {
   const upkeep = getShelterUpkeep(state);
   const gear = playerGearRows(state);
-  const weaponName = state.equipped.weapon ? ITEMS[state.equipped.weapon]?.name : "Bare hands";
-  const armorName = state.equipped.armor ? ITEMS[state.equipped.armor]?.name : "Street clothes";
+  const weaponName = state.equipped.weapon ? ITEMS[state.equipped.weapon]?.name : "Bare Hands";
+  const armorName = state.equipped.armor ? ITEMS[state.equipped.armor]?.name : "Street Clothes";
   const stressedCount = state.survivors.roster.filter((survivor) => survivor.stress >= 4).length;
   const woundedCount = state.survivors.roster.filter((survivor) => survivor.wounded > 0).length;
   const statusCards = `
     <div class="fact-grid">
       <div class="fact"><span>Attack</span><strong>${derived.attack}</strong></div>
       <div class="fact"><span>Defense</span><strong>${derived.defense}</strong></div>
-      <div class="fact"><span>Condition</span><strong>${state.resources.condition}</strong></div>
+      <div class="fact"><span>Condition</span><strong>${state.condition}</strong></div>
       <div class="fact"><span>Ammo</span><strong>${state.resources.ammo}</strong></div>
-      <div class="fact"><span>Meal due</span><strong>${upkeep.foodDueInHours}h</strong></div>
-      <div class="fact"><span>Water due</span><strong>${upkeep.waterDueInHours}h</strong></div>
+      <div class="fact"><span>Meal due</span><strong>${upkeep.mealHoursLeft}h</strong></div>
+      <div class="fact"><span>Water due</span><strong>${upkeep.waterHoursLeft}h</strong></div>
       <div class="fact"><span>Crew stress</span><strong>${stressedCount}</strong></div>
       <div class="fact"><span>Crew wounds</span><strong>${woundedCount}</strong></div>
     </div>
@@ -222,9 +272,7 @@ export function renderPlayerTab(state, derived, isMobile = false) {
     title: "Tool belt",
     meta: `${gear.tools.length} tools`,
     className,
-    body: gear.tools.length
-      ? `<div class="inventory-card-grid">${gear.tools.join("")}</div>`
-      : `<p class="empty-state">No field tools packed yet.</p>`,
+    body: groupedToolMarkup(state),
   });
   const gearCard = (className = "") => surfaceCard({
     title: "Equipment locker",

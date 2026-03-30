@@ -9,6 +9,7 @@ function actionToken(action, label) {
   const tokens = {
     "search-rubble": "search",
     "search-source": "scavenge",
+    "start-work-job": "build",
     "buy-upgrade": "build",
     "burn-warmth": "warmth",
     "forage-food": "food",

@@ -3,7 +3,6 @@ import {
   attackCombat,
   burnForWarmth,
   buyTraderOffer,
-  buyUpgrade,
   chooseFaction,
   craftAmmo,
   drinkWater,
@@ -21,6 +20,7 @@ import {
   scanRadio,
   scavengeZone,
   searchRubble,
+  startWorkJob,
   setExpeditionApproach,
   setNightPlan,
   useBestMedicalItem,
@@ -64,7 +64,8 @@ export function createActionDispatcher({
       forageFood(state);
       return actionResult(true);
     },
-    "buy-upgrade": ({ state, button }) => actionResult(buyUpgrade(state, button.dataset.upgrade)),
+    "start-work-job": ({ state, button }) => actionResult(startWorkJob(state, button.dataset.upgrade)),
+    "buy-upgrade": ({ state, button }) => actionResult(startWorkJob(state, button.dataset.upgrade)),
     "inspect-structure": ({ state, button }) => {
       if (state.ui.inspectedStructure === button.dataset.structure) {
         return actionResult(false);

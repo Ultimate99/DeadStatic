@@ -11,9 +11,9 @@ import {
   attackCombat,
   advanceTime,
   braceCombat,
-  buyUpgrade,
   chooseFaction,
   evaluateProgression,
+  getActiveWorkJob,
   getAvailableScavengeSources,
   getAvailableTraderChannels,
   getDerivedState,
@@ -28,6 +28,7 @@ import {
   runScavengeSource,
   scanRadio,
   searchRubble,
+  startWorkJob,
   setExpeditionApproach,
   setExpeditionObjective,
   setNightPlan,
@@ -209,18 +210,85 @@ run("search rubble yields tiered loot and discoveries", () => {
   assert.equal(state.stats.scavengeSources.rubble, 3);
 });
 
-run("backpack respects cloth requirement before it can be built", () => {
+run("timed work queue gates backpack behind Sewing Kit and completes over time", () => {
   const state = createInitialState();
   state.stats.searches = 3;
-  state.resources.scrap = 7;
+  state.resources.scrap = 18;
+  state.resources.cloth = 8;
+  state.resources.wire = 1;
 
   evaluateProgression(state);
-  assert.equal(buyUpgrade(state, "backpack"), false);
+  assert.equal(startWorkJob(state, "backpack"), false);
 
-  state.resources.scrap = 8;
-  state.resources.cloth = 3;
-  assert.equal(buyUpgrade(state, "backpack"), true);
+  assert.equal(startWorkJob(state, "sewing_kit"), true);
+  assert.ok(getActiveWorkJob(state));
+  assert.ok(!state.upgrades.includes("sewing_kit"));
+  assert.equal(state.inventory.sewing_kit || 0, 0);
+
+  advanceTime(state, 3);
+  assert.ok(state.upgrades.includes("sewing_kit"));
+  assert.equal(state.inventory.sewing_kit, 1);
+  assert.equal(getActiveWorkJob(state), null);
+
+  state.resources.scrap += 4;
+  assert.equal(startWorkJob(state, "backpack"), true);
+  assert.ok(!state.upgrades.includes("backpack"));
+  advanceTime(state, 1);
   assert.ok(state.upgrades.includes("backpack"));
+});
+
+run("one shared work slot blocks a second job until the first one completes", () => {
+  const state = createInitialState();
+  state.stats.searches = 4;
+  state.resources.scrap = 28;
+  state.resources.cloth = 5;
+  state.resources.wood = 4;
+  state.resources.parts = 8;
+  state.resources.wire = 1;
+
+  evaluateProgression(state);
+  assert.equal(startWorkJob(state, "hammer_tool"), true);
+  assert.equal(startWorkJob(state, "sewing_kit"), false);
+  assert.equal(getActiveWorkJob(state)?.recipeId, "hammer_tool");
+
+  advanceTime(state, 3);
+  assert.equal(getActiveWorkJob(state), null);
+  assert.ok(state.upgrades.includes("hammer_tool"));
+  assert.equal(startWorkJob(state, "sewing_kit"), true);
+});
+
+run("advanced builds fail cleanly without the required tool", () => {
+  const state = createInitialState();
+  state.stats.searches = 5;
+  state.upgrades = ["small_scavenge"];
+  state.resources.scrap = 50;
+  state.resources.wood = 8;
+  state.resources.parts = 10;
+  state.resources.wire = 2;
+
+  evaluateProgression(state);
+  assert.equal(startWorkJob(state, "crafting_bench"), false);
+
+  state.inventory.hammer = 1;
+  assert.equal(startWorkJob(state, "crafting_bench"), true);
+});
+
+run("starting a job spends resources upfront and grants output only on completion", () => {
+  const state = createInitialState();
+  state.stats.searches = 4;
+  state.resources.scrap = 16;
+  state.resources.cloth = 4;
+  state.resources.wire = 1;
+
+  evaluateProgression(state);
+  assert.equal(startWorkJob(state, "sewing_kit"), true);
+  assert.equal(state.resources.scrap, 8);
+  assert.equal(state.inventory.sewing_kit || 0, 0);
+  assert.ok(!state.upgrades.includes("sewing_kit"));
+
+  advanceTime(state, 3);
+  assert.ok(state.upgrades.includes("sewing_kit"));
+  assert.equal(state.inventory.sewing_kit, 1);
 });
 
 run("rarity ladder extends above rare and loot table uses higher tiers", () => {
@@ -389,6 +457,7 @@ run("save migration fills new night, expedition, and inspector defaults", () => 
     assert.equal(state.ui.mobileResourceDrawerOpen, false);
     assert.equal(state.ui.mobileShelterMode, "ops");
     assert.equal(state.ui.mobileInspectorStructure, null);
+    assert.equal(state.work.activeJob, null);
     assert.equal(state.resources.wood, 0);
     assert.deepEqual(state.shelter.damage, {});
     assert.equal(state.settings.tutorialHints, true);
@@ -790,6 +859,7 @@ run("log tab renders compact pulse rows instead of stretched tiles", () => {
   const tabMarkup = harness.elements.get("tab-content").innerHTML;
   assert.match(tabMarkup, /Event pulse/);
   assert.match(tabMarkup, /Patch notes/);
+  assert.match(tabMarkup, /v5\.2/);
   assert.match(tabMarkup, /log-pulse-stack/);
   assert.match(tabMarkup, /log-pulse-row/);
   assert.doesNotMatch(tabMarkup, /log-pulse-grid/);
@@ -946,14 +1016,15 @@ run("player tab renders loadout, field stats, and tools", () => {
   assert.match(markup, /data-tooltip=/);
 });
 
-run("craft cards stay cost-first and expose tooltip data for deeper detail", () => {
+run("craft tab renders work queue, categories, time, tool, and tier", () => {
   const bundle = readFileSync(path.join(projectRoot, "dist", "js", "game.js"), "utf8");
   const state = createInitialState();
   state.ui.activeTab = "craft";
   state.stats.searches = 5;
-  state.resources.scrap = 20;
-  state.resources.cloth = 3;
-  state.resources.parts = 4;
+  state.resources.scrap = 26;
+  state.resources.cloth = 6;
+  state.resources.parts = 8;
+  state.resources.wire = 1;
   state.inventory.sharp_metal = 1;
   state.unlockedSections = ["upgrades"];
 
@@ -961,10 +1032,20 @@ run("craft cards stay cost-first and expose tooltip data for deeper detail", () 
   vm.runInNewContext(bundle, harness.context, { filename: "game.js" });
   const markup = harness.elements.get("tab-content").innerHTML;
 
+  assert.match(markup, /Work in Progress/);
+  assert.match(markup, /Base Builds/);
+  assert.match(markup, /Tools/);
+  assert.match(markup, /Weapons/);
+  assert.match(markup, /Armor/);
+  assert.match(markup, /Consumables/);
   assert.match(markup, /Backpack/);
-  assert.match(markup, /Rusty Knife/);
+  assert.match(markup, /Sewing Kit/);
   assert.match(markup, /data-tooltip=/);
   assert.match(markup, /upgrade-costline/);
+  assert.match(markup, /time 1h/);
+  assert.match(markup, /tool Sewing Kit/);
+  assert.match(markup, /tier field/);
+  assert.match(markup, /start-work-job/);
 });
 
 run("non-defense support builds do not report fake defense bonuses", () => {

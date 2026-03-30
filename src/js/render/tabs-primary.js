@@ -14,14 +14,18 @@ import {
   NIGHT_PLANS,
   canAfford,
   formatCost,
+  formatMaterials,
   getAvailableScavengeSources,
+  getActiveWorkJob,
   getExpeditionPreview,
   getNightForecast,
   getShelterSystems,
   getShelterUpkeep,
   getVisibleUpgrades,
+  hasRequiredTools,
   hasMaterials,
   hasItem,
+  missingRequiredTools,
 } from "../engine.js";
 import {
   actionButton,
@@ -78,14 +82,47 @@ const BUILD_UPGRADE_IDS = new Set([
 ]);
 
 function upgradeDiscipline(upgrade) {
-  if (BUILD_UPGRADE_IDS.has(upgrade.id)) {
+  if (upgrade.category === "build" || BUILD_UPGRADE_IDS.has(upgrade.id)) {
     return "build";
   }
   return "craft";
 }
 
 function upgradeDisciplineLabel(upgrade) {
+  if (upgrade.category === "tool") return "tool";
+  if (upgrade.category === "weapon") return "weapon";
+  if (upgrade.category === "armor") return "armor";
+  if (upgrade.category === "consumable") return "consumable";
   return upgradeDiscipline(upgrade) === "build" ? "base build" : "fieldcraft";
+}
+
+function upgradeTierLabel(upgrade) {
+  return (upgrade.tier || "field").replace(/_/g, " ");
+}
+
+function upgradeToolLabel(upgrade) {
+  if (!upgrade.requiredTools?.length) {
+    return "none";
+  }
+  return upgrade.requiredTools.map((itemId) => ITEMS[itemId]?.name || itemId).join(" + ");
+}
+
+function upgradeResultLabel(upgrade) {
+  if (upgrade.resultLabel) {
+    return upgrade.resultLabel;
+  }
+  if (upgrade.effects?.grantItems) {
+    const [itemId] = Object.keys(upgrade.effects.grantItems);
+    return ITEMS[itemId]?.name || itemId;
+  }
+  if (upgrade.effects?.unlockZones?.length) {
+    const zone = ZONES.find((entry) => entry.id === upgrade.effects.unlockZones[0]);
+    return zone?.name || upgrade.effects.unlockZones[0];
+  }
+  if (upgrade.effects?.unlockSections?.length) {
+    return TAB_NAME_BY_SECTION[upgrade.effects.unlockSections[0]] || upgrade.effects.unlockSections[0];
+  }
+  return upgrade.name;
 }
 
 function formatPercent(value) {
@@ -160,6 +197,7 @@ const TAB_NAME_BY_SECTION = {
 
 function getUpgradeMissingNotes(state, upgrade) {
   const missing = [];
+  const activeJob = getActiveWorkJob(state);
 
   Object.entries(upgrade.cost || {}).forEach(([resourceId, amount]) => {
     const have = state.resources[resourceId] || 0;
@@ -175,23 +213,39 @@ function getUpgradeMissingNotes(state, upgrade) {
     }
   });
 
+  missingRequiredTools(state, upgrade.requiredTools || []).forEach((itemId) => {
+    missing.push(`Need ${itemLabel(itemId)}`);
+  });
+
+  if (activeJob && activeJob.recipeId !== upgrade.id) {
+    missing.push(`Work slot busy: ${activeJob.label}`);
+  }
+
   return missing;
 }
 
 function upgradeTooltipText(state, upgrade, built, ready, missing) {
   const lines = [upgrade.name];
 
-  if (upgrade.description) {
-    lines.push(upgrade.description);
-  }
+  lines.push(`Tier: ${upgradeTierLabel(upgrade)}`);
+  lines.push(`Time: ${upgrade.hours || 1}h`);
+  lines.push(`Required tool: ${upgradeToolLabel(upgrade)}`);
+  lines.push(`Result: ${upgradeResultLabel(upgrade)}`);
 
   const effectChips = upgradeEffectChips(upgrade);
   if (effectChips.length) {
     lines.push(`Effects: ${effectChips.join(" | ")}`);
   }
 
+  if (upgrade.cost && Object.keys(upgrade.cost).length) {
+    lines.push(`Cost: ${formatCost(upgrade.cost)}`);
+  }
   if (upgrade.materials && Object.keys(upgrade.materials).length) {
-    lines.push(`Needs: ${Object.entries(upgrade.materials).map(([itemId, amount]) => `${ITEMS[itemId]?.name || itemId} x${amount}`).join(" / ")}`);
+    lines.push(`Materials: ${formatMaterials(upgrade.materials)}`);
+  }
+
+  if (upgrade.description) {
+    lines.push(upgrade.description);
   }
 
   if (missing.length) {
@@ -207,6 +261,41 @@ function upgradeTooltipText(state, upgrade, built, ready, missing) {
   return lines.join(" • ");
 }
 
+function renderWorkInProgress(state) {
+  const job = getActiveWorkJob(state);
+  if (!job) {
+    return `
+      <div class="list-block compact-block">
+        <div class="surface-head">
+          <h4>Queue open</h4>
+          <span class="tag">idle</span>
+        </div>
+        <p class="note">No active build or craft job. Start one queue item, then let time pass through scavenging, routes, radio, or the night.</p>
+        <div class="chip-row">${tagList(["one shared slot", "cost paid upfront", "auto-completes"])}</div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="list-block compact-block">
+      <div class="surface-head">
+        <h4>${job.label}</h4>
+        <span class="tag">${job.kind}</span>
+      </div>
+      <div class="fact-grid">
+        <div class="fact"><span>Tier</span><strong>${(job.tier || "field").replace(/_/g, " ")}</strong></div>
+        <div class="fact"><span>Total</span><strong>${job.hoursTotal}h</strong></div>
+        <div class="fact"><span>Left</span><strong>${job.hoursRemaining}h</strong></div>
+        <div class="fact"><span>Due</span><strong>${job.completesAt}</strong></div>
+      </div>
+      <div class="chip-row">${tagList([
+        job.kind === "build" ? "base work" : "fieldcraft",
+        ...(job.requiredTools?.length ? job.requiredTools.map((itemId) => itemLabel(itemId)) : ["no tool gate"]),
+      ])}</div>
+    </div>
+  `;
+}
+
 function renderUpgradeQueue(state, title, ready, blocked, emptyText) {
   return `
     <div class="queue-column">
@@ -220,7 +309,7 @@ function renderUpgradeQueue(state, title, ready, blocked, emptyText) {
       ${blocked.length
         ? `
           <div class="queue-stack">
-            <span class="note-label">Need salvage</span>
+            <span class="note-label">Blocked</span>
             <div class="detail-list">${blocked.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>
           </div>
         `
@@ -316,13 +405,17 @@ function renderOverviewActions(state) {
 
 function renderUpgradeCard(state, upgrade) {
   const built = state.upgrades.includes(upgrade.id);
-  const ready = canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials);
+  const activeJob = getActiveWorkJob(state);
+  const ready = !activeJob && canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials) && hasRequiredTools(state, upgrade.requiredTools);
   const missing = getUpgradeMissingNotes(state, upgrade);
   const tooltip = upgradeTooltipText(state, upgrade, built, ready, missing);
   const costLine = Object.keys(upgrade.cost || {}).length ? formatCost(upgrade.cost) : "No cost";
-  const materialLine = upgrade.materials && Object.keys(upgrade.materials).length
-    ? Object.entries(upgrade.materials).map(([itemId, amount]) => `${ITEMS[itemId]?.name || itemId} x${amount}`).join(" / ")
-    : "";
+  const detailTags = [
+    `time ${upgrade.hours || 1}h`,
+    `tool ${upgradeToolLabel(upgrade)}`,
+    `result ${upgradeResultLabel(upgrade)}`,
+    `tier ${upgradeTierLabel(upgrade)}`,
+  ];
 
   return `
     <div class="list-block upgrade-card has-tooltip ${built ? "is-built-upgrade" : ready ? "is-ready-upgrade" : "is-blocked-upgrade"}"${tooltipAttrs(tooltip)}>
@@ -331,11 +424,11 @@ function renderUpgradeCard(state, upgrade) {
         <span class="tag">${built ? "built" : ready ? "ready" : "blocked"}</span>
       </div>
       <p class="upgrade-costline">${costLine}</p>
-      ${materialLine ? `<p class="upgrade-material-line">${materialLine}</p>` : ""}
+      <div class="chip-row">${tagList(detailTags)}</div>
       ${built ? "" : actionButton({
-        action: "buy-upgrade",
-        label: upgrade.verb || "Build",
-        meta: ready ? "unlock" : missing[0] || "Need salvage or tools",
+        action: "start-work-job",
+        label: `${upgrade.verb || "Start"} ${upgrade.name}`,
+        meta: ready ? `${upgrade.hours || 1}h queue` : missing[0] || "Need salvage or tools",
         disabled: !ready,
         data: { upgrade: upgrade.id },
         title: tooltip,
@@ -435,64 +528,72 @@ export function renderOverviewTab(state, derived, _isMobile = false) {
 export function renderCraftTab(state, isMobile = false) {
   const visibleUpgrades = getVisibleUpgrades(state);
   const available = visibleUpgrades.filter((upgrade) => !state.upgrades.includes(upgrade.id));
-  const buildUpgrades = available.filter((upgrade) => upgradeDiscipline(upgrade) === "build");
-  const craftUpgrades = available.filter((upgrade) => upgradeDiscipline(upgrade) === "craft");
-  const readyBuilds = buildUpgrades.filter((upgrade) => canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials));
-  const blockedBuilds = buildUpgrades.filter((upgrade) => !readyBuilds.includes(upgrade));
-  const readyCrafts = craftUpgrades.filter((upgrade) => canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials));
-  const blockedCrafts = craftUpgrades.filter((upgrade) => !readyCrafts.includes(upgrade));
+  const activeJob = getActiveWorkJob(state);
   const built = state.upgrades
     .map((upgradeId) => visibleUpgrades.find((upgrade) => upgrade.id === upgradeId))
     .filter(Boolean);
-  const builtBuilds = built.filter((upgrade) => upgradeDiscipline(upgrade) === "build");
-  const builtCrafts = built.filter((upgrade) => upgradeDiscipline(upgrade) === "craft");
+  const builtBuilds = built.filter((upgrade) => (upgrade.category || upgradeDiscipline(upgrade)) === "build");
+  const builtCrafts = built.filter((upgrade) => (upgrade.category || upgradeDiscipline(upgrade)) !== "build");
+  const categories = [
+    { id: "build", title: "Base Builds", empty: "No base structure jobs are open yet.", className: "span-6" },
+    { id: "tool", title: "Tools", empty: "No tool jobs are open yet.", className: "span-6" },
+    { id: "weapon", title: "Weapons", empty: "No weapon jobs are open yet.", className: "span-4" },
+    { id: "armor", title: "Armor", empty: "No armor jobs are open yet.", className: "span-4" },
+    { id: "consumable", title: "Consumables", empty: "No consumable jobs are open yet.", className: "span-4" },
+  ];
+  const upgradesForCategory = (categoryId) => available.filter((upgrade) => {
+    const category = upgrade.category || (upgradeDiscipline(upgrade) === "build" ? "build" : "tool");
+    return category === categoryId;
+  });
+  const renderCategoryBody = (category) => {
+    const upgrades = upgradesForCategory(category.id);
+    const ready = upgrades.filter((upgrade) => !getUpgradeMissingNotes(state, upgrade).length);
+    const blocked = upgrades.filter((upgrade) => !ready.includes(upgrade));
+    return renderUpgradeQueue(state, category.title, ready, blocked, category.empty);
+  };
 
   if (isMobile) {
     return `
       <div class="tab-mobile-flow tab-mobile-flow-craft">
         ${surfaceCard({
-          title: "Base builds",
-          meta: `${readyBuilds.length} ready / ${blockedBuilds.length} blocked`,
-          body: `
-            <details class="mobile-accordion" open>
-              <summary>Open build queue</summary>
-              <div class="mobile-accordion-body">
-                ${renderUpgradeQueue(state, "Shelter works", readyBuilds, blockedBuilds, "No base structures are open yet.")}
-              </div>
-            </details>
-          `,
+          title: "Work in Progress",
+          meta: activeJob ? `${activeJob.hoursRemaining}h left` : "idle",
+          body: renderWorkInProgress(state),
         })}
-        ${surfaceCard({
-          title: "Fieldcraft",
-          meta: `${readyCrafts.length} ready / ${blockedCrafts.length} blocked`,
-          body: `
-            <details class="mobile-accordion" open>
-              <summary>Open fieldcraft queue</summary>
-              <div class="mobile-accordion-body">
-                ${renderUpgradeQueue(state, "Tools and fieldwork", readyCrafts, blockedCrafts, "No fieldcraft jobs are open yet.")}
-              </div>
-            </details>
-          `,
-        })}
+        ${categories.map((category) => {
+          const upgrades = upgradesForCategory(category.id);
+          const ready = upgrades.filter((upgrade) => !getUpgradeMissingNotes(state, upgrade).length);
+          const blocked = upgrades.filter((upgrade) => !ready.includes(upgrade));
+          return surfaceCard({
+            title: category.title,
+            meta: `${ready.length} ready / ${blocked.length} blocked`,
+            body: `
+              <details class="mobile-accordion"${category.id === "build" || category.id === "tool" ? " open" : ""}>
+                <summary>Open ${category.title.toLowerCase()}</summary>
+                <div class="mobile-accordion-body">
+                  ${renderCategoryBody(category)}
+                </div>
+              </details>
+            `,
+          });
+        }).join("")}
         ${surfaceCard({
           title: "Systems online",
           meta: `${built.length} total`,
-          body: built.length
-            ? `
-              <details class="mobile-accordion">
-                <summary>Show installed systems</summary>
-                <div class="detail-list">${built.map((upgrade) => `
-                  <div class="list-block compact-block">
-                    <div class="surface-head">
-                      <h4>${upgrade.name}</h4>
-                      <span class="tag">live</span>
-                    </div>
-                    <div class="chip-row">${tagList([upgradeDisciplineLabel(upgrade), "installed"])}</div>
+          body: `
+            <details class="mobile-accordion">
+              <summary>Show installed systems</summary>
+              <div class="detail-list">${built.length ? built.map((upgrade) => `
+                <div class="list-block compact-block">
+                  <div class="surface-head">
+                    <h4>${upgrade.name}</h4>
+                    <span class="tag">live</span>
                   </div>
-                `).join("")}</div>
-              </details>
-            `
-            : `<p class="empty-state">No installed systems yet.</p>`,
+                  <div class="chip-row">${tagList([upgradeDisciplineLabel(upgrade), `tier ${upgradeTierLabel(upgrade)}`, `result ${upgradeResultLabel(upgrade)}`])}</div>
+                </div>
+              `).join("") : `<p class="empty-state">No installed systems yet.</p>`}</div>
+            </details>
+          `,
         })}
       </div>
     `;
@@ -501,42 +602,46 @@ export function renderCraftTab(state, isMobile = false) {
   return `
     <div class="tab-grid">
       ${surfaceCard({
-        title: "Build + craft board",
-        meta: `${available.length} open`,
-        className: "span-8",
-        body: available.length
-          ? `
-            <div class="queue-board">
-              ${renderUpgradeQueue(state, "Base builds", readyBuilds, blockedBuilds, "No base structures are open yet.")}
-              ${renderUpgradeQueue(state, "Fieldcraft", readyCrafts, blockedCrafts, "No fieldcraft jobs are open yet.")}
-            </div>
-          `
-          : `<p class="empty-state">No fresh plans yet. Search deeper.</p>`,
+        title: "Work in Progress",
+        meta: activeJob ? `${activeJob.hoursRemaining}h left` : "queue idle",
+        className: "span-12",
+        body: renderWorkInProgress(state),
       })}
+      ${categories.map((category) => {
+        const upgrades = upgradesForCategory(category.id);
+        const ready = upgrades.filter((upgrade) => !getUpgradeMissingNotes(state, upgrade).length);
+        const blocked = upgrades.filter((upgrade) => !ready.includes(upgrade));
+        return surfaceCard({
+          title: category.title,
+          meta: `${ready.length} ready / ${blocked.length} blocked`,
+          className: category.className,
+          body: renderCategoryBody(category),
+        });
+      }).join("")}
       ${surfaceCard({
         title: "Systems online",
         meta: `${built.length} total`,
-        className: "span-4",
+        className: "span-12",
         body: built.length
           ? `
-            <div class="detail-list">
-              <div class="list-block compact-block">
+            <div class="queue-board">
+              <div class="queue-column">
                 <div class="surface-head">
-                  <h4>Base builds</h4>
+                  <h4>Base Builds</h4>
                   <span class="tag">${builtBuilds.length}</span>
                 </div>
                 ${builtBuilds.length
                   ? `<div class="chip-row">${tagList(builtBuilds.map((upgrade) => upgrade.name))}</div>`
                   : `<p class="empty-state">No base systems live.</p>`}
               </div>
-              <div class="list-block compact-block">
+              <div class="queue-column">
                 <div class="surface-head">
-                  <h4>Fieldcraft</h4>
+                  <h4>Crafted Gear</h4>
                   <span class="tag">${builtCrafts.length}</span>
                 </div>
                 ${builtCrafts.length
                   ? `<div class="chip-row">${tagList(builtCrafts.map((upgrade) => upgrade.name))}</div>`
-                  : `<p class="empty-state">No crafted tools online.</p>`}
+                  : `<p class="empty-state">No crafted gear online.</p>`}
               </div>
             </div>
           `

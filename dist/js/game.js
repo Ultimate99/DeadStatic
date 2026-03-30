@@ -186,6 +186,7 @@ const ITEMS = {
     id: "rusty_knife",
     name: "Rusty Knife",
     type: "weapon",
+    tier: "improvised",
     attack: 3,
     description: "Weapon. Attack 3.",
   },
@@ -193,36 +194,63 @@ const ITEMS = {
     id: "pry_bar",
     name: "Pry Bar",
     type: "tool",
+    toolRole: "salvage",
     description: "Tool. Opens sealed caches and improves parts salvage.",
+  },
+  hammer: {
+    id: "hammer",
+    name: "Hammer",
+    type: "tool",
+    toolRole: "build",
+    description: "Tool. Required for structural builds and blunt weapon assembly.",
+  },
+  sewing_kit: {
+    id: "sewing_kit",
+    name: "Sewing Kit",
+    type: "tool",
+    toolRole: "clothwork",
+    description: "Tool. Required for backpacks, cloth repairs, and stitched armor work.",
   },
   salvage_hatchet: {
     id: "salvage_hatchet",
     name: "Salvage Hatchet",
     type: "tool",
+    toolRole: "salvage",
     description: "Tool. Improves wood recovery and shelter work.",
+  },
+  sharpening_stone: {
+    id: "sharpening_stone",
+    name: "Sharpening Stone",
+    type: "tool",
+    toolRole: "edgework",
+    description: "Tool. Required for better blade and spear work.",
   },
   carpenter_kit: {
     id: "carpenter_kit",
     name: "Carpenter Kit",
     type: "tool",
+    toolRole: "build",
     description: "Tool. Improves repairs and maintenance.",
   },
   hand_drill: {
     id: "hand_drill",
     name: "Hand Drill",
     type: "tool",
+    toolRole: "repair",
     description: "Tool. Improves parts salvage, repairs, and signal rig work.",
   },
   signal_meter: {
     id: "signal_meter",
     name: "Signal Meter",
     type: "tool",
+    toolRole: "signal",
     description: "Tool. Improves signal and anomaly trace work.",
   },
   nail_bat: {
     id: "nail_bat",
     name: "Nail Bat",
     type: "weapon",
+    tier: "bench-made",
     attack: 5,
     description: "Weapon. Attack 5.",
   },
@@ -230,6 +258,7 @@ const ITEMS = {
     id: "hunting_spear",
     name: "Hunting Spear",
     type: "weapon",
+    tier: "bench-made",
     attack: 6,
     description: "Weapon. Attack 6.",
   },
@@ -237,6 +266,7 @@ const ITEMS = {
     id: "transit_pistol",
     name: "Transit Pistol",
     type: "weapon",
+    tier: "recovered",
     attack: 4,
     ammoPerAttack: 1,
     description: "Weapon. Attack 4. Uses 1 ammo.",
@@ -245,6 +275,7 @@ const ITEMS = {
     id: "tower_rifle",
     name: "Tower Rifle",
     type: "weapon",
+    tier: "military",
     attack: 6,
     ammoPerAttack: 1,
     description: "Weapon. Attack 6. Uses 1 ammo.",
@@ -253,6 +284,7 @@ const ITEMS = {
     id: "fire_axe",
     name: "Fire Axe",
     type: "weapon",
+    tier: "heavy",
     attack: 7,
     description: "Weapon. Attack 7.",
   },
@@ -260,6 +292,7 @@ const ITEMS = {
     id: "patchwork_vest",
     name: "Patchwork Vest",
     type: "armor",
+    tier: "stitched",
     defense: 2,
     description: "Armor. Defense 2.",
   },
@@ -267,6 +300,7 @@ const ITEMS = {
     id: "riot_padding",
     name: "Riot Padding",
     type: "armor",
+    tier: "reinforced",
     defense: 3,
     description: "Armor. Defense 3.",
   },
@@ -274,6 +308,7 @@ const ITEMS = {
     id: "signal_cloak",
     name: "Signal Cloak",
     type: "armor",
+    tier: "signal",
     defense: 2,
     description: "Armor. Defense 2. Useful on signal-heavy runs.",
   },
@@ -374,7 +409,7 @@ const ITEM_ORDER = Object.keys(ITEMS);
 
 
 // content.js
-const UPGRADES = [
+const RAW_UPGRADES = [
   {
     id: "backpack",
     name: "Backpack",
@@ -505,6 +540,30 @@ const UPGRADES = [
     },
   },
   {
+    id: "hammer_tool",
+    name: "Hammer",
+    description: "Build tool for structural work and blunt weapon assembly.",
+    verb: "Forge",
+    cost: { scrap: 12, wood: 2, parts: 4, cloth: 1 },
+    requires: { searches: 3 },
+    effects: {
+      grantItems: { hammer: 1 },
+      unlockSections: ["inventory"],
+    },
+  },
+  {
+    id: "sewing_kit",
+    name: "Sewing Kit",
+    description: "Clothwork tool for packs, patched armor, and stitched repairs.",
+    verb: "Stitch",
+    cost: { scrap: 8, cloth: 4, wire: 1 },
+    requires: { searches: 3 },
+    effects: {
+      grantItems: { sewing_kit: 1 },
+      unlockSections: ["inventory"],
+    },
+  },
+  {
     id: "salvage_hatchet",
     name: "Salvage Hatchet",
     description: "Passive tool for wood recovery, shelter work, and minor night resistance.",
@@ -516,6 +575,18 @@ const UPGRADES = [
       grantItems: { salvage_hatchet: 1 },
       forageYieldBonus: 0.08,
       nightMitigation: 0.15,
+      unlockSections: ["inventory"],
+    },
+  },
+  {
+    id: "sharpening_stone",
+    name: "Sharpening Stone",
+    description: "Edgework tool for blades, spearheads, and cleaner melee prep.",
+    verb: "True",
+    cost: { scrap: 10, parts: 2, cloth: 1 },
+    requires: { upgrades: ["crafting_bench"] },
+    effects: {
+      grantItems: { sharpening_stone: 1 },
       unlockSections: ["inventory"],
     },
   },
@@ -595,6 +666,19 @@ const UPGRADES = [
     requires: { upgrades: ["crafting_bench"] },
     effects: {
       armorSlot: true,
+      unlockSections: ["inventory"],
+    },
+  },
+  {
+    id: "patchwork_vest_kit",
+    name: "Patchwork Vest",
+    description: "Stitched armor. Grants Patchwork Vest and +1 defense.",
+    verb: "Stitch",
+    cost: { scrap: 18, cloth: 5, parts: 3, wire: 1 },
+    requires: { upgrades: ["armor_hooks", "sewing_kit"] },
+    effects: {
+      grantItems: { patchwork_vest: 1 },
+      defense: 1,
       unlockSections: ["inventory"],
     },
   },
@@ -803,6 +887,20 @@ const UPGRADES = [
     },
   },
   {
+    id: "signal_cloak_kit",
+    name: "Signal Cloak",
+    description: "Late signal armor. Grants Signal Cloak and steadies radio-heavy runs.",
+    verb: "Sew",
+    cost: { scrap: 34, cloth: 6, wire: 4, electronics: 2, relics: 1 },
+    requires: { upgrades: ["armor_hooks", "signal_decoder"], radioProgress: 3 },
+    effects: {
+      grantItems: { signal_cloak: 1 },
+      coverage: 0.15,
+      signalGain: 0.08,
+      unlockSections: ["inventory"],
+    },
+  },
+  {
     id: "auto_scavenger",
     name: "Auto Scavenger",
     description: "Small passive scrap and parts income plus better salvage routes.",
@@ -852,6 +950,309 @@ const UPGRADES = [
     },
   },
 ];
+
+const UPGRADE_RULES = {
+  backpack: {
+    category: "tool",
+    tier: "field",
+    hours: 1,
+    requiredTools: ["sewing_kit"],
+    resultLabel: "Carry more salvage",
+  },
+  rusty_knife: {
+    category: "weapon",
+    tier: "improvised",
+    hours: 1,
+    resultLabel: "Rusty Knife",
+  },
+  shelter_stash: {
+    category: "build",
+    tier: "starter",
+    hours: 2,
+    resultLabel: "Open shelter storage",
+  },
+  campfire: {
+    category: "build",
+    tier: "starter",
+    hours: 2,
+    resultLabel: "Warm shelter core",
+  },
+  basic_barricade: {
+    category: "build",
+    tier: "starter",
+    hours: 3,
+    requiredTools: ["hammer"],
+    resultLabel: "Perimeter fence",
+  },
+  first_aid_rag: {
+    category: "consumable",
+    tier: "field",
+    hours: 1,
+    resultLabel: "First Aid Rag",
+  },
+  food_search: {
+    category: "build",
+    tier: "starter",
+    hours: 2,
+    resultLabel: "Food search loop",
+  },
+  small_scavenge: {
+    category: "build",
+    tier: "starter",
+    hours: 2,
+    resultLabel: "Ruined Street route",
+  },
+  food_crate: {
+    category: "build",
+    tier: "starter",
+    hours: 2,
+    requiredTools: ["hammer"],
+    resultLabel: "Food storage",
+  },
+  crafting_bench: {
+    category: "build",
+    tier: "bench",
+    hours: 3,
+    requiredTools: ["hammer"],
+    resultLabel: "Bench online",
+  },
+  pry_bar_tool: {
+    category: "tool",
+    tier: "field",
+    hours: 3,
+    resultLabel: "Pry Bar",
+  },
+  hammer_tool: {
+    category: "tool",
+    tier: "field",
+    hours: 3,
+    resultLabel: "Hammer",
+  },
+  sewing_kit: {
+    category: "tool",
+    tier: "field",
+    hours: 3,
+    resultLabel: "Sewing Kit",
+  },
+  salvage_hatchet: {
+    category: "tool",
+    tier: "field",
+    hours: 3,
+    resultLabel: "Salvage Hatchet",
+  },
+  sharpening_stone: {
+    category: "tool",
+    tier: "bench",
+    hours: 2,
+    resultLabel: "Sharpening Stone",
+  },
+  carpenter_kit: {
+    category: "tool",
+    tier: "workshop",
+    hours: 4,
+    requiredTools: ["hammer"],
+    resultLabel: "Carpenter Kit",
+  },
+  hand_drill: {
+    category: "tool",
+    tier: "workshop",
+    hours: 4,
+    requiredTools: ["hammer"],
+    resultLabel: "Hand Drill",
+  },
+  weapon_rack: {
+    category: "build",
+    tier: "starter",
+    hours: 2,
+    resultLabel: "Weapon slot",
+  },
+  nail_bat: {
+    category: "weapon",
+    tier: "bench-made",
+    hours: 4,
+    requiredTools: ["hammer"],
+    resultLabel: "Nail Bat",
+  },
+  hunting_spear: {
+    category: "weapon",
+    tier: "bench-made",
+    hours: 4,
+    requiredTools: ["sharpening_stone"],
+    resultLabel: "Hunting Spear",
+  },
+  armor_hooks: {
+    category: "build",
+    tier: "starter",
+    hours: 2,
+    resultLabel: "Armor slot",
+  },
+  patchwork_vest_kit: {
+    category: "armor",
+    tier: "stitched",
+    hours: 4,
+    requiredTools: ["sewing_kit"],
+    resultLabel: "Patchwork Vest",
+  },
+  riot_padding_kit: {
+    category: "armor",
+    tier: "reinforced",
+    hours: 4,
+    requiredTools: ["sewing_kit"],
+    resultLabel: "Riot Padding",
+  },
+  watch_post: {
+    category: "build",
+    tier: "defense",
+    hours: 5,
+    requiredTools: ["hammer", "carpenter_kit"],
+    resultLabel: "Watch line",
+  },
+  tripwire_grid: {
+    category: "build",
+    tier: "defense",
+    hours: 5,
+    requiredTools: ["hammer", "hand_drill"],
+    resultLabel: "Tripwire perimeter",
+  },
+  ammo_press: {
+    category: "build",
+    tier: "bench",
+    hours: 4,
+    requiredTools: ["hammer"],
+    resultLabel: "Ammo press",
+  },
+  repair_rig: {
+    category: "build",
+    tier: "workshop",
+    hours: 5,
+    requiredTools: ["hand_drill", "carpenter_kit"],
+    resultLabel: "Repair line",
+  },
+  rain_collector: {
+    category: "build",
+    tier: "starter",
+    hours: 3,
+    requiredTools: ["hammer"],
+    resultLabel: "Water catch",
+  },
+  water_still: {
+    category: "build",
+    tier: "workshop",
+    hours: 5,
+    requiredTools: ["carpenter_kit"],
+    resultLabel: "Clean water still",
+  },
+  radio_rig: {
+    category: "build",
+    tier: "signal",
+    hours: 5,
+    requiredTools: ["hand_drill"],
+    resultLabel: "Radio line",
+  },
+  battery_bank: {
+    category: "build",
+    tier: "signal",
+    hours: 6,
+    requiredTools: ["hand_drill"],
+    resultLabel: "Power reserve",
+  },
+  signal_meter: {
+    category: "tool",
+    tier: "signal",
+    hours: 5,
+    requiredTools: ["hand_drill"],
+    resultLabel: "Signal Meter",
+  },
+  flood_lights: {
+    category: "build",
+    tier: "defense",
+    hours: 6,
+    requiredTools: ["hand_drill"],
+    resultLabel: "Lit perimeter",
+  },
+  map_board: {
+    category: "build",
+    tier: "starter",
+    hours: 2,
+    requiredTools: ["hammer"],
+    resultLabel: "Route board",
+  },
+  survivor_cots: {
+    category: "build",
+    tier: "starter",
+    hours: 3,
+    requiredTools: ["hammer", "sewing_kit"],
+    resultLabel: "Crew beds",
+  },
+  smokehouse: {
+    category: "build",
+    tier: "starter",
+    hours: 4,
+    requiredTools: ["salvage_hatchet"],
+    resultLabel: "Food preserve line",
+  },
+  trader_beacon: {
+    category: "build",
+    tier: "signal",
+    hours: 5,
+    requiredTools: ["signal_meter", "hand_drill"],
+    resultLabel: "Signal beacon",
+  },
+  scout_bike: {
+    category: "build",
+    tier: "field",
+    hours: 4,
+    requiredTools: ["hammer"],
+    resultLabel: "Deep route access",
+  },
+  signal_decoder: {
+    category: "build",
+    tier: "signal",
+    hours: 6,
+    requiredTools: ["signal_meter", "hand_drill"],
+    resultLabel: "Decoder stack",
+  },
+  signal_cloak_kit: {
+    category: "armor",
+    tier: "signal",
+    hours: 5,
+    requiredTools: ["sewing_kit", "signal_meter"],
+    resultLabel: "Signal Cloak",
+  },
+  auto_scavenger: {
+    category: "build",
+    tier: "workshop",
+    hours: 6,
+    requiredTools: ["hand_drill", "hammer"],
+    resultLabel: "Auto salvage line",
+  },
+  faraday_mesh: {
+    category: "build",
+    tier: "signal",
+    hours: 7,
+    requiredTools: ["hand_drill", "signal_meter"],
+    resultLabel: "Static shield",
+  },
+  relay_tap: {
+    category: "build",
+    tier: "signal",
+    hours: 6,
+    requiredTools: ["hand_drill", "signal_meter"],
+    resultLabel: "Relay tap",
+  },
+  bunker_drill: {
+    category: "build",
+    tier: "late",
+    hours: 8,
+    requiredTools: ["hand_drill", "carpenter_kit"],
+    resultLabel: "Bunker breach rig",
+  },
+};
+
+const UPGRADES = RAW_UPGRADES.map((upgrade) => ({
+  ...upgrade,
+  ...(UPGRADE_RULES[upgrade.id] || {}),
+}));
 
 const UPGRADES_BY_ID = Object.fromEntries(UPGRADES.map((upgrade) => [upgrade.id, upgrade]));
 
@@ -2871,6 +3272,23 @@ function getTimeStamp(state) {
   return `D${state.time.day} ${hourStamp(state.time.hour)}`;
 }
 
+function futureTimeStamp(state, hours = 0) {
+  let day = state.time.day;
+  let hour = state.time.hour;
+  for (let index = 0; index < hours; index += 1) {
+    hour += 1;
+    if (hour >= 24) {
+      hour = 0;
+      day += 1;
+    }
+  }
+  return `D${day} ${hourStamp(hour)}`;
+}
+
+function getActiveWorkJob(state) {
+  return state.work?.activeJob || null;
+}
+
 function getShelterUpkeep(state) {
   const crew = Math.max(0, state.survivors?.total || 0);
   const mealCost = Math.max(1, 1 + Math.floor(crew / 2));
@@ -3654,6 +4072,14 @@ function hasMaterials(state, materials = {}) {
   return Object.entries(materials).every(([itemId, amount]) => (state.inventory[itemId] || 0) >= amount);
 }
 
+function missingRequiredTools(state, requiredTools = []) {
+  return requiredTools.filter((itemId) => !hasItem(state, itemId));
+}
+
+function hasRequiredTools(state, requiredTools = []) {
+  return missingRequiredTools(state, requiredTools).length === 0;
+}
+
 function spendResources(state, cost = {}) {
   Object.entries(cost).forEach(([resourceId, amount]) => {
     state.resources[resourceId] = Math.max(0, state.resources[resourceId] - amount);
@@ -4373,7 +4799,6 @@ function runNightPressure(state, derived) {
 
 function advanceTime(state, hours) {
   for (let index = 0; index < hours; index += 1) {
-    const derived = getDerivedState(state);
     state.time.hour += 1;
     if (state.time.hour >= 24) {
       state.time.hour = 0;
@@ -4402,6 +4827,9 @@ function advanceTime(state, hours) {
       maybeUseMaintenance(state);
     }
 
+    tickActiveJob(state);
+
+    const derived = getDerivedState(state);
     if (state.time.hour === 21) {
       runNightPressure(state, derived);
     }
@@ -4527,26 +4955,48 @@ function drinkWater(state) {
   return true;
 }
 
-function buyUpgrade(state, upgradeId) {
+function startWorkJob(state, upgradeId) {
   const upgrade = UPGRADES_BY_ID[upgradeId];
-  if (!upgrade || state.upgrades.includes(upgradeId)) {
+  if (!upgrade || state.upgrades.includes(upgradeId) || getActiveWorkJob(state)) {
     return false;
   }
   if (
     !requirementsMet(state, upgrade.requires)
     || !canAfford(state, upgrade.cost)
     || !hasMaterials(state, upgrade.materials)
+    || !hasRequiredTools(state, upgrade.requiredTools)
   ) {
     return false;
   }
 
+  if (!state.work) {
+    state.work = { activeJob: null };
+  }
+
   spendResources(state, upgrade.cost);
   spendMaterials(state, upgrade.materials);
-  state.upgrades.push(upgradeId);
-  applyEffectBundle(state, upgrade.effects);
-  addLog(state, `Built: ${upgrade.name}. ${upgrade.description}`, "build");
-  evaluateProgression(state);
+  const jobHours = Math.max(1, upgrade.hours || 1);
+  state.work.activeJob = {
+    kind: workKindForUpgrade(upgrade),
+    recipeId: upgrade.id,
+    label: upgrade.name,
+    tier: upgrade.tier || "field",
+    hoursTotal: jobHours,
+    hoursRemaining: jobHours,
+    requiredTools: [...(upgrade.requiredTools || [])],
+    startedAt: getTimeStamp(state),
+    completesAt: futureTimeStamp(state, jobHours),
+  };
+  addLog(
+    state,
+    `${workCategoryLabel(state.work.activeJob.kind)} started: ${upgrade.name}. ${jobHours}h on the bench. Due ${state.work.activeJob.completesAt}.`,
+    state.work.activeJob.kind,
+  );
   return true;
+}
+
+function buyUpgrade(state, upgradeId) {
+  return startWorkJob(state, upgradeId);
 }
 
 function enemyBehavior(enemyId) {
@@ -5060,6 +5510,75 @@ function getAvailableRadioInvestigations(state) {
   });
 }
 
+function workKindForUpgrade(upgrade) {
+  return upgrade.category === "build" ? "build" : "craft";
+}
+
+function workCategoryLabel(kind) {
+  return kind === "build" ? "Base Build" : "Craft";
+}
+
+function workResultLabel(upgrade) {
+  if (upgrade.resultLabel) {
+    return upgrade.resultLabel;
+  }
+  const grantedItems = Object.keys(upgrade.effects?.grantItems || {});
+  if (grantedItems.length) {
+    return ITEMS[grantedItems[0]]?.name || grantedItems[0];
+  }
+  const zoneId = upgrade.effects?.unlockZones?.[0];
+  if (zoneId && ZONES_BY_ID[zoneId]) {
+    return ZONES_BY_ID[zoneId].name;
+  }
+  const sectionId = upgrade.effects?.unlockSections?.[0];
+  if (sectionId) {
+    return sectionId;
+  }
+  return upgrade.name;
+}
+
+function applyCompletedUpgrade(state, upgrade) {
+  if (!state.upgrades.includes(upgrade.id)) {
+    state.upgrades.push(upgrade.id);
+  }
+  applyEffectBundle(state, upgrade.effects);
+  addLog(
+    state,
+    `${workCategoryLabel(workKindForUpgrade(upgrade))} complete: ${upgrade.name}. ${workResultLabel(upgrade)} is now live.`,
+    workKindForUpgrade(upgrade),
+  );
+  evaluateProgression(state);
+}
+
+function finishActiveJob(state) {
+  const job = getActiveWorkJob(state);
+  if (!job) {
+    return false;
+  }
+
+  const upgrade = UPGRADES_BY_ID[job.recipeId];
+  state.work.activeJob = null;
+  if (!upgrade) {
+    return false;
+  }
+
+  applyCompletedUpgrade(state, upgrade);
+  return true;
+}
+
+function tickActiveJob(state) {
+  const job = getActiveWorkJob(state);
+  if (!job) {
+    return false;
+  }
+
+  job.hoursRemaining = Math.max(0, job.hoursRemaining - 1);
+  if (job.hoursRemaining <= 0) {
+    return finishActiveJob(state);
+  }
+  return true;
+}
+
 function setRadioInvestigation(state, investigationId) {
   if (!RADIO_INVESTIGATIONS_BY_ID[investigationId] || state.radio.investigation === investigationId) {
     return false;
@@ -5404,6 +5923,10 @@ function renderResourceChange(resourceId, amount) {
 function itemSummaryChips(item) {
   const chips = [item.type];
 
+  if (item.tier) {
+    chips.push(`tier ${item.tier}`);
+  }
+
   if (item.attack) {
     chips.push(`atk ${item.attack}`);
   }
@@ -5430,7 +5953,10 @@ function itemSummaryChips(item) {
 
   const toolChips = {
     pry_bar: ["sealed caches", "parts salvage"],
+    hammer: ["structural builds", "blunt assembly"],
+    sewing_kit: ["packs", "cloth repair"],
     salvage_hatchet: ["wood salvage", "shelter work"],
+    sharpening_stone: ["blade prep", "spear prep"],
     carpenter_kit: ["repairs +1", "maintenance +1"],
     hand_drill: ["repairs +1", "parts salvage"],
     signal_meter: ["signal trace", "anomaly trace"],
@@ -5449,6 +5975,9 @@ function itemSummaryChips(item) {
 
 function itemTooltipText(item, amount) {
   const lines = [`${item.name} x${amount}`, `Type: ${item.type}`];
+  if (item.tier) {
+    lines.push(`Tier: ${item.tier}`);
+  }
   const summary = itemSummaryChips(item).filter((chip) => chip !== item.type);
 
   if (summary.length) {
@@ -5475,7 +6004,7 @@ function itemPrimaryLine(item) {
     return `COND +${item.condition}`;
   }
   if (item.type === "tool") {
-    return "TOOL";
+    return `${(item.toolRole || "tool").replace(/_/g, " ").toUpperCase()} TOOL`;
   }
   if (item.type === "key") {
     return "KEY ITEM";
@@ -5963,10 +6492,18 @@ function lootBandMarkup(state, sourceId = null) {
 }
 
 function readyUpgradeCandidate(state, upgrades) {
-  return upgrades.find((upgrade) => canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials)) || null;
+  if (getActiveWorkJob(state)) {
+    return null;
+  }
+  return upgrades.find((upgrade) => (
+    canAfford(state, upgrade.cost)
+    && hasMaterials(state, upgrade.materials)
+    && hasRequiredTools(state, upgrade.requiredTools)
+  )) || null;
 }
 
 function currentDirective(state, upgrades) {
+  const activeJob = getActiveWorkJob(state);
   const readyUpgrade = readyUpgradeCandidate(state, upgrades);
   const upkeep = getShelterUpkeep(state);
   const systems = getShelterSystems(state);
@@ -5981,6 +6518,12 @@ function currentDirective(state, upgrades) {
     return {
       title: "Combat contact",
       detail: "Resolve the current encounter before you push any other operation.",
+    };
+  }
+  if (activeJob) {
+    return {
+      title: `Finish ${activeJob.label}`,
+      detail: `${activeJob.kind === "build" ? "Base work" : "Fieldcraft"} is running. Let time pass and keep the shelter steady until ${activeJob.completesAt}.`,
     };
   }
   if (lowFood) {
@@ -6124,7 +6667,10 @@ function getTutorialStep(state) {
   }
 
   if (state.unlockedSections.includes("upgrades") && !state.upgrades.includes("shelter_stash")) {
-    const stashReady = canAfford(state, UPGRADES_BY_ID.shelter_stash.cost) && hasMaterials(state, UPGRADES_BY_ID.shelter_stash.materials);
+    const stashReady = !getActiveWorkJob(state)
+      && canAfford(state, UPGRADES_BY_ID.shelter_stash.cost)
+      && hasMaterials(state, UPGRADES_BY_ID.shelter_stash.materials)
+      && hasRequiredTools(state, UPGRADES_BY_ID.shelter_stash.requiredTools);
     return {
       id: "stash",
       title: "Build Shelter Stash first",
@@ -6133,7 +6679,7 @@ function getTutorialStep(state) {
       tabs: ["overview", "craft"],
       action: state.ui.activeTab === "craft" && stashReady
         ? {
-            action: "buy-upgrade",
+            action: "start-work-job",
             label: "Build Shelter Stash",
             meta: "first shelter upgrade",
             data: { upgrade: "shelter_stash" },
@@ -6150,7 +6696,10 @@ function getTutorialStep(state) {
   }
 
   if (state.upgrades.includes("shelter_stash") && !state.upgrades.includes("food_search")) {
-    const foodReady = canAfford(state, UPGRADES_BY_ID.food_search.cost) && hasMaterials(state, UPGRADES_BY_ID.food_search.materials);
+    const foodReady = !getActiveWorkJob(state)
+      && canAfford(state, UPGRADES_BY_ID.food_search.cost)
+      && hasMaterials(state, UPGRADES_BY_ID.food_search.materials)
+      && hasRequiredTools(state, UPGRADES_BY_ID.food_search.requiredTools);
     return {
       id: "food_loop",
       title: "Secure food next",
@@ -6159,7 +6708,7 @@ function getTutorialStep(state) {
       tabs: ["overview", "craft"],
       action: state.ui.activeTab === "craft" && foodReady
         ? {
-            action: "buy-upgrade",
+            action: "start-work-job",
             label: "Build Simple Food Search",
             meta: "unlock provisions",
             data: { upgrade: "food_search" },
@@ -6299,7 +6848,7 @@ function renderCommandDesk(state, derived, availableSources, availableUpgrades) 
     }
     if (readyUpgrade) {
       return actionButton({
-        action: "buy-upgrade",
+        action: "start-work-job",
         label: `${readyUpgrade.verb || "Build"} ${readyUpgrade.name}`,
         meta: "priority build",
         data: { upgrade: readyUpgrade.id },
@@ -6780,15 +7329,24 @@ function mapStructureByUpgrade(upgradeId) {
 function renderPlannedStructureCard(state, upgrade) {
   const structure = mapStructureByUpgrade(upgrade.id);
   const meta = [];
+  const activeJob = getActiveWorkJob(state);
+  const missingTools = missingRequiredTools(state, upgrade.requiredTools || []);
   if (Object.keys(upgrade.cost || {}).length) {
     meta.push(formatCost(upgrade.cost));
   }
   if (upgrade.materials && Object.keys(upgrade.materials).length) {
     meta.push(formatMaterials(upgrade.materials));
   }
+  if (upgrade.requiredTools?.length) {
+    meta.push(`Tool ${upgrade.requiredTools.map((itemId) => ITEMS[itemId]?.name || itemId).join(" + ")}`);
+  }
   if (structure?.col && structure?.row) {
     meta.push(`Grid ${structure.col}-${structure.row}`);
   }
+  const canStart = !activeJob
+    && canAfford(state, upgrade.cost)
+    && hasMaterials(state, upgrade.materials)
+    && hasRequiredTools(state, upgrade.requiredTools);
 
   return `
     <div class="ghost-card kind-${structure?.kind || "utility"} sprite-${structure?.sprite || "bench"}">
@@ -6809,10 +7367,10 @@ function renderPlannedStructureCard(state, upgrade) {
       <p class="note">${upgrade.description}</p>
       ${meta.length ? `<div class="chip-row">${tagList(meta)}</div>` : ""}
       ${actionButton({
-        action: "buy-upgrade",
+        action: "start-work-job",
         label: `${upgrade.verb || "Build"} ${upgrade.name}`,
-        meta: "slot ready",
-        disabled: !(canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials)),
+        meta: canStart ? `${upgrade.hours || 1}h queue` : activeJob ? `Busy: ${activeJob.label}` : missingTools[0] ? `Need ${ITEMS[missingTools[0]]?.name || missingTools[0]}` : "Need salvage",
+        disabled: !canStart,
         data: { upgrade: upgrade.id },
         variant: "compact slot-trigger",
       })}
@@ -7604,7 +8162,10 @@ async function submitLeaderboardScore(state) {
 // render/stage.js
 function tabStageMeta(state, derived) {
   const visibleUpgrades = getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id));
-  const readyUpgrades = visibleUpgrades.filter((upgrade) => canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials));
+  const activeJob = getActiveWorkJob(state);
+  const readyUpgrades = activeJob
+    ? []
+    : visibleUpgrades.filter((upgrade) => canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials) && hasRequiredTools(state, upgrade.requiredTools));
   const preview = state.expedition.selectedZone
     ? getExpeditionPreview(state, state.expedition.selectedZone, state.expedition.approach)
     : null;
@@ -7621,20 +8182,22 @@ function tabStageMeta(state, derived) {
         stats: [
           ["Attack", derived.attack],
           ["Defense", derived.defense],
-          ["Condition", state.resources.condition],
+          ["Condition", state.condition],
           ["Ammo", state.resources.ammo],
         ],
       };
     case "craft":
       return {
         label: "Build queue",
-        title: "Convert salvage into systems",
-        detail: "Ready systems first. Blocked ones define the next hunt.",
+        title: activeJob ? `Finish ${activeJob.label}` : "Convert salvage into systems",
+        detail: activeJob
+          ? `One shared work slot is active until ${activeJob.completesAt}. Let time pass and keep the shelter stable.`
+          : "Ready systems first. Blocked ones define the next hunt.",
         stats: [
           ["Ready", readyUpgrades.length],
           ["Blocked", Math.max(0, visibleUpgrades.length - readyUpgrades.length)],
           ["Built", state.upgrades.length],
-          ["Lanes", getAvailableScavengeSources(state).length],
+          ["Queue", activeJob ? `${activeJob.hoursRemaining}h` : "idle"],
         ],
       };
     case "inventory":
@@ -7865,14 +8428,47 @@ const BUILD_UPGRADE_IDS = new Set([
 ]);
 
 function upgradeDiscipline(upgrade) {
-  if (BUILD_UPGRADE_IDS.has(upgrade.id)) {
+  if (upgrade.category === "build" || BUILD_UPGRADE_IDS.has(upgrade.id)) {
     return "build";
   }
   return "craft";
 }
 
 function upgradeDisciplineLabel(upgrade) {
+  if (upgrade.category === "tool") return "tool";
+  if (upgrade.category === "weapon") return "weapon";
+  if (upgrade.category === "armor") return "armor";
+  if (upgrade.category === "consumable") return "consumable";
   return upgradeDiscipline(upgrade) === "build" ? "base build" : "fieldcraft";
+}
+
+function upgradeTierLabel(upgrade) {
+  return (upgrade.tier || "field").replace(/_/g, " ");
+}
+
+function upgradeToolLabel(upgrade) {
+  if (!upgrade.requiredTools?.length) {
+    return "none";
+  }
+  return upgrade.requiredTools.map((itemId) => ITEMS[itemId]?.name || itemId).join(" + ");
+}
+
+function upgradeResultLabel(upgrade) {
+  if (upgrade.resultLabel) {
+    return upgrade.resultLabel;
+  }
+  if (upgrade.effects?.grantItems) {
+    const [itemId] = Object.keys(upgrade.effects.grantItems);
+    return ITEMS[itemId]?.name || itemId;
+  }
+  if (upgrade.effects?.unlockZones?.length) {
+    const zone = ZONES.find((entry) => entry.id === upgrade.effects.unlockZones[0]);
+    return zone?.name || upgrade.effects.unlockZones[0];
+  }
+  if (upgrade.effects?.unlockSections?.length) {
+    return TAB_NAME_BY_SECTION[upgrade.effects.unlockSections[0]] || upgrade.effects.unlockSections[0];
+  }
+  return upgrade.name;
 }
 
 function formatPercent(value) {
@@ -7947,6 +8543,7 @@ const TAB_NAME_BY_SECTION = {
 
 function getUpgradeMissingNotes(state, upgrade) {
   const missing = [];
+  const activeJob = getActiveWorkJob(state);
 
   Object.entries(upgrade.cost || {}).forEach(([resourceId, amount]) => {
     const have = state.resources[resourceId] || 0;
@@ -7962,23 +8559,39 @@ function getUpgradeMissingNotes(state, upgrade) {
     }
   });
 
+  missingRequiredTools(state, upgrade.requiredTools || []).forEach((itemId) => {
+    missing.push(`Need ${itemLabel(itemId)}`);
+  });
+
+  if (activeJob && activeJob.recipeId !== upgrade.id) {
+    missing.push(`Work slot busy: ${activeJob.label}`);
+  }
+
   return missing;
 }
 
 function upgradeTooltipText(state, upgrade, built, ready, missing) {
   const lines = [upgrade.name];
 
-  if (upgrade.description) {
-    lines.push(upgrade.description);
-  }
+  lines.push(`Tier: ${upgradeTierLabel(upgrade)}`);
+  lines.push(`Time: ${upgrade.hours || 1}h`);
+  lines.push(`Required tool: ${upgradeToolLabel(upgrade)}`);
+  lines.push(`Result: ${upgradeResultLabel(upgrade)}`);
 
   const effectChips = upgradeEffectChips(upgrade);
   if (effectChips.length) {
     lines.push(`Effects: ${effectChips.join(" | ")}`);
   }
 
+  if (upgrade.cost && Object.keys(upgrade.cost).length) {
+    lines.push(`Cost: ${formatCost(upgrade.cost)}`);
+  }
   if (upgrade.materials && Object.keys(upgrade.materials).length) {
-    lines.push(`Needs: ${Object.entries(upgrade.materials).map(([itemId, amount]) => `${ITEMS[itemId]?.name || itemId} x${amount}`).join(" / ")}`);
+    lines.push(`Materials: ${formatMaterials(upgrade.materials)}`);
+  }
+
+  if (upgrade.description) {
+    lines.push(upgrade.description);
   }
 
   if (missing.length) {
@@ -7994,6 +8607,41 @@ function upgradeTooltipText(state, upgrade, built, ready, missing) {
   return lines.join(" • ");
 }
 
+function renderWorkInProgress(state) {
+  const job = getActiveWorkJob(state);
+  if (!job) {
+    return `
+      <div class="list-block compact-block">
+        <div class="surface-head">
+          <h4>Queue open</h4>
+          <span class="tag">idle</span>
+        </div>
+        <p class="note">No active build or craft job. Start one queue item, then let time pass through scavenging, routes, radio, or the night.</p>
+        <div class="chip-row">${tagList(["one shared slot", "cost paid upfront", "auto-completes"])}</div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="list-block compact-block">
+      <div class="surface-head">
+        <h4>${job.label}</h4>
+        <span class="tag">${job.kind}</span>
+      </div>
+      <div class="fact-grid">
+        <div class="fact"><span>Tier</span><strong>${(job.tier || "field").replace(/_/g, " ")}</strong></div>
+        <div class="fact"><span>Total</span><strong>${job.hoursTotal}h</strong></div>
+        <div class="fact"><span>Left</span><strong>${job.hoursRemaining}h</strong></div>
+        <div class="fact"><span>Due</span><strong>${job.completesAt}</strong></div>
+      </div>
+      <div class="chip-row">${tagList([
+        job.kind === "build" ? "base work" : "fieldcraft",
+        ...(job.requiredTools?.length ? job.requiredTools.map((itemId) => itemLabel(itemId)) : ["no tool gate"]),
+      ])}</div>
+    </div>
+  `;
+}
+
 function renderUpgradeQueue(state, title, ready, blocked, emptyText) {
   return `
     <div class="queue-column">
@@ -8007,7 +8655,7 @@ function renderUpgradeQueue(state, title, ready, blocked, emptyText) {
       ${blocked.length
         ? `
           <div class="queue-stack">
-            <span class="note-label">Need salvage</span>
+            <span class="note-label">Blocked</span>
             <div class="detail-list">${blocked.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>
           </div>
         `
@@ -8103,13 +8751,17 @@ function renderOverviewActions(state) {
 
 function renderUpgradeCard(state, upgrade) {
   const built = state.upgrades.includes(upgrade.id);
-  const ready = canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials);
+  const activeJob = getActiveWorkJob(state);
+  const ready = !activeJob && canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials) && hasRequiredTools(state, upgrade.requiredTools);
   const missing = getUpgradeMissingNotes(state, upgrade);
   const tooltip = upgradeTooltipText(state, upgrade, built, ready, missing);
   const costLine = Object.keys(upgrade.cost || {}).length ? formatCost(upgrade.cost) : "No cost";
-  const materialLine = upgrade.materials && Object.keys(upgrade.materials).length
-    ? Object.entries(upgrade.materials).map(([itemId, amount]) => `${ITEMS[itemId]?.name || itemId} x${amount}`).join(" / ")
-    : "";
+  const detailTags = [
+    `time ${upgrade.hours || 1}h`,
+    `tool ${upgradeToolLabel(upgrade)}`,
+    `result ${upgradeResultLabel(upgrade)}`,
+    `tier ${upgradeTierLabel(upgrade)}`,
+  ];
 
   return `
     <div class="list-block upgrade-card has-tooltip ${built ? "is-built-upgrade" : ready ? "is-ready-upgrade" : "is-blocked-upgrade"}"${tooltipAttrs(tooltip)}>
@@ -8118,11 +8770,11 @@ function renderUpgradeCard(state, upgrade) {
         <span class="tag">${built ? "built" : ready ? "ready" : "blocked"}</span>
       </div>
       <p class="upgrade-costline">${costLine}</p>
-      ${materialLine ? `<p class="upgrade-material-line">${materialLine}</p>` : ""}
+      <div class="chip-row">${tagList(detailTags)}</div>
       ${built ? "" : actionButton({
-        action: "buy-upgrade",
-        label: upgrade.verb || "Build",
-        meta: ready ? "unlock" : missing[0] || "Need salvage or tools",
+        action: "start-work-job",
+        label: `${upgrade.verb || "Start"} ${upgrade.name}`,
+        meta: ready ? `${upgrade.hours || 1}h queue` : missing[0] || "Need salvage or tools",
         disabled: !ready,
         data: { upgrade: upgrade.id },
         title: tooltip,
@@ -8222,64 +8874,72 @@ function renderOverviewTab(state, derived, _isMobile = false) {
 function renderCraftTab(state, isMobile = false) {
   const visibleUpgrades = getVisibleUpgrades(state);
   const available = visibleUpgrades.filter((upgrade) => !state.upgrades.includes(upgrade.id));
-  const buildUpgrades = available.filter((upgrade) => upgradeDiscipline(upgrade) === "build");
-  const craftUpgrades = available.filter((upgrade) => upgradeDiscipline(upgrade) === "craft");
-  const readyBuilds = buildUpgrades.filter((upgrade) => canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials));
-  const blockedBuilds = buildUpgrades.filter((upgrade) => !readyBuilds.includes(upgrade));
-  const readyCrafts = craftUpgrades.filter((upgrade) => canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials));
-  const blockedCrafts = craftUpgrades.filter((upgrade) => !readyCrafts.includes(upgrade));
+  const activeJob = getActiveWorkJob(state);
   const built = state.upgrades
     .map((upgradeId) => visibleUpgrades.find((upgrade) => upgrade.id === upgradeId))
     .filter(Boolean);
-  const builtBuilds = built.filter((upgrade) => upgradeDiscipline(upgrade) === "build");
-  const builtCrafts = built.filter((upgrade) => upgradeDiscipline(upgrade) === "craft");
+  const builtBuilds = built.filter((upgrade) => (upgrade.category || upgradeDiscipline(upgrade)) === "build");
+  const builtCrafts = built.filter((upgrade) => (upgrade.category || upgradeDiscipline(upgrade)) !== "build");
+  const categories = [
+    { id: "build", title: "Base Builds", empty: "No base structure jobs are open yet.", className: "span-6" },
+    { id: "tool", title: "Tools", empty: "No tool jobs are open yet.", className: "span-6" },
+    { id: "weapon", title: "Weapons", empty: "No weapon jobs are open yet.", className: "span-4" },
+    { id: "armor", title: "Armor", empty: "No armor jobs are open yet.", className: "span-4" },
+    { id: "consumable", title: "Consumables", empty: "No consumable jobs are open yet.", className: "span-4" },
+  ];
+  const upgradesForCategory = (categoryId) => available.filter((upgrade) => {
+    const category = upgrade.category || (upgradeDiscipline(upgrade) === "build" ? "build" : "tool");
+    return category === categoryId;
+  });
+  const renderCategoryBody = (category) => {
+    const upgrades = upgradesForCategory(category.id);
+    const ready = upgrades.filter((upgrade) => !getUpgradeMissingNotes(state, upgrade).length);
+    const blocked = upgrades.filter((upgrade) => !ready.includes(upgrade));
+    return renderUpgradeQueue(state, category.title, ready, blocked, category.empty);
+  };
 
   if (isMobile) {
     return `
       <div class="tab-mobile-flow tab-mobile-flow-craft">
         ${surfaceCard({
-          title: "Base builds",
-          meta: `${readyBuilds.length} ready / ${blockedBuilds.length} blocked`,
-          body: `
-            <details class="mobile-accordion" open>
-              <summary>Open build queue</summary>
-              <div class="mobile-accordion-body">
-                ${renderUpgradeQueue(state, "Shelter works", readyBuilds, blockedBuilds, "No base structures are open yet.")}
-              </div>
-            </details>
-          `,
+          title: "Work in Progress",
+          meta: activeJob ? `${activeJob.hoursRemaining}h left` : "idle",
+          body: renderWorkInProgress(state),
         })}
-        ${surfaceCard({
-          title: "Fieldcraft",
-          meta: `${readyCrafts.length} ready / ${blockedCrafts.length} blocked`,
-          body: `
-            <details class="mobile-accordion" open>
-              <summary>Open fieldcraft queue</summary>
-              <div class="mobile-accordion-body">
-                ${renderUpgradeQueue(state, "Tools and fieldwork", readyCrafts, blockedCrafts, "No fieldcraft jobs are open yet.")}
-              </div>
-            </details>
-          `,
-        })}
+        ${categories.map((category) => {
+          const upgrades = upgradesForCategory(category.id);
+          const ready = upgrades.filter((upgrade) => !getUpgradeMissingNotes(state, upgrade).length);
+          const blocked = upgrades.filter((upgrade) => !ready.includes(upgrade));
+          return surfaceCard({
+            title: category.title,
+            meta: `${ready.length} ready / ${blocked.length} blocked`,
+            body: `
+              <details class="mobile-accordion"${category.id === "build" || category.id === "tool" ? " open" : ""}>
+                <summary>Open ${category.title.toLowerCase()}</summary>
+                <div class="mobile-accordion-body">
+                  ${renderCategoryBody(category)}
+                </div>
+              </details>
+            `,
+          });
+        }).join("")}
         ${surfaceCard({
           title: "Systems online",
           meta: `${built.length} total`,
-          body: built.length
-            ? `
-              <details class="mobile-accordion">
-                <summary>Show installed systems</summary>
-                <div class="detail-list">${built.map((upgrade) => `
-                  <div class="list-block compact-block">
-                    <div class="surface-head">
-                      <h4>${upgrade.name}</h4>
-                      <span class="tag">live</span>
-                    </div>
-                    <div class="chip-row">${tagList([upgradeDisciplineLabel(upgrade), "installed"])}</div>
+          body: `
+            <details class="mobile-accordion">
+              <summary>Show installed systems</summary>
+              <div class="detail-list">${built.length ? built.map((upgrade) => `
+                <div class="list-block compact-block">
+                  <div class="surface-head">
+                    <h4>${upgrade.name}</h4>
+                    <span class="tag">live</span>
                   </div>
-                `).join("")}</div>
-              </details>
-            `
-            : `<p class="empty-state">No installed systems yet.</p>`,
+                  <div class="chip-row">${tagList([upgradeDisciplineLabel(upgrade), `tier ${upgradeTierLabel(upgrade)}`, `result ${upgradeResultLabel(upgrade)}`])}</div>
+                </div>
+              `).join("") : `<p class="empty-state">No installed systems yet.</p>`}</div>
+            </details>
+          `,
         })}
       </div>
     `;
@@ -8288,42 +8948,46 @@ function renderCraftTab(state, isMobile = false) {
   return `
     <div class="tab-grid">
       ${surfaceCard({
-        title: "Build + craft board",
-        meta: `${available.length} open`,
-        className: "span-8",
-        body: available.length
-          ? `
-            <div class="queue-board">
-              ${renderUpgradeQueue(state, "Base builds", readyBuilds, blockedBuilds, "No base structures are open yet.")}
-              ${renderUpgradeQueue(state, "Fieldcraft", readyCrafts, blockedCrafts, "No fieldcraft jobs are open yet.")}
-            </div>
-          `
-          : `<p class="empty-state">No fresh plans yet. Search deeper.</p>`,
+        title: "Work in Progress",
+        meta: activeJob ? `${activeJob.hoursRemaining}h left` : "queue idle",
+        className: "span-12",
+        body: renderWorkInProgress(state),
       })}
+      ${categories.map((category) => {
+        const upgrades = upgradesForCategory(category.id);
+        const ready = upgrades.filter((upgrade) => !getUpgradeMissingNotes(state, upgrade).length);
+        const blocked = upgrades.filter((upgrade) => !ready.includes(upgrade));
+        return surfaceCard({
+          title: category.title,
+          meta: `${ready.length} ready / ${blocked.length} blocked`,
+          className: category.className,
+          body: renderCategoryBody(category),
+        });
+      }).join("")}
       ${surfaceCard({
         title: "Systems online",
         meta: `${built.length} total`,
-        className: "span-4",
+        className: "span-12",
         body: built.length
           ? `
-            <div class="detail-list">
-              <div class="list-block compact-block">
+            <div class="queue-board">
+              <div class="queue-column">
                 <div class="surface-head">
-                  <h4>Base builds</h4>
+                  <h4>Base Builds</h4>
                   <span class="tag">${builtBuilds.length}</span>
                 </div>
                 ${builtBuilds.length
                   ? `<div class="chip-row">${tagList(builtBuilds.map((upgrade) => upgrade.name))}</div>`
                   : `<p class="empty-state">No base systems live.</p>`}
               </div>
-              <div class="list-block compact-block">
+              <div class="queue-column">
                 <div class="surface-head">
-                  <h4>Fieldcraft</h4>
+                  <h4>Crafted Gear</h4>
                   <span class="tag">${builtCrafts.length}</span>
                 </div>
                 ${builtCrafts.length
                   ? `<div class="chip-row">${tagList(builtCrafts.map((upgrade) => upgrade.name))}</div>`
-                  : `<p class="empty-state">No crafted tools online.</p>`}
+                  : `<p class="empty-state">No crafted gear online.</p>`}
               </div>
             </div>
           `
@@ -8897,6 +9561,17 @@ function accordionSection(title, meta, body, open = false) {
 
 const PATCH_NOTES = [
   {
+    version: "v5.2",
+    title: "Building / Crafting Overhaul",
+    points: [
+      "Builds and crafts now run through one timed work queue.",
+      "Advanced shelter jobs require the right tools strictly.",
+      "Hammer, Sewing Kit, and Sharpening Stone join the permanent tool ladder.",
+      "Craft is split into Base Builds, Tools, Weapons, Armor, and Consumables.",
+      "Player loadout now surfaces baseline gear and a more deliberate tool belt.",
+    ],
+  },
+  {
     version: "v5.1",
     title: "Base Pressure Overhaul",
     points: [
@@ -9037,21 +9712,60 @@ function playerGearRows(state) {
   };
 }
 
+function groupedToolMarkup(state) {
+  const roleDefs = [
+    { id: "salvage", label: "Salvage" },
+    { id: "build", label: "Build" },
+    { id: "clothwork", label: "Clothwork" },
+    { id: "edgework", label: "Edgework" },
+    { id: "repair", label: "Repair" },
+    { id: "signal", label: "Signal" },
+  ];
+
+  const toolEntries = Object.entries(state.inventory)
+    .filter(([itemId, amount]) => amount > 0 && ITEMS[itemId]?.type === "tool");
+
+  const groups = roleDefs.map((role) => {
+    const tools = toolEntries
+      .filter(([itemId]) => ITEMS[itemId]?.toolRole === role.id)
+      .map(([itemId, amount]) => renderInventoryItemCard(itemId, amount));
+    return { ...role, tools };
+  }).filter((group) => group.tools.length);
+
+  if (!groups.length) {
+    return `<p class="empty-state">No field tools packed yet.</p>`;
+  }
+
+  return `
+    <div class="detail-list">
+      ${groups.map((group) => `
+        <div class="list-block compact-block">
+          <div class="surface-head">
+            <h4>${group.label}</h4>
+            <span class="tag">${group.tools.length}</span>
+          </div>
+          <div class="inventory-card-grid">${group.tools.join("")}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
 function renderPlayerTab(state, derived, isMobile = false) {
   const upkeep = getShelterUpkeep(state);
   const gear = playerGearRows(state);
-  const weaponName = state.equipped.weapon ? ITEMS[state.equipped.weapon]?.name : "Bare hands";
-  const armorName = state.equipped.armor ? ITEMS[state.equipped.armor]?.name : "Street clothes";
+  const weaponName = state.equipped.weapon ? ITEMS[state.equipped.weapon]?.name : "Bare Hands";
+  const armorName = state.equipped.armor ? ITEMS[state.equipped.armor]?.name : "Street Clothes";
   const stressedCount = state.survivors.roster.filter((survivor) => survivor.stress >= 4).length;
   const woundedCount = state.survivors.roster.filter((survivor) => survivor.wounded > 0).length;
   const statusCards = `
     <div class="fact-grid">
       <div class="fact"><span>Attack</span><strong>${derived.attack}</strong></div>
       <div class="fact"><span>Defense</span><strong>${derived.defense}</strong></div>
-      <div class="fact"><span>Condition</span><strong>${state.resources.condition}</strong></div>
+      <div class="fact"><span>Condition</span><strong>${state.condition}</strong></div>
       <div class="fact"><span>Ammo</span><strong>${state.resources.ammo}</strong></div>
-      <div class="fact"><span>Meal due</span><strong>${upkeep.foodDueInHours}h</strong></div>
-      <div class="fact"><span>Water due</span><strong>${upkeep.waterDueInHours}h</strong></div>
+      <div class="fact"><span>Meal due</span><strong>${upkeep.mealHoursLeft}h</strong></div>
+      <div class="fact"><span>Water due</span><strong>${upkeep.waterHoursLeft}h</strong></div>
       <div class="fact"><span>Crew stress</span><strong>${stressedCount}</strong></div>
       <div class="fact"><span>Crew wounds</span><strong>${woundedCount}</strong></div>
     </div>
@@ -9079,9 +9793,7 @@ function renderPlayerTab(state, derived, isMobile = false) {
     title: "Tool belt",
     meta: `${gear.tools.length} tools`,
     className,
-    body: gear.tools.length
-      ? `<div class="inventory-card-grid">${gear.tools.join("")}</div>`
-      : `<p class="empty-state">No field tools packed yet.</p>`,
+    body: groupedToolMarkup(state),
   });
   const gearCard = (className = "") => surfaceCard({
     title: "Equipment locker",
@@ -10227,6 +10939,12 @@ function defaultTraderState() {
   };
 }
 
+function defaultWorkState() {
+  return {
+    activeJob: null,
+  };
+}
+
 function roleSequenceFromAssigned(assigned) {
   const sequence = [];
   Object.keys(SURVIVOR_ROLES).forEach((roleId) => {
@@ -10286,7 +11004,7 @@ function summarizeRoster(roster) {
 
 function createInitialState() {
   return {
-    version: 8,
+    version: 9,
     time: {
       day: 1,
       hour: 7,
@@ -10361,6 +11079,7 @@ function createInitialState() {
     player: {
       username: "",
     },
+    work: defaultWorkState(),
     radio: defaultRadioState(),
     buffers: {
       resources: defaultBuffers(),
@@ -10459,6 +11178,13 @@ function normalizeState(rawState) {
         ...(state.radio?.traces || {}),
       },
       resolved: Array.isArray(state.radio?.resolved) ? [...new Set(state.radio.resolved)] : fresh.radio.resolved,
+    },
+    work: {
+      ...fresh.work,
+      ...state.work,
+      activeJob: state.work?.activeJob && typeof state.work.activeJob === "object"
+        ? { ...state.work.activeJob }
+        : null,
     },
     ui: { ...fresh.ui, ...state.ui },
     settings: { ...fresh.settings, ...state.settings },
@@ -10670,8 +11396,9 @@ function handleAction(action, button) {
       forageFood(state);
       changed = true;
       break;
+    case "start-work-job":
     case "buy-upgrade":
-      changed = buyUpgrade(state, button.dataset.upgrade);
+      changed = startWorkJob(state, button.dataset.upgrade);
       break;
     case "inspect-structure":
       if (state.ui.inspectedStructure !== button.dataset.structure) {

@@ -45,6 +45,12 @@ function defaultTraderState() {
   };
 }
 
+function defaultWorkState() {
+  return {
+    activeJob: null,
+  };
+}
+
 function roleSequenceFromAssigned(assigned) {
   const sequence = [];
   Object.keys(SURVIVOR_ROLES).forEach((roleId) => {
@@ -104,7 +110,7 @@ function summarizeRoster(roster) {
 
 export function createInitialState() {
   return {
-    version: 8,
+    version: 9,
     time: {
       day: 1,
       hour: 7,
@@ -179,6 +185,7 @@ export function createInitialState() {
     player: {
       username: "",
     },
+    work: defaultWorkState(),
     radio: defaultRadioState(),
     buffers: {
       resources: defaultBuffers(),
@@ -277,6 +284,13 @@ function normalizeState(rawState) {
         ...(state.radio?.traces || {}),
       },
       resolved: Array.isArray(state.radio?.resolved) ? [...new Set(state.radio.resolved)] : fresh.radio.resolved,
+    },
+    work: {
+      ...fresh.work,
+      ...state.work,
+      activeJob: state.work?.activeJob && typeof state.work.activeJob === "object"
+        ? { ...state.work.activeJob }
+        : null,
     },
     ui: { ...fresh.ui, ...state.ui },
     settings: { ...fresh.settings, ...state.settings },

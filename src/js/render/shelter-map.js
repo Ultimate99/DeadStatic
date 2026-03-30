@@ -1,15 +1,19 @@
+import { ITEMS } from "../data.js";
 import { UPGRADES_BY_ID } from "../content.js";
 import {
   canAfford,
   formatCost,
   formatMaterials,
+  getActiveWorkJob,
   getAvailableScavengeSources,
   getDerivedState,
   getShelterSystems,
   getRepairCost,
   getStructureDamage,
   getVisibleUpgrades,
+  hasRequiredTools,
   hasMaterials,
+  missingRequiredTools,
 } from "../engine.js";
 import {
   actionButton,
@@ -294,15 +298,24 @@ function mapStructureByUpgrade(upgradeId) {
 function renderPlannedStructureCard(state, upgrade) {
   const structure = mapStructureByUpgrade(upgrade.id);
   const meta = [];
+  const activeJob = getActiveWorkJob(state);
+  const missingTools = missingRequiredTools(state, upgrade.requiredTools || []);
   if (Object.keys(upgrade.cost || {}).length) {
     meta.push(formatCost(upgrade.cost));
   }
   if (upgrade.materials && Object.keys(upgrade.materials).length) {
     meta.push(formatMaterials(upgrade.materials));
   }
+  if (upgrade.requiredTools?.length) {
+    meta.push(`Tool ${upgrade.requiredTools.map((itemId) => ITEMS[itemId]?.name || itemId).join(" + ")}`);
+  }
   if (structure?.col && structure?.row) {
     meta.push(`Grid ${structure.col}-${structure.row}`);
   }
+  const canStart = !activeJob
+    && canAfford(state, upgrade.cost)
+    && hasMaterials(state, upgrade.materials)
+    && hasRequiredTools(state, upgrade.requiredTools);
 
   return `
     <div class="ghost-card kind-${structure?.kind || "utility"} sprite-${structure?.sprite || "bench"}">
@@ -323,10 +336,10 @@ function renderPlannedStructureCard(state, upgrade) {
       <p class="note">${upgrade.description}</p>
       ${meta.length ? `<div class="chip-row">${tagList(meta)}</div>` : ""}
       ${actionButton({
-        action: "buy-upgrade",
+        action: "start-work-job",
         label: `${upgrade.verb || "Build"} ${upgrade.name}`,
-        meta: "slot ready",
-        disabled: !(canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials)),
+        meta: canStart ? `${upgrade.hours || 1}h queue` : activeJob ? `Busy: ${activeJob.label}` : missingTools[0] ? `Need ${ITEMS[missingTools[0]]?.name || missingTools[0]}` : "Need salvage",
+        disabled: !canStart,
         data: { upgrade: upgrade.id },
         variant: "compact slot-trigger",
       })}

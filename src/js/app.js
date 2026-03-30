@@ -4,7 +4,6 @@ import {
   braceCombat,
   burnForWarmth,
   buyTraderOffer,
-  buyUpgrade,
   chooseFaction,
   craftAmmo,
   drinkWater,
@@ -24,6 +23,7 @@ import {
   scanRadio,
   scavengeZone,
   searchRubble,
+  startWorkJob,
   setExpeditionApproach,
   setExpeditionObjective,
   setNightPlan,
@@ -123,8 +123,9 @@ function handleAction(action, button) {
       forageFood(state);
       changed = true;
       break;
+    case "start-work-job":
     case "buy-upgrade":
-      changed = buyUpgrade(state, button.dataset.upgrade);
+      changed = startWorkJob(state, button.dataset.upgrade);
       break;
     case "inspect-structure":
       if (state.ui.inspectedStructure !== button.dataset.structure) {

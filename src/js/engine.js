@@ -430,6 +430,23 @@ export function getTimeStamp(state) {
   return `D${state.time.day} ${hourStamp(state.time.hour)}`;
 }
 
+function futureTimeStamp(state, hours = 0) {
+  let day = state.time.day;
+  let hour = state.time.hour;
+  for (let index = 0; index < hours; index += 1) {
+    hour += 1;
+    if (hour >= 24) {
+      hour = 0;
+      day += 1;
+    }
+  }
+  return `D${day} ${hourStamp(hour)}`;
+}
+
+export function getActiveWorkJob(state) {
+  return state.work?.activeJob || null;
+}
+
 export function getShelterUpkeep(state) {
   const crew = Math.max(0, state.survivors?.total || 0);
   const mealCost = Math.max(1, 1 + Math.floor(crew / 2));
@@ -1213,6 +1230,14 @@ export function hasMaterials(state, materials = {}) {
   return Object.entries(materials).every(([itemId, amount]) => (state.inventory[itemId] || 0) >= amount);
 }
 
+export function missingRequiredTools(state, requiredTools = []) {
+  return requiredTools.filter((itemId) => !hasItem(state, itemId));
+}
+
+export function hasRequiredTools(state, requiredTools = []) {
+  return missingRequiredTools(state, requiredTools).length === 0;
+}
+
 function spendResources(state, cost = {}) {
   Object.entries(cost).forEach(([resourceId, amount]) => {
     state.resources[resourceId] = Math.max(0, state.resources[resourceId] - amount);
@@ -1932,7 +1957,6 @@ function runNightPressure(state, derived) {
 
 export function advanceTime(state, hours) {
   for (let index = 0; index < hours; index += 1) {
-    const derived = getDerivedState(state);
     state.time.hour += 1;
     if (state.time.hour >= 24) {
       state.time.hour = 0;
@@ -1961,6 +1985,9 @@ export function advanceTime(state, hours) {
       maybeUseMaintenance(state);
     }
 
+    tickActiveJob(state);
+
+    const derived = getDerivedState(state);
     if (state.time.hour === 21) {
       runNightPressure(state, derived);
     }
@@ -2086,26 +2113,48 @@ export function drinkWater(state) {
   return true;
 }
 
-export function buyUpgrade(state, upgradeId) {
+export function startWorkJob(state, upgradeId) {
   const upgrade = UPGRADES_BY_ID[upgradeId];
-  if (!upgrade || state.upgrades.includes(upgradeId)) {
+  if (!upgrade || state.upgrades.includes(upgradeId) || getActiveWorkJob(state)) {
     return false;
   }
   if (
     !requirementsMet(state, upgrade.requires)
     || !canAfford(state, upgrade.cost)
     || !hasMaterials(state, upgrade.materials)
+    || !hasRequiredTools(state, upgrade.requiredTools)
   ) {
     return false;
   }
 
+  if (!state.work) {
+    state.work = { activeJob: null };
+  }
+
   spendResources(state, upgrade.cost);
   spendMaterials(state, upgrade.materials);
-  state.upgrades.push(upgradeId);
-  applyEffectBundle(state, upgrade.effects);
-  addLog(state, `Built: ${upgrade.name}. ${upgrade.description}`, "build");
-  evaluateProgression(state);
+  const jobHours = Math.max(1, upgrade.hours || 1);
+  state.work.activeJob = {
+    kind: workKindForUpgrade(upgrade),
+    recipeId: upgrade.id,
+    label: upgrade.name,
+    tier: upgrade.tier || "field",
+    hoursTotal: jobHours,
+    hoursRemaining: jobHours,
+    requiredTools: [...(upgrade.requiredTools || [])],
+    startedAt: getTimeStamp(state),
+    completesAt: futureTimeStamp(state, jobHours),
+  };
+  addLog(
+    state,
+    `${workCategoryLabel(state.work.activeJob.kind)} started: ${upgrade.name}. ${jobHours}h on the bench. Due ${state.work.activeJob.completesAt}.`,
+    state.work.activeJob.kind,
+  );
   return true;
+}
+
+export function buyUpgrade(state, upgradeId) {
+  return startWorkJob(state, upgradeId);
 }
 
 function enemyBehavior(enemyId) {
@@ -2617,6 +2666,75 @@ export function getAvailableRadioInvestigations(state) {
     }
     return true;
   });
+}
+
+function workKindForUpgrade(upgrade) {
+  return upgrade.category === "build" ? "build" : "craft";
+}
+
+function workCategoryLabel(kind) {
+  return kind === "build" ? "Base Build" : "Craft";
+}
+
+function workResultLabel(upgrade) {
+  if (upgrade.resultLabel) {
+    return upgrade.resultLabel;
+  }
+  const grantedItems = Object.keys(upgrade.effects?.grantItems || {});
+  if (grantedItems.length) {
+    return ITEMS[grantedItems[0]]?.name || grantedItems[0];
+  }
+  const zoneId = upgrade.effects?.unlockZones?.[0];
+  if (zoneId && ZONES_BY_ID[zoneId]) {
+    return ZONES_BY_ID[zoneId].name;
+  }
+  const sectionId = upgrade.effects?.unlockSections?.[0];
+  if (sectionId) {
+    return sectionId;
+  }
+  return upgrade.name;
+}
+
+function applyCompletedUpgrade(state, upgrade) {
+  if (!state.upgrades.includes(upgrade.id)) {
+    state.upgrades.push(upgrade.id);
+  }
+  applyEffectBundle(state, upgrade.effects);
+  addLog(
+    state,
+    `${workCategoryLabel(workKindForUpgrade(upgrade))} complete: ${upgrade.name}. ${workResultLabel(upgrade)} is now live.`,
+    workKindForUpgrade(upgrade),
+  );
+  evaluateProgression(state);
+}
+
+function finishActiveJob(state) {
+  const job = getActiveWorkJob(state);
+  if (!job) {
+    return false;
+  }
+
+  const upgrade = UPGRADES_BY_ID[job.recipeId];
+  state.work.activeJob = null;
+  if (!upgrade) {
+    return false;
+  }
+
+  applyCompletedUpgrade(state, upgrade);
+  return true;
+}
+
+function tickActiveJob(state) {
+  const job = getActiveWorkJob(state);
+  if (!job) {
+    return false;
+  }
+
+  job.hoursRemaining = Math.max(0, job.hoursRemaining - 1);
+  if (job.hoursRemaining <= 0) {
+    return finishActiveJob(state);
+  }
+  return true;
 }
 
 export function setRadioInvestigation(state, investigationId) {
