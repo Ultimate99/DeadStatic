@@ -209,12 +209,13 @@ run("search rubble yields tiered loot and discoveries", () => {
 run("backpack respects cloth requirement before it can be built", () => {
   const state = createInitialState();
   state.stats.searches = 3;
-  state.resources.scrap = 4;
+  state.resources.scrap = 5;
 
   evaluateProgression(state);
   assert.equal(buyUpgrade(state, "backpack"), false);
 
-  state.resources.cloth = 2;
+  state.resources.scrap = 6;
+  state.resources.cloth = 3;
   assert.equal(buyUpgrade(state, "backpack"), true);
   assert.ok(state.upgrades.includes("backpack"));
 });
@@ -624,7 +625,7 @@ run("mobile shell renders bottom nav, compact tutorial, and sticky survival stri
 run("mobile more sheet exposes secondary screens without shelter map", () => {
   const bundle = readFileSync(path.join(projectRoot, "dist", "js", "game.js"), "utf8");
   const state = createInitialState();
-  state.unlockedSections = ["upgrades", "inventory", "shelter", "map", "survivors", "radio", "trader", "factions"];
+  state.unlockedSections = ["upgrades", "inventory", "shelter", "map", "survivors", "radio"];
   state.ui.mobileMoreOpen = true;
 
   const harness = createBundleHarness(SEARCH_PATTERN, { initialSave: state, innerWidth: 390 });
@@ -634,11 +635,12 @@ run("mobile more sheet exposes secondary screens without shelter map", () => {
   assert.match(sheetMarkup, /Inventory/);
   assert.match(sheetMarkup, /Crew/);
   assert.match(sheetMarkup, /Radio/);
-  assert.match(sheetMarkup, /Trade/);
-  assert.match(sheetMarkup, /Factions/);
+  assert.match(sheetMarkup, /Leaderboard/);
   assert.match(sheetMarkup, /Log/);
   assert.match(sheetMarkup, /Help/);
   assert.match(sheetMarkup, /Settings/);
+  assert.doesNotMatch(sheetMarkup, /Trade/);
+  assert.doesNotMatch(sheetMarkup, /Factions/);
   assert.doesNotMatch(sheetMarkup, /Shelter Map/);
 });
 

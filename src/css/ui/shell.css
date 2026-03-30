@@ -1750,9 +1750,106 @@ button:hover:not(:disabled) {
     font-size: 0.52rem;
   }
 
-  body[data-mobile="false"] .map-structure.is-selected .structure-name {
-    border-color: rgba(198, 163, 109, 0.22);
-    color: var(--accent-strong);
+body[data-mobile="false"] .map-structure.is-selected .structure-name {
+  border-color: rgba(198, 163, 109, 0.22);
+  color: var(--accent-strong);
+}
+}
+
+.summary-pill {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.summary-pill small {
+  color: rgba(165, 160, 148, 0.82);
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+}
+
+.summary-pill.tone-good {
+  border-color: rgba(138, 168, 123, 0.14);
+}
+
+.summary-pill.tone-warn {
+  border-color: rgba(190, 154, 102, 0.16);
+}
+
+.summary-pill.tone-danger {
+  border-color: rgba(174, 94, 85, 0.18);
+}
+
+.summary-pill.tone-neutral {
+  border-color: rgba(205, 196, 174, 0.08);
+}
+
+.upgrade-card-grid,
+.inventory-card-grid,
+.resource-tier-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.upgrade-card-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.inventory-card-grid,
+.resource-tier-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.compact-fact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.compact-fact-grid > div {
+  padding: 7px 8px;
+  border: 1px solid rgba(205, 196, 174, 0.06);
+  border-radius: 10px;
+  background: rgba(14, 17, 17, 0.8);
+}
+
+.compact-fact-grid span {
+  display: block;
+  margin-bottom: 2px;
+  color: rgba(146, 141, 128, 0.82);
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.compact-fact-grid strong {
+  color: var(--text);
+  font-size: 0.82rem;
+}
+
+.map-structure {
+  position: relative;
+  left: auto;
+  top: auto;
+  grid-column: var(--col);
+  grid-row: var(--row);
+  justify-self: center;
+  align-self: center;
+}
+
+.map-perimeter-button {
+  position: relative;
+  bottom: auto;
+  grid-column: 6 / span 2;
+  grid-row: 8;
+  justify-self: center;
+  align-self: end;
+}
+
+@media (max-width: 1180px) {
+  .upgrade-card-grid {
+    grid-template-columns: 1fr;
   }
 }
 

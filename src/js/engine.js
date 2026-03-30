@@ -59,6 +59,7 @@ const STRUCTURE_SIGNAL_IDS = new Set(["radio_rig", "signal_decoder", "trader_bea
 const STRUCTURE_UTILITY_IDS = new Set(["crafting_bench", "ammo_press", "rain_collector", "bunker_drill"]);
 const STRUCTURE_DEFENSE_IDS = new Set(["basic_barricade", "watch_post"]);
 const SURVIVOR_TRAIT_IDS = Object.keys(SURVIVOR_TRAITS);
+const PASSIVE_RESOURCE_MULTIPLIER = 0.45;
 
 export const NIGHT_PLANS = {
   low_profile: {
@@ -384,7 +385,7 @@ function mergeEffectsIntoDerived(derived, effects = {}) {
 
   if (effects.passive) {
     Object.entries(effects.passive).forEach(([resourceId, amount]) => {
-      derived.passive[resourceId] += amount;
+      derived.passive[resourceId] += amount * PASSIVE_RESOURCE_MULTIPLIER;
     });
   }
 
@@ -432,14 +433,10 @@ export function getDerivedState(state) {
     mergeEffectsIntoDerived(derived, UPGRADES_BY_ID[upgradeId]?.effects);
   });
 
-  if (state.faction.aligned) {
-    mergeEffectsIntoDerived(derived, FACTIONS_BY_ID[state.faction.aligned]?.effects);
-  }
-
   const assigned = state.survivors.assigned;
   derived.salvageYieldBonus += assigned.scavenger * 0.06;
   derived.defense += assigned.guard;
-  derived.conditionRegen += assigned.medic * 0.04;
+  derived.conditionRegen += assigned.medic * 0.02;
   derived.expeditionLootBonus += assigned.scout * 0.08;
   derived.scoutBonus += assigned.scout * 0.06;
   derived.expeditionEncounterAdjust -= assigned.scout * 0.025;
@@ -536,52 +533,52 @@ export function getNightForecast(state) {
   const faction = factionConsequences(state);
   const adjustedDefense = Math.max(0, derived.defense + plan.defense);
   const adjustedNoise = clamp(state.shelter.noise + plan.noise + (faction.nightNoise || 0), 0, 10);
-  const guardBonus = guardStrength(state) * 0.45;
-  const signalBonus = state.survivors.assigned.tuner * 0.08;
+  const guardBonus = guardStrength(state) * 0.34;
+  const signalBonus = state.survivors.assigned.tuner * 0.05;
   const dangerScore = clamp(
-    state.shelter.threat * 1.32
-      + adjustedNoise * 1.16
-      + Math.max(0, state.time.day - 1) * 0.28
-      - adjustedDefense * 0.92
-      - state.shelter.warmth * 0.36
+    state.shelter.threat * 1.5
+      + adjustedNoise * 1.28
+      + Math.max(0, state.time.day - 1) * 0.38
+      - adjustedDefense * 0.84
+      - state.shelter.warmth * 0.24
       - guardBonus
       - signalBonus,
     0,
     14,
   );
 
-  const infectedChance = clamp(0.12 + state.shelter.threat * 0.07 + adjustedNoise * 0.045 - adjustedDefense * 0.02, 0.06, 0.82);
+  const infectedChance = clamp(0.16 + state.shelter.threat * 0.08 + adjustedNoise * 0.05 - adjustedDefense * 0.018, 0.1, 0.86);
   const raidChance = clamp(
-    (state.time.day >= 4 ? 0.08 : 0.02)
-      + adjustedNoise * 0.05
-      + state.resources.reputation * 0.008
+    (state.time.day >= 3 ? 0.1 : 0.03)
+      + adjustedNoise * 0.06
+      + state.resources.reputation * 0.01
       + plan.raidBias
       + (faction.raidBias || 0)
       - (faction.raidMitigation || 0)
-      - adjustedDefense * 0.014,
-    0.03,
-    0.62,
+      - adjustedDefense * 0.012,
+    0.04,
+    0.7,
   );
   const breachChance = clamp(
-    0.06
-      + Math.max(0, dangerScore - 2) * 0.05
+    0.08
+      + Math.max(0, dangerScore - 1.5) * 0.06
       + plan.breachBias
       - (faction.breachMitigation || 0)
-      - adjustedDefense * 0.018,
-    0.02,
-    0.58,
+      - adjustedDefense * 0.015,
+    0.03,
+    0.64,
   );
-  const quietChance = clamp(1 - (infectedChance * 0.46 + raidChance * 0.36 + breachChance * 0.34), 0.08, 0.7);
+  const quietChance = clamp(1 - (infectedChance * 0.5 + raidChance * 0.4 + breachChance * 0.38), 0.05, 0.58);
   const hoursUntilNight = state.time.hour < 21 ? 21 - state.time.hour : 24 - state.time.hour + 21;
 
   let severity = "Quiet";
-  if (dangerScore >= 3) {
+  if (dangerScore >= 2.5) {
     severity = "Tense";
   }
-  if (dangerScore >= 5.5) {
+  if (dangerScore >= 4.8) {
     severity = "Rough";
   }
-  if (dangerScore >= 8) {
+  if (dangerScore >= 7) {
     severity = "Critical";
   }
 
@@ -622,7 +619,7 @@ function radioInvestigation(investigationId) {
 }
 
 function alignedFaction(state) {
-  return state.faction.aligned ? FACTIONS_BY_ID[state.faction.aligned] : null;
+  return null;
 }
 
 function factionConsequences(state) {
@@ -1071,7 +1068,7 @@ export function evaluateProgression(state) {
   syncSurvivorRoster(state);
   if (state.stats.searches >= 3 && !state.flags.burnUnlocked) {
     state.flags.burnUnlocked = true;
-    addLog(state, "Cold makes simple math persuasive. Ten scrap for warmth suddenly sounds fair.");
+    addLog(state, "Cold makes simple math persuasive. Twelve scrap for warmth suddenly sounds fair.");
   }
 
   if ((state.stats.searches >= 4 || state.resources.scrap >= 8) && !state.unlockedSections.includes("upgrades")) {
@@ -1098,14 +1095,6 @@ export function evaluateProgression(state) {
   if (hasUpgrade(state, "radio_rig")) {
     unlockSection(state, "radio");
     discoverResource(state, "reputation");
-  }
-
-  if (hasUpgrade(state, "trader_beacon")) {
-    unlockSection(state, "trader");
-  }
-
-  if (state.story.radioProgress >= 4 || hasItem(state, "relay_key")) {
-    unlockSection(state, "factions");
   }
 
   if (state.story.secretProgress >= 2 && hasItem(state, "relay_key") && !state.flags.bunkerRouteKnown) {
@@ -1188,10 +1177,10 @@ function applyZoneRewards(state, zoneId, rewards) {
 function maybeUseFood(state) {
   if (state.resources.food > 0) {
     state.resources.food -= 1;
-    state.condition = clamp(state.condition + 2, 0, getDerivedState(state).maxCondition);
+    state.condition = clamp(state.condition + 1, 0, getDerivedState(state).maxCondition);
   } else {
-    state.condition = clamp(state.condition - 6, 0, getDerivedState(state).maxCondition);
-    state.resources.morale = Math.max(0, state.resources.morale - 1);
+    state.condition = clamp(state.condition - 8, 0, getDerivedState(state).maxCondition);
+    state.resources.morale = Math.max(0, state.resources.morale - 2);
     addLog(state, "Hunger turns sharp. The room feels smaller.");
   }
 }
@@ -1199,9 +1188,9 @@ function maybeUseFood(state) {
 function maybeUseWater(state) {
   if (state.resources.water > 0) {
     state.resources.water -= 1;
-    state.condition = clamp(state.condition + 1, 0, getDerivedState(state).maxCondition);
+    state.condition = clamp(state.condition, 0, getDerivedState(state).maxCondition);
   } else {
-    state.condition = clamp(state.condition - 4, 0, getDerivedState(state).maxCondition);
+    state.condition = clamp(state.condition - 6, 0, getDerivedState(state).maxCondition);
     state.resources.morale = Math.max(0, state.resources.morale - 1);
     addLog(state, "Your mouth dries to paper. The static sounds closer.");
   }
@@ -1232,44 +1221,46 @@ function runNightPressure(state, derived) {
   let summary = "The line holds through a mostly quiet night.";
 
   if (eventType === "quiet") {
-    const relief = Math.max(1, Math.round((forecast.adjustedDefense + state.shelter.warmth) / 6));
-    addResource(state, "morale", 1 + Math.max(0, plan.morale));
-    state.condition = clamp(state.condition + relief, 0, derived.maxCondition);
-    summary = "The night stays tense but uneventful. The shelter keeps its shape.";
+    const relief = forecast.dangerScore <= 1.5 ? 1 : 0;
+    addResource(state, "morale", Math.max(1, 1 + Math.max(0, plan.morale)));
+    if (relief > 0) {
+      state.condition = clamp(state.condition + relief, 0, derived.maxCondition);
+    }
+    summary = "The night stays tense. Nothing gets through, but nobody sleeps well.";
   }
 
   if (eventType === "infected") {
-    conditionLoss = Math.max(2, Math.round(basePressure * 0.8));
-    moraleDelta -= 1;
+    conditionLoss = Math.max(3, Math.round(basePressure * 0.95));
+    moraleDelta -= 2;
     const target = pickDamageTarget(state, ["basic_barricade", "watch_post"]);
-    addStructureDamage(state, target, 1);
+    addStructureDamage(state, target, 2);
     damagedStructures.push(target);
     summary = "Infected pressure drags along the walls and finds weak points before dawn.";
   }
 
   if (eventType === "raiders") {
-    conditionLoss = Math.max(3, Math.round(basePressure * 0.7));
-    moraleDelta -= 2;
+    conditionLoss = Math.max(4, Math.round(basePressure * 0.9));
+    moraleDelta -= 3;
     stolen = {
-      scrap: Math.min(state.resources.scrap, randInt(2, 6)),
-      parts: Math.min(state.resources.parts, chance(0.5) ? 1 : 0),
+      scrap: Math.min(state.resources.scrap, randInt(3, 8)),
+      parts: Math.min(state.resources.parts, chance(0.65) ? randInt(1, 2) : 0),
     };
     Object.entries(stolen).forEach(([resourceId, amount]) => {
       state.resources[resourceId] -= amount;
     });
     const target = pickDamageTarget(state, ["basic_barricade", "radio_rig", "watch_post"]);
-    addStructureDamage(state, target, 1);
+    addStructureDamage(state, target, 2);
     damagedStructures.push(target);
     addResource(state, "reputation", 1);
     summary = "Raiders probe the perimeter, steal what they can reach, and vanish before first light.";
   }
 
   if (eventType === "breach") {
-    conditionLoss = Math.max(5, Math.round(basePressure * 1.05));
-    moraleDelta -= 3;
+    conditionLoss = Math.max(6, Math.round(basePressure * 1.2));
+    moraleDelta -= 4;
     const firstTarget = pickDamageTarget(state, ["basic_barricade", "shelter_core"]);
     const secondTarget = pickDamageTarget(state, ["watch_post", "campfire", "radio_rig", "crafting_bench", "shelter_core"]);
-    addStructureDamage(state, firstTarget, 1);
+    addStructureDamage(state, firstTarget, 2);
     addStructureDamage(state, secondTarget, firstTarget === secondTarget ? 1 : 1);
     damagedStructures.push(firstTarget, secondTarget);
     summary = "Something gets into the line. The room survives, but not cleanly.";
@@ -1286,8 +1277,8 @@ function runNightPressure(state, derived) {
     state.resources.morale = Math.max(0, state.resources.morale + moraleDelta);
   }
 
-  state.shelter.noise = clamp(state.shelter.noise * 0.62, 0, 10);
-  state.shelter.threat = clamp(state.shelter.threat + (eventType === "quiet" ? -0.3 : 0.45), 0, 12);
+  state.shelter.noise = clamp(state.shelter.noise * 0.78, 0, 10);
+  state.shelter.threat = clamp(state.shelter.threat + (eventType === "quiet" ? -0.15 : 0.8), 0, 12);
   state.night.lastReport = {
     stamp: getTimeStamp(state),
     eventType,
@@ -1319,9 +1310,9 @@ export function advanceTime(state, hours) {
       state.time.day += 1;
     }
 
-    state.shelter.warmth = Math.max(0, state.shelter.warmth - 0.35);
-    state.shelter.threat = clamp(state.shelter.threat + 0.28, 0, 12);
-    state.shelter.noise = clamp(state.shelter.noise - 0.08, 0, 10);
+    state.shelter.warmth = Math.max(0, state.shelter.warmth - 0.4);
+    state.shelter.threat = clamp(state.shelter.threat + 0.34, 0, 12);
+    state.shelter.noise = clamp(state.shelter.noise - 0.05, 0, 10);
     state.clocks.hunger += 1;
     state.clocks.thirst += 1;
 
@@ -1341,8 +1332,8 @@ export function advanceTime(state, hours) {
 
     if (state.time.hour === 6 && state.time.day > 1) {
       state.stats.nightsSurvived += 1;
-      state.shelter.threat = clamp(state.shelter.threat - derived.defense * 0.4, 0, 12);
-      state.shelter.noise = clamp(state.shelter.noise - 1.1, 0, 10);
+      state.shelter.threat = clamp(state.shelter.threat - derived.defense * 0.22, 0, 12);
+      state.shelter.noise = clamp(state.shelter.noise - 0.6, 0, 10);
       addLog(state, "A grey dawn leaks over the shelter. You are still here.", "night");
     }
   }
@@ -1359,8 +1350,8 @@ export function runScavengeSource(state, sourceId = "rubble") {
   advanceTime(state, source.hours || 1);
   state.stats.searches += 1;
   state.stats.scavengeSources[sourceId] = (state.stats.scavengeSources[sourceId] || 0) + 1;
-  state.shelter.threat = clamp(state.shelter.threat + (source.threat || 0.35), 0, 12);
-  state.shelter.noise = clamp(state.shelter.noise + (source.noise || 0.4) - traitBonuses.scavengeNoiseReduction, 0, 10);
+  state.shelter.threat = clamp(state.shelter.threat + (source.threat || 0.35) + 0.12, 0, 12);
+  state.shelter.noise = clamp(state.shelter.noise + (source.noise || 0.4) + 0.08 - traitBonuses.scavengeNoiseReduction, 0, 10);
 
   const scrapMin = Math.max(0, derived.searchScrapMin + (source.scrapMod?.min || 0));
   const scrapMax = Math.max(scrapMin, derived.searchScrapMax + (source.scrapMod?.max || 0));
@@ -1402,14 +1393,14 @@ export function searchRubble(state) {
 
 export function burnForWarmth(state) {
   const derived = getDerivedState(state);
-  if (state.resources.scrap < 10) {
+  if (state.resources.scrap < 12) {
     return false;
   }
 
-  state.resources.scrap -= 10;
+  state.resources.scrap -= 12;
   state.stats.burnUses += 1;
-  state.shelter.warmth = clamp(state.shelter.warmth + 3, 0, 10);
-  state.shelter.noise = clamp(state.shelter.noise + 0.2, 0, 10);
+  state.shelter.warmth = clamp(state.shelter.warmth + 2.6, 0, 10);
+  state.shelter.noise = clamp(state.shelter.noise + 0.25, 0, 10);
   state.condition = clamp(state.condition + derived.burnCondition, 0, derived.maxCondition);
   addLog(state, "You feed the fire with old metal and buy yourself another stretch of feeling alive.", "build");
   evaluateProgression(state);
@@ -1420,13 +1411,14 @@ export function forageFood(state) {
   const derived = getDerivedState(state);
   advanceTime(state, 1);
   state.stats.foodSearches += 1;
-  state.shelter.noise = clamp(state.shelter.noise + 0.24, 0, 10);
-  addResource(state, "food", zoneRewardMultiplier(randInt(1, 3), derived.forageYieldBonus));
-  addResource(state, "water", zoneRewardMultiplier(randInt(0, 2), derived.forageYieldBonus));
-  if (chance(0.25)) {
+  state.shelter.noise = clamp(state.shelter.noise + 0.3, 0, 10);
+  state.shelter.threat = clamp(state.shelter.threat + 0.12, 0, 12);
+  addResource(state, "food", zoneRewardMultiplier(randInt(1, 2), derived.forageYieldBonus));
+  addResource(state, "water", zoneRewardMultiplier(randInt(0, 1), derived.forageYieldBonus));
+  if (chance(0.18)) {
     addResource(state, "medicine", 1);
   }
-  if (chance(0.18)) {
+  if (chance(0.12)) {
     addResource(state, "cloth", 1);
   }
   addLog(state, "You search for food instead of useful things. Today, that is the useful thing.", "loot");
@@ -1443,7 +1435,7 @@ export function drinkWater(state) {
 
   state.resources.water -= 1;
   state.clocks.thirst = 0;
-  state.condition = clamp(state.condition + 5, 0, getDerivedState(state).maxCondition);
+  state.condition = clamp(state.condition + 4, 0, getDerivedState(state).maxCondition);
   addLog(state, "You drink slowly and let your hands stop shaking.");
   return true;
 }
@@ -1846,21 +1838,22 @@ export function eatRation(state) {
   }
 
   state.resources.food -= 1;
-  state.condition = clamp(state.condition + 8, 0, getDerivedState(state).maxCondition);
+  state.clocks.hunger = 0;
+  state.condition = clamp(state.condition + 6, 0, getDerivedState(state).maxCondition);
   addResource(state, "morale", 1);
   addLog(state, "You eat while the shelter creaks around you.", "loot");
   return true;
 }
 
 export function patchBarricade(state) {
-  if (state.resources.scrap < 6) {
+  if (state.resources.scrap < 8) {
     return false;
   }
 
-  state.resources.scrap -= 6;
-  state.shelter.threat = clamp(state.shelter.threat - 2, 0, 12);
-  state.shelter.warmth = clamp(state.shelter.warmth + 1, 0, 10);
-  state.shelter.noise = clamp(state.shelter.noise + 0.14, 0, 10);
+  state.resources.scrap -= 8;
+  state.shelter.threat = clamp(state.shelter.threat - 1.4, 0, 12);
+  state.shelter.warmth = clamp(state.shelter.warmth + 0.6, 0, 10);
+  state.shelter.noise = clamp(state.shelter.noise + 0.18, 0, 10);
   if (hasUpgrade(state, "basic_barricade")) {
     setStructureDamage(state, "basic_barricade", getStructureDamage(state, "basic_barricade") - 1);
   }

@@ -694,14 +694,14 @@ export function renderHelpTab(state, isMobile = false) {
   const combatGuide = [
     "Attack when the enemy intent looks weak or you can finish it.",
     "Brace against heavy intents to reduce the next hit.",
-    "Bandage only when the trade is worth the item.",
+    "Bandage only when the item saves more condition than the fight will cost.",
     "Retreat is for bad fights, not default fights.",
   ];
   const signalGuide = [
     "Pick one investigation and repeat it.",
     "Radio milestones are directional now, not blind RNG.",
-    "Trade fixes shortages. Open a channel with a purpose.",
-    "Factions give power and problems. Choose late, not fast.",
+    "Signal objectives and tower routes feed the radio board faster.",
+    "Major mystery beats now come from deliberate trace work, not blind luck.",
   ];
 
   if (isMobile) {
@@ -766,7 +766,7 @@ export function renderHelpTab(state, isMobile = false) {
           <div class="detail-list">
             <div class="list-block compact-block"><p class="note"><strong>Survive today:</strong> condition, warmth, food, water, threat, and noise.</p></div>
             <div class="list-block compact-block"><p class="note"><strong>Build stability:</strong> upgrades and shelter systems turn panic into options.</p></div>
-            <div class="list-block compact-block"><p class="note"><strong>Choose direction:</strong> routes, radio tracks, trade channels, crew, and factions shape the run.</p></div>
+            <div class="list-block compact-block"><p class="note"><strong>Choose direction:</strong> routes, radio tracks, and crew pressure shape the run.</p></div>
           </div>
         `,
       }),
@@ -794,7 +794,7 @@ export function renderHelpTab(state, isMobile = false) {
             <div class="list-block compact-block"><p class="note"><strong>Overview:</strong> next best action and current pressure.</p></div>
             <div class="list-block compact-block"><p class="note"><strong>Craft:</strong> install systems and read what to scavenge next.</p></div>
             <div class="list-block compact-block"><p class="note"><strong>Map:</strong> choose zone, objective, and approach.</p></div>
-            <div class="list-block compact-block"><p class="note"><strong>Radio / Trade / Factions:</strong> direction-setting systems, not early obligations.</p></div>
+            <div class="list-block compact-block"><p class="note"><strong>Radio / Crew / Routes:</strong> direction-setting systems, not early obligations.</p></div>
           </div>
         `,
       }),

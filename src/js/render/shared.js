@@ -30,8 +30,6 @@ export const TAB_DEFS = [
   { id: "map", label: "Map", hint: "routes", unlock: "map", count: (state) => state.unlockedZones.length || null },
   { id: "survivors", label: "Crew", hint: "assignments", unlock: "survivors", count: (state) => state.survivors.total || null },
   { id: "radio", label: "Radio", hint: "signals", unlock: "radio", count: (state) => state.story.radioProgress || null },
-  { id: "trade", label: "Trade", hint: "market", unlock: "trader", count: (state) => state.trader.offers.length || null },
-  { id: "factions", label: "Factions", hint: "alignment", unlock: "factions" },
   { id: "leaderboard", label: "Leaderboard", hint: "hosted" },
   { id: "log", label: "Log", hint: "history" },
   { id: "help", label: "Help", hint: "guide" },
@@ -39,7 +37,7 @@ export const TAB_DEFS = [
 ];
 
 export const MOBILE_PRIMARY_TABS = ["overview", "craft", "shelter", "map"];
-export const MOBILE_MORE_TABS = ["inventory", "survivors", "radio", "trade", "factions", "leaderboard", "log", "help", "settings"];
+export const MOBILE_MORE_TABS = ["inventory", "survivors", "radio", "leaderboard", "log", "help", "settings"];
 
 export function byId(id) {
   return document.getElementById(id);
@@ -57,6 +55,19 @@ function meterClass(percent) {
     return "warn";
   }
   return "good";
+}
+
+function conditionLabel(percent) {
+  if (percent <= 24) {
+    return "Critical";
+  }
+  if (percent <= 49) {
+    return "Failing";
+  }
+  if (percent <= 74) {
+    return "Worn";
+  }
+  return "Stable";
 }
 
 export function actionButton({ action, label, meta = "", disabled = false, variant = "", data = {} }) {
@@ -271,37 +282,86 @@ export function renderMobileSurvivalStrip(state, derived) {
 
 export function renderCondition(state, derived) {
   const percent = Math.round((state.condition / derived.maxCondition) * 100);
-  byId("condition-readout").textContent = `Condition ${state.condition}/${derived.maxCondition}`;
+  const label = conditionLabel(percent);
+  const readout = byId("condition-readout");
+  readout.textContent = `Condition ${state.condition}/${derived.maxCondition} · ${label}`;
+  readout.title = "Condition is your overall survival state. If it collapses, the run ends. Food, water, warmth, combat, and bad nights all push it.";
   byId("condition-bar").innerHTML = `<div class="meter-fill ${meterClass(percent)}" style="width:${percent}%"></div>`;
 }
 
 export function renderSummaryStrip(state, derived) {
   const pills = [
-    { label: "Warmth", value: state.shelter.warmth.toFixed(1) },
-    { label: "Threat", value: state.shelter.threat.toFixed(1) },
-    { label: "Noise", value: state.shelter.noise.toFixed(1) },
+    {
+      label: "Warmth",
+      value: state.shelter.warmth.toFixed(1),
+      note: state.shelter.warmth >= 4 ? "higher is safer at night" : "cold shelter, fix soon",
+      tone: state.shelter.warmth >= 4 ? "good" : state.shelter.warmth >= 2 ? "warn" : "danger",
+      tip: "Warmth slows collapse at night. Low warmth makes every dark hour worse.",
+    },
+    {
+      label: "Threat",
+      value: state.shelter.threat.toFixed(1),
+      note: state.shelter.threat < 3 ? "keep this low" : "outside pressure building",
+      tone: state.shelter.threat < 3 ? "good" : state.shelter.threat < 6 ? "warn" : "danger",
+      tip: "Threat is the outside pressure around the shelter. High threat makes infected, raids, and breaches more likely.",
+    },
+    {
+      label: "Noise",
+      value: state.shelter.noise.toFixed(1),
+      note: state.shelter.noise < 3 ? "quiet line" : "loud shelters draw heat",
+      tone: state.shelter.noise < 3 ? "good" : state.shelter.noise < 6 ? "warn" : "danger",
+      tip: "Noise is how loud your shelter and actions are. Loud runs and loud nights attract trouble.",
+    },
   ];
 
   if (state.discoveredResources.includes("food")) {
-    pills.push({ label: "Hunger", value: `${state.clocks.hunger}/6h` });
+    const hoursLeft = Math.max(0, 6 - state.clocks.hunger);
+    pills.push({
+      label: "Next meal",
+      value: `${hoursLeft}h`,
+      note: hoursLeft <= 1 ? "eat soon" : "meal buffer left",
+      tone: hoursLeft <= 1 ? "danger" : hoursLeft <= 2 ? "warn" : "neutral",
+      tip: "When this reaches zero, the shelter consumes food automatically. If none is available, condition drops hard.",
+    });
   }
   if (state.discoveredResources.includes("water")) {
-    pills.push({ label: "Thirst", value: `${state.clocks.thirst}/4h` });
+    const hoursLeft = Math.max(0, 4 - state.clocks.thirst);
+    pills.push({
+      label: "Water due",
+      value: `${hoursLeft}h`,
+      note: hoursLeft <= 1 ? "drink soon" : "water buffer left",
+      tone: hoursLeft <= 1 ? "danger" : hoursLeft <= 2 ? "warn" : "neutral",
+      tip: "When this hits zero, the shelter consumes water automatically. No water means faster condition loss.",
+    });
   }
   if (state.unlockedSections.includes("survivors")) {
-    pills.push({ label: "Crew", value: `${state.survivors.total}/${derived.survivorCap}` });
+    const freeBeds = Math.max(0, derived.survivorCap - state.survivors.total);
+    pills.push({
+      label: "Crew",
+      value: `${state.survivors.total}/${derived.survivorCap}`,
+      note: freeBeds > 0 ? `${freeBeds} berth open` : "full shelter line",
+      tone: freeBeds > 0 ? "neutral" : "warn",
+      tip: "Crew capacity controls how many survivors can stay. More hands help, but they also increase upkeep pressure.",
+    });
   }
   if (state.unlockedSections.includes("radio")) {
-    pills.push({ label: "Signal", value: `${state.story.radioProgress}` });
+    pills.push({
+      label: "Signal",
+      value: `${state.story.radioProgress}`,
+      note: "milestones cracked",
+      tone: "neutral",
+      tip: "Signal progress tracks how far you have pushed the investigations and major radio milestones.",
+    });
   }
 
   byId("summary-strip").innerHTML = pills
     .map((pill) => `
-      <div class="summary-pill">
+      <div class="summary-pill tone-${pill.tone}" title="${pill.tip}">
         <div class="summary-pill-top">
           <span>${pill.label}</span>
           <strong>${pill.value}</strong>
         </div>
+        <small>${pill.note}</small>
       </div>
     `)
     .join("");
@@ -313,13 +373,10 @@ export function renderSubtitle(state) {
     subtitle = "Rubble stops being debris the second you learn how to sort it.";
   }
   if (state.unlockedSections.includes("map")) {
-    subtitle = "The shelter holds. The city starts offering routes and prices.";
+    subtitle = "The shelter holds. The city starts offering routes and hard choices.";
   }
   if (state.unlockedSections.includes("radio")) {
     subtitle = "The static stops sounding random once it realizes you are listening.";
-  }
-  if (state.unlockedSections.includes("factions")) {
-    subtitle = "Everyone left alive wants the signal for a different kind of future.";
   }
   if (state.flags.worldReveal) {
     subtitle = "The outbreak had a transmission layer. You are standing inside its residue.";
@@ -730,23 +787,6 @@ export function getTutorialStep(state) {
     };
   }
 
-  if (state.unlockedSections.includes("trader") && !state.trader.offers.length) {
-    return {
-      id: "trade",
-      title: "Open a trade channel",
-      summary: "Trade is for fixing shortages, not browsing. Pull a channel only when you know what you need.",
-      chips: ["solve bottlenecks", "not a reroll shop"],
-      tabs: ["overview", "trade"],
-      action: {
-        action: state.ui.activeTab === "trade" ? "request-trader-channel" : "set-tab",
-        label: state.ui.activeTab === "trade" ? "Open Market" : "Open Trade",
-        meta: state.ui.activeTab === "trade" ? "pull current stock" : "channel view",
-        data: state.ui.activeTab === "trade" ? { channel: "open_market" } : { tab: "trade" },
-        variant: "primary compact",
-      },
-    };
-  }
-
   return null;
 }
 
@@ -827,8 +867,8 @@ export function renderCommandDesk(state, derived, availableSources, availableUpg
       return actionButton({
         action: "burn-warmth",
         label: "Burn for warmth",
-        meta: "10 scrap / immediate relief",
-        disabled: state.resources.scrap < 10,
+        meta: "12 scrap / immediate relief",
+        disabled: state.resources.scrap < 12,
         variant: "compact",
       });
     }
@@ -883,7 +923,7 @@ export function renderCommandDesk(state, derived, availableSources, availableUpg
 
 export function renderInventoryItemCard(itemId, amount) {
   const item = ITEMS[itemId];
-  let actionMarkup = `<p class="note">No direct action.</p>`;
+  let actionMarkup = `<div class="chip-row">${tagList(["stored"])}</div>`;
   if (item.type === "weapon" || item.type === "armor") {
     actionMarkup = actionButton({
       action: "equip-item",
@@ -925,7 +965,7 @@ export function renderSignalSpectrum(state) {
 
 export function renderCrewPressure(state) {
   const bands = [
-    { label: "Scavengers", value: state.survivors.assigned.scavenger, note: "slow salvage income" },
+    { label: "Scavengers", value: state.survivors.assigned.scavenger, note: "salvage yield" },
     { label: "Guards", value: state.survivors.assigned.guard, note: "night defense" },
     { label: "Medics", value: state.survivors.assigned.medic, note: "condition mitigation" },
     { label: "Scouts", value: state.survivors.assigned.scout, note: "route yield and escape" },
@@ -961,7 +1001,7 @@ export function renderFactionStatus(state) {
 }
 
 export function renderLogPulse(state) {
-  const orderedCategories = ["loot", "build", "night", "expedition", "radio", "combat", "trade", "notable"];
+  const orderedCategories = ["loot", "build", "night", "expedition", "radio", "combat", "notable"];
   const counts = orderedCategories
     .map((category) => ({
       category,

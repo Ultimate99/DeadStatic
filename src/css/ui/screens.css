@@ -325,6 +325,41 @@ body::after {
   }
 }
 
+.shelter-map {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: repeat(8, minmax(34px, 1fr));
+  align-items: center;
+  justify-items: center;
+  padding: 22px 22px 18px;
+}
+
+.map-compound-floor,
+.map-path,
+.map-fence {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+}
+
+.resource-tier-grid .list-block,
+.inventory-card-grid .inventory-item-card,
+.upgrade-card-grid .list-block {
+  min-height: 100%;
+}
+
+@media (max-width: 720px) {
+  .shelter-map {
+    padding: 18px 16px 16px;
+  }
+
+  .inventory-card-grid,
+  .resource-tier-grid,
+  .upgrade-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* secondary-tab pass */
 
 .inventory-item-card,

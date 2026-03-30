@@ -20,21 +20,21 @@ import {
 } from "./shared.js";
 
 export const SHELTER_MAP_STRUCTURES = [
-  { id: "shelter_core", label: "Held Room", short: "HQ", detail: "main room", kind: "core", sprite: "core", x: 5, y: 3, active: (state) => state.unlockedSections.includes("shelter") },
-  { id: "shelter_stash", label: "Stash", short: "ST", detail: "secure cache", kind: "core", sprite: "stash", x: 4, y: 4, upgrade: "shelter_stash" },
-  { id: "campfire", label: "Campfire", short: "CF", detail: "heat pit", kind: "core", sprite: "campfire", x: 5, y: 5, upgrade: "campfire" },
-  { id: "survivor_cots", label: "Cots", short: "CT", detail: "sleep line", kind: "support", sprite: "cots", x: 2, y: 4, upgrade: "survivor_cots" },
-  { id: "smokehouse", label: "Smokehouse", short: "SH", detail: "food cure", kind: "support", sprite: "smokehouse", x: 1, y: 6, upgrade: "smokehouse" },
-  { id: "rain_collector", label: "Collector", short: "RC", detail: "rain catch", kind: "utility", sprite: "collector", x: 1, y: 2, upgrade: "rain_collector" },
-  { id: "crafting_bench", label: "Workbench", short: "WB", detail: "build line", kind: "utility", sprite: "bench", x: 8, y: 4, upgrade: "crafting_bench" },
-  { id: "ammo_press", label: "Ammo Press", short: "AP", detail: "round press", kind: "utility", sprite: "press", x: 9, y: 4, upgrade: "ammo_press" },
-  { id: "watch_post", label: "Watch Post", short: "WT", detail: "tower eyes", kind: "defense", sprite: "tower", x: 10, y: 1, upgrade: "watch_post" },
-  { id: "radio_rig", label: "Radio", short: "RD", detail: "receiver", kind: "signal", sprite: "radio", x: 6, y: 1, upgrade: "radio_rig" },
-  { id: "signal_decoder", label: "Decoder", short: "SD", detail: "signal parse", kind: "signal", sprite: "decoder", x: 7, y: 1, upgrade: "signal_decoder" },
-  { id: "trader_beacon", label: "Beacon", short: "BC", detail: "coded light", kind: "signal", sprite: "beacon", x: 10, y: 3, upgrade: "trader_beacon" },
-  { id: "faraday_mesh", label: "Mesh Node", short: "FM", detail: "shield anchor", kind: "signal", sprite: "mesh", x: 1, y: 0, upgrade: "faraday_mesh" },
-  { id: "relay_tap", label: "Relay Tap", short: "RT", detail: "stolen feed", kind: "signal", sprite: "relay", x: 9, y: 0, upgrade: "relay_tap" },
-  { id: "bunker_drill", label: "Drill", short: "BD", detail: "deep breach", kind: "utility", sprite: "drill", x: 8, y: 6, upgrade: "bunker_drill" },
+  { id: "shelter_core", label: "Held Room", short: "HQ", detail: "main room", kind: "core", sprite: "core", col: 6, row: 4, active: (state) => state.unlockedSections.includes("shelter") },
+  { id: "shelter_stash", label: "Stash", short: "ST", detail: "secure cache", kind: "core", sprite: "stash", col: 5, row: 5, upgrade: "shelter_stash" },
+  { id: "campfire", label: "Campfire", short: "CF", detail: "heat pit", kind: "core", sprite: "campfire", col: 6, row: 6, upgrade: "campfire" },
+  { id: "survivor_cots", label: "Cots", short: "CT", detail: "sleep line", kind: "support", sprite: "cots", col: 3, row: 5, upgrade: "survivor_cots" },
+  { id: "smokehouse", label: "Smokehouse", short: "SH", detail: "food cure", kind: "support", sprite: "smokehouse", col: 2, row: 7, upgrade: "smokehouse" },
+  { id: "rain_collector", label: "Collector", short: "RC", detail: "rain catch", kind: "utility", sprite: "collector", col: 2, row: 3, upgrade: "rain_collector" },
+  { id: "crafting_bench", label: "Workbench", short: "WB", detail: "build line", kind: "utility", sprite: "bench", col: 8, row: 5, upgrade: "crafting_bench" },
+  { id: "ammo_press", label: "Ammo Press", short: "AP", detail: "round press", kind: "utility", sprite: "press", col: 9, row: 5, upgrade: "ammo_press" },
+  { id: "watch_post", label: "Watch Post", short: "WT", detail: "tower eyes", kind: "defense", sprite: "tower", col: 11, row: 2, upgrade: "watch_post" },
+  { id: "radio_rig", label: "Radio", short: "RD", detail: "receiver", kind: "signal", sprite: "radio", col: 6, row: 2, upgrade: "radio_rig" },
+  { id: "signal_decoder", label: "Decoder", short: "SD", detail: "signal parse", kind: "signal", sprite: "decoder", col: 7, row: 2, upgrade: "signal_decoder" },
+  { id: "trader_beacon", label: "Signal Beacon", short: "SB", detail: "tower mark", kind: "signal", sprite: "beacon", col: 8, row: 2, upgrade: "trader_beacon" },
+  { id: "faraday_mesh", label: "Mesh Node", short: "FM", detail: "shield anchor", kind: "signal", sprite: "mesh", col: 2, row: 1, upgrade: "faraday_mesh" },
+  { id: "relay_tap", label: "Relay Tap", short: "RT", detail: "stolen feed", kind: "signal", sprite: "relay", col: 10, row: 1, upgrade: "relay_tap" },
+  { id: "bunker_drill", label: "Drill", short: "BD", detail: "deep breach", kind: "utility", sprite: "drill", col: 9, row: 7, upgrade: "bunker_drill" },
 ];
 
 export const SHELTER_MAP_ANNEXES = [
@@ -263,6 +263,9 @@ function renderPlannedStructureCard(state, upgrade) {
   if (upgrade.materials && Object.keys(upgrade.materials).length) {
     meta.push(formatMaterials(upgrade.materials));
   }
+  if (structure?.col && structure?.row) {
+    meta.push(`Grid ${structure.col}-${structure.row}`);
+  }
 
   return `
     <div class="ghost-card kind-${structure?.kind || "utility"} sprite-${structure?.sprite || "bench"}">
@@ -297,7 +300,7 @@ function renderPlannedStructureCard(state, upgrade) {
 function renderMapStructureButton(state, structure, derived, mobile = false) {
   const id = structureKey(structure);
   const status = structureStatus(id, state, derived);
-  const tooltip = `${structure.label}: ${status.label}. ${status.telemetry[0] || structure.detail || "built"}`;
+  const tooltip = `${structure.label}: ${status.label}. ${status.telemetry[0] || structure.detail || "built"}. Grid ${structure.col}-${structure.row}.`;
   const selected = inspectedStructureId(state) === id;
   const showLabel = !mobile || selected || status.damage >= 2 || ["watch_post", "radio_rig", "campfire"].includes(structure.id);
 
@@ -305,7 +308,7 @@ function renderMapStructureButton(state, structure, derived, mobile = false) {
     <button
       type="button"
       class="map-structure kind-${structure.kind} sprite-${structure.sprite} ${status.className} ${selected ? "is-selected" : ""} ${mobile && !showLabel ? "is-mobile-minimal" : ""}"
-      style="--x:${structure.x}; --y:${structure.y};"
+      style="--col:${structure.col}; --row:${structure.row};"
       data-action="inspect-structure"
       data-structure="${id}"
       data-tooltip="${tooltip}"
@@ -355,6 +358,7 @@ function renderStructureInspector(state) {
         <div class="fact-grid">
           <div class="fact"><span>Integrity</span><strong>${Math.max(0, 3 - status.damage)}/3</strong></div>
           <div class="fact"><span>Crew use</span><strong>${status.crew}</strong></div>
+          ${structure.col && structure.row ? `<div class="fact"><span>Grid</span><strong>${structure.col}-${structure.row}</strong></div>` : ""}
         </div>
         <div class="chip-row">${tagList(telemetry)}</div>
         ${Object.keys(cost).length
@@ -472,6 +476,7 @@ function renderShelterMapBoard(state, mobile = false) {
           <button
             type="button"
             class="map-perimeter-button ${structureStatus(SHELTER_MAP_PERIMETER.id, state, derived).className} ${inspectedStructureId(state) === SHELTER_MAP_PERIMETER.id ? "is-selected" : ""}"
+            style="--col:6; --row:8;"
             data-action="inspect-structure"
             data-structure="${SHELTER_MAP_PERIMETER.id}"
             data-tooltip="Perimeter Fence: ${structureStatus(SHELTER_MAP_PERIMETER.id, state, derived).label}. ${structureStatus(SHELTER_MAP_PERIMETER.id, state, derived).telemetry[0] || "holds the edge"}"
@@ -508,6 +513,7 @@ function renderMobileStructureInspector(state) {
           <div class="fact-grid">
             <div class="fact"><span>State</span><strong>${status.label}</strong></div>
             <div class="fact"><span>Integrity</span><strong>${Math.max(0, 3 - status.damage)}/3</strong></div>
+            ${structure.col && structure.row ? `<div class="fact"><span>Grid</span><strong>${structure.col}-${structure.row}</strong></div>` : ""}
           </div>
           <div class="chip-row">${tagList(telemetry)}</div>
           ${Object.keys(cost).length

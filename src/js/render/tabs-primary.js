@@ -76,9 +76,9 @@ function renderOverviewActions(state) {
   if (state.flags.burnUnlocked) {
     utilityButtons.push(actionButton({
       action: "burn-warmth",
-      label: "Burn 10 scrap for warmth",
-      meta: "10 scrap / immediate shelter relief",
-      disabled: state.resources.scrap < 10,
+      label: "Burn 12 scrap for warmth",
+      meta: "12 scrap / immediate shelter relief",
+      disabled: state.resources.scrap < 12,
       variant: "compact utility-trigger",
     }));
   }
@@ -305,32 +305,39 @@ export function renderCraftTab(state, isMobile = false) {
   return `
     <div class="tab-grid">
       ${surfaceCard({
-        title: "Build queue",
+        title: "Build board",
         meta: `${ready.length} ready / ${blocked.length} blocked`,
         className: "span-8",
         body: available.length
           ? `
-            <div class="detail-list">
-              ${ready.length ? `
-                <div class="list-block compact-block queue-header">
-                  <div class="surface-head">
-                    <h4>Ready now</h4>
-                    <span class="tag">${ready.length}</span>
-                  </div>
-                  <p class="note">These builds are funded and can be installed immediately.</p>
+            <div class="upgrade-card-grid">
+              <div class="list-block compact-block">
+                <div class="surface-head">
+                  <h4>Ready now</h4>
+                  <span class="tag">${ready.length}</span>
                 </div>
-                ${ready.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}
-              ` : ""}
-              ${blocked.length ? `
-                <div class="list-block compact-block queue-header">
-                  <div class="surface-head">
-                    <h4>Need salvage</h4>
-                    <span class="tag">${blocked.length}</span>
-                  </div>
-                  <p class="note">Useful systems waiting on material or resource recovery.</p>
+                ${ready.length
+                  ? `<div class="detail-list">${ready.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>`
+                  : `<p class="empty-state">Nothing is funded yet.</p>`}
+              </div>
+              <div class="list-block compact-block">
+                <div class="surface-head">
+                  <h4>Need salvage</h4>
+                  <span class="tag">${blocked.length}</span>
                 </div>
-                ${blocked.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}
-              ` : ""}
+                ${blocked.length
+                  ? `<div class="detail-list">${blocked.map((upgrade) => renderUpgradeCard(state, upgrade)).join("")}</div>`
+                  : `<p class="empty-state">No blocked builds waiting.</p>`}
+              </div>
+              <div class="list-block compact-block">
+                <div class="surface-head">
+                  <h4>Systems online</h4>
+                  <span class="tag">${built.length}</span>
+                </div>
+                ${built.length
+                  ? `<div class="chip-row">${tagList(built.map((upgrade) => upgrade.name))}</div>`
+                  : `<p class="empty-state">Still living hand-to-mouth.</p>`}
+              </div>
             </div>
           `
           : `<p class="empty-state">No fresh plans yet. Search deeper.</p>`,
@@ -398,34 +405,20 @@ export function renderInventoryTab(state, derived, _isMobile = false) {
     .filter(Boolean)
     .join("");
 
-  return renderSplitPane(
-    [
-      surfaceCard({
+  return `
+    <div class="tab-grid tab-grid-tight">
+      ${surfaceCard({
         title: "Stores by tier",
         meta: `${state.discoveredResources.length} tracked`,
-        body: `<div class="detail-list">${resourceGroups || `<p class="empty-state">Only scrap has a name so far.</p>`}</div>`,
-      }),
-      `<div class="tab-inline-grid">
-        ${surfaceCard({
-          title: "Field kit",
-          meta: `${fieldItems.length} usable`,
-          body: fieldItems.length
-            ? `<div class="detail-list">${fieldItems.map(([itemId, amount]) => renderInventoryItemCard(itemId, amount)).join("")}</div>`
-            : `<p class="empty-state">No consumables packed right now.</p>`,
-        })}
-        ${surfaceCard({
-          title: "Odd salvage",
-          meta: `${oddItems.length} pieces`,
-          body: oddItems.length
-            ? `<div class="detail-list">${oddItems.map(([itemId, amount]) => renderInventoryItemCard(itemId, amount)).join("")}</div>`
-            : `<p class="empty-state">Nothing unusual is taking up space yet.</p>`,
-        })}
-      </div>`,
-    ],
-    [
-      surfaceCard({
+        className: "span-12",
+        body: resourceGroups
+          ? `<div class="resource-tier-grid">${resourceGroups}</div>`
+          : `<p class="empty-state">Only scrap has a name so far.</p>`,
+      })}
+      ${surfaceCard({
         title: "Field loadout",
         meta: `attack ${derived.attack} / defense ${derived.defense}`,
+        className: "span-4",
         body: `
           <div class="fact-grid">
             <div class="fact"><span>Weapon</span><strong>${weaponName}</strong></div>
@@ -434,17 +427,33 @@ export function renderInventoryTab(state, derived, _isMobile = false) {
             <div class="fact"><span>Ammo</span><strong>${state.resources.ammo}</strong></div>
           </div>
         `,
-      }),
-      surfaceCard({
+      })}
+      ${surfaceCard({
         title: "Gear locker",
-        meta: `${gearItems.length} equipped or ready`,
+        meta: `${gearItems.length} ready`,
+        className: "span-4",
         body: gearItems.length
-          ? `<div class="detail-list">${gearItems.map(([itemId, amount]) => renderInventoryItemCard(itemId, amount)).join("")}</div>`
+          ? `<div class="inventory-card-grid">${gearItems.map(([itemId, amount]) => renderInventoryItemCard(itemId, amount)).join("")}</div>`
           : `<p class="empty-state">No dedicated weapons or armor stored yet.</p>`,
-      }),
-    ],
-    "tab-columns-inventory"
-  );
+      })}
+      ${surfaceCard({
+        title: "Field kit",
+        meta: `${fieldItems.length} usable`,
+        className: "span-4",
+        body: fieldItems.length
+          ? `<div class="inventory-card-grid">${fieldItems.map(([itemId, amount]) => renderInventoryItemCard(itemId, amount)).join("")}</div>`
+          : `<p class="empty-state">No consumables packed right now.</p>`,
+      })}
+      ${surfaceCard({
+        title: "Odd salvage",
+        meta: `${oddItems.length} pieces`,
+        className: "span-12",
+        body: oddItems.length
+          ? `<div class="inventory-card-grid">${oddItems.map(([itemId, amount]) => renderInventoryItemCard(itemId, amount)).join("")}</div>`
+          : `<p class="empty-state">Nothing unusual is taking up space yet.</p>`,
+      })}
+    </div>
+  `;
 }
 
 export function renderNightPlanner(state) {
@@ -523,11 +532,13 @@ export function renderExpeditionPlanner(state) {
                 <h4>${objective.label}</h4>
                 <span class="tag">${objective.short}</span>
               </div>
-              <div class="chip-row">${tagList([
-                `${Math.round(objectivePreview.encounterChance * 100)}% encounter`,
-                `${objectivePreview.hours}h`,
-                ...objective.tags,
-              ])}</div>
+              <div class="compact-fact-grid">
+                <div><span>Travel</span><strong>${objectivePreview.hours}h</strong></div>
+                <div><span>Encounter</span><strong>${Math.round(objectivePreview.encounterChance * 100)}%</strong></div>
+                <div><span>Noise</span><strong>${objectivePreview.noise.toFixed(1)}</strong></div>
+                <div><span>Bias</span><strong>${objective.tags[0]}</strong></div>
+              </div>
+              <div class="chip-row">${tagList(objective.tags)}</div>
               ${actionButton({
                 action: "set-objective",
                 label: objective.label,
@@ -549,10 +560,14 @@ export function renderExpeditionPlanner(state) {
                 <h4>${approach.label}</h4>
                 <span class="tag">${approach.short}</span>
               </div>
-              <p class="note">${approach.description}</p>
+              <div class="compact-fact-grid">
+                <div><span>Travel</span><strong>${approachPreview.hours}h</strong></div>
+                <div><span>Encounter</span><strong>${Math.round(approachPreview.encounterChance * 100)}%</strong></div>
+                <div><span>Noise</span><strong>${approachPreview.noise.toFixed(1)}</strong></div>
+                <div><span>Prep</span><strong>${Object.keys(approach.cost).length ? "supply" : "none"}</strong></div>
+              </div>
               <div class="chip-row">${tagList([
-                `${approachPreview.hours}h`,
-                `${Math.round(approachPreview.encounterChance * 100)}% encounter`,
+                approach.short,
                 Object.keys(approach.cost).length ? formatCost(approach.cost) : "no extra cost",
               ])}</div>
               ${actionButton({
@@ -595,8 +610,8 @@ export function renderShelterTab(state, derived, isMobile = false) {
     actionButton({
       action: "patch-barricade",
       label: "Patch barricade",
-      meta: "Spend 6 scrap to lower pressure outside.",
-      disabled: state.resources.scrap < 6,
+      meta: "Spend 8 scrap to steady the perimeter.",
+      disabled: state.resources.scrap < 8,
     }),
   ];
 
@@ -616,7 +631,6 @@ export function renderShelterTab(state, derived, isMobile = false) {
     derived.salvageYieldBonus > 0 ? `salvage +${Math.round(derived.salvageYieldBonus * 100)}%` : "",
     derived.forageYieldBonus > 0 ? `forage +${Math.round(derived.forageYieldBonus * 100)}%` : "",
     derived.signalGain > 0 ? `signal +${derived.signalGain.toFixed(2)}` : "",
-    derived.traderDiscount > 0 ? `market -${Math.round(derived.traderDiscount * 100)}%` : "",
     derived.nightMitigation > 0 ? `night shield ${derived.nightMitigation.toFixed(1)}` : "",
   ].filter(Boolean);
   const perimeter = getShelterMapPerimeter(state);

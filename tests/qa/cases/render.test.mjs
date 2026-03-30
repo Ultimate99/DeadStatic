@@ -38,10 +38,14 @@ export function registerRenderTests(run) {
     assert.match(harness.elements.get("tab-bar").innerHTML, /Leaderboard/);
     assert.match(harness.elements.get("tab-bar").innerHTML, /ui-icon-svg/);
     assert.match(harness.elements.get("tab-bar").innerHTML, /Log/);
+    assert.doesNotMatch(harness.elements.get("tab-bar").innerHTML, /Trade/);
+    assert.doesNotMatch(harness.elements.get("tab-bar").innerHTML, /Factions/);
     assert.match(harness.elements.get("tab-content").innerHTML, /Operations desk/);
     assert.match(harness.elements.get("tab-content").innerHTML, /Current directive/);
     assert.match(harness.elements.get("tab-content").innerHTML, /stage-banner/);
     assert.match(harness.elements.get("tab-content").innerHTML, /Search rubble/);
+    assert.match(harness.elements.get("summary-strip").innerHTML, /higher is safer at night/);
+    assert.match(harness.elements.get("summary-strip").innerHTML, /keep this low/);
 
     const clickHandler = harness.bodyListeners.get("click");
     assert.ok(clickHandler);
@@ -94,6 +98,10 @@ export function registerRenderTests(run) {
     assert.match(tabMarkup, /map-compound-floor/);
     assert.match(tabMarkup, /fence-segment/);
     assert.match(tabMarkup, /inspect-structure/);
+    assert.match(tabMarkup, /--col:/);
+    assert.match(tabMarkup, /--row:/);
+    assert.doesNotMatch(tabMarkup, /--x:/);
+    assert.doesNotMatch(tabMarkup, /--y:/);
     assert.doesNotMatch(tabMarkup, /map-legend/);
     assert.doesNotMatch(tabMarkup, /sector-core/);
     assert.doesNotMatch(tabMarkup, /map-road/);
