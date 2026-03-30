@@ -1651,30 +1651,30 @@ function applyZoneRewards(state, zoneId, rewards) {
 function sourceEncounterProfile(sourceId) {
   switch (sourceId) {
     case "vehicle_shells":
-      return { zoneId: "abandoned_gas_station", enemies: ["walker", "stalker"], rewards: { resources: { parts: 1 } } };
+      return { zoneId: "abandoned_gas_station", enemies: ["walker", "screecher"], rewards: { resources: { parts: 1 } } };
     case "dead_pantries":
       return { zoneId: "burned_apartments", enemies: ["walker"], rewards: { resources: { food: 1 } } };
     case "clinic_drawers":
       return { zoneId: "hospital_wing", enemies: ["walker", "screecher"], rewards: { resources: { medicine: 1 } } };
     case "signal_wrecks":
-      return { zoneId: "radio_tower_perimeter", enemies: ["stalker", "static_touched"], rewards: { resources: { wire: 1 } } };
+      return { zoneId: "radio_tower_perimeter", enemies: ["screecher", "bloated_carrier"], rewards: { resources: { wire: 1 } } };
     case "sealed_caches":
-      return { zoneId: "radio_tower_perimeter", enemies: ["stalker", "relay_brute"], rewards: { resources: { ammo: 1, parts: 1 } } };
+      return { zoneId: "radio_tower_perimeter", enemies: ["screecher", "bloated_carrier"], rewards: { resources: { ammo: 1, parts: 1 } } };
     case "rubble":
     default:
-      return { zoneId: "ruined_street", enemies: ["walker", "screecher"], rewards: { resources: { wood: 1 } } };
+      return { zoneId: "ruined_street", enemies: ["walker"], rewards: { resources: { wood: 1 } } };
   }
 }
 
 function sourceEncounterChance(state, source) {
-  const searchPressure = Math.max(0, state.stats.searches - 2) * 0.022;
-  const shelterPressure = state.shelter.threat * 0.03 + state.shelter.noise * 0.024;
+  const searchPressure = Math.max(0, state.stats.searches - 2) * 0.018;
+  const shelterPressure = state.shelter.threat * 0.022 + state.shelter.noise * 0.018;
   const lanePressure = (source.threat || 0.3) * 0.12 + (source.noise || 0.3) * 0.08;
 
   return clamp(
-    0.015 + searchPressure + shelterPressure + lanePressure,
-    0.05,
-    source.id === "rubble" ? 0.24 : 0.38,
+    0.01 + searchPressure + shelterPressure + lanePressure,
+    0.03,
+    source.id === "rubble" ? 0.16 : 0.24,
   );
 }
 

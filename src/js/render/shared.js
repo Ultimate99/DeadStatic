@@ -25,6 +25,7 @@ import {
 
 export const TAB_DEFS = [
   { id: "overview", label: "Overview", hint: "control", count: (state) => state.stats.searches || null },
+  { id: "player", label: "Player", hint: "loadout" },
   { id: "craft", label: "Craft", hint: "build queue", unlock: "upgrades", count: (state) => getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id)).length || null },
   { id: "inventory", label: "Inventory", hint: "gear hold", unlock: "inventory" },
   { id: "shelter", label: "Shelter", hint: "survival", unlock: "shelter" },
@@ -39,7 +40,7 @@ export const TAB_DEFS = [
 ];
 
 export const MOBILE_PRIMARY_TABS = ["overview", "craft", "shelter", "map"];
-export const MOBILE_MORE_TABS = ["inventory", "survivors", "radio", "leaderboard", "log", "help", "settings"];
+export const MOBILE_MORE_TABS = ["player", "inventory", "survivors", "radio", "leaderboard", "log", "help", "settings"];
 
 export function byId(id) {
   return document.getElementById(id);
@@ -47,6 +48,14 @@ export function byId(id) {
 
 export function isMobileViewport() {
   return typeof window !== "undefined" && Number(window.innerWidth || 0) <= 720;
+}
+
+export function escapeAttribute(value = "") {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 function meterClass(percent) {
@@ -72,17 +81,18 @@ function conditionLabel(percent) {
   return "Stable";
 }
 
-export function actionButton({ action, label, meta = "", disabled = false, variant = "", data = {} }) {
+export function actionButton({ action, label, meta = "", disabled = false, variant = "", data = {}, title = "" }) {
   const dataAttrs = Object.entries(data)
     .map(([key, value]) => ` data-${key}="${value}"`)
     .join("");
   const classes = ["action-button", variant].filter(Boolean).join(" ");
+  const titleAttr = title ? ` title="${escapeAttribute(title)}"` : "";
 
   return `
     <button
       type="button"
       class="${classes}"
-      data-action="${action}"${dataAttrs}
+      data-action="${action}"${dataAttrs}${titleAttr}
       ${disabled ? "disabled" : ""}
     >
       <span class="action-label">${label}</span>
@@ -164,6 +174,20 @@ function itemSummaryChips(item) {
   }
 
   return chips;
+}
+
+function itemTooltipText(item, amount) {
+  const lines = [`${item.name} x${amount}`, `Type: ${item.type}`];
+  const summary = itemSummaryChips(item).filter((chip) => chip !== item.type);
+
+  if (summary.length) {
+    lines.push(`Effects: ${summary.join(" | ")}`);
+  }
+  if (item.description) {
+    lines.push(item.description);
+  }
+
+  return lines.join(" | ");
 }
 
 function contentAvailable(state, requirements = {}) {
@@ -1053,32 +1077,36 @@ export function renderCommandDesk(state, derived, availableSources, availableUpg
 export function renderInventoryItemCard(itemId, amount) {
   const item = ITEMS[itemId];
   let actionMarkup = "";
+  const tooltip = itemTooltipText(item, amount);
   if (item.type === "weapon" || item.type === "armor") {
     actionMarkup = actionButton({
       action: "equip-item",
-      label: `Equip ${item.name}`,
+      label: "Equip",
       meta: item.type,
       data: { item: itemId },
+      title: tooltip,
     });
   } else if (item.type === "consumable") {
     actionMarkup = actionButton({
       action: "use-item",
-      label: `Use ${item.name}`,
+      label: "Use",
       meta: item.type,
       data: { item: itemId },
+      title: tooltip,
     });
   }
 
-  const summary = itemSummaryChips(item);
+  const summary = itemSummaryChips(item)
+    .filter((chip) => chip !== item.type)
+    .slice(0, 2);
 
   return `
-    <div class="list-block inventory-item-card">
+    <div class="list-block inventory-item-card" title="${escapeAttribute(tooltip)}">
       <div class="surface-head">
         <h4>${item.name}</h4>
         <span class="tag">${item.type} x${amount}</span>
       </div>
       ${summary.length ? `<div class="chip-row">${tagList(summary)}</div>` : ""}
-      ${item.description ? `<p class="note">${item.description}</p>` : ""}
       ${actionMarkup}
     </div>
   `;

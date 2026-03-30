@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import { RARITY_ORDER, SAVE_KEY } from "../../src/js/data.js";
 import { createInitialState, loadState } from "../../src/js/state.js";
-import { SEARCH_LOOT_TABLE } from "../../src/js/content.js";
+import { SEARCH_LOOT_TABLE, UPGRADES_BY_ID } from "../../src/js/content.js";
 import {
   attackCombat,
   advanceTime,
@@ -699,6 +699,7 @@ run("standalone build stays inline and bundled runtime renders tabs and actions"
 
   assert.match(html, /tabs-layout/);
   assert.match(harness.elements.get("tab-bar").innerHTML, /Overview/);
+  assert.match(harness.elements.get("tab-bar").innerHTML, /Player/);
   assert.match(harness.elements.get("tab-bar").innerHTML, /Log/);
   assert.match(harness.elements.get("tab-bar").innerHTML, /Help/);
   assert.match(harness.elements.get("tab-bar").innerHTML, /Settings/);
@@ -884,6 +885,7 @@ run("mobile more sheet exposes secondary screens without shelter map", () => {
 
   const sheetMarkup = harness.elements.get("mobile-sheet-layer").innerHTML;
   assert.match(sheetMarkup, /Inventory/);
+  assert.match(sheetMarkup, /Player/);
   assert.match(sheetMarkup, /Crew/);
   assert.match(sheetMarkup, /Radio/);
   assert.match(sheetMarkup, /Leaderboard/);
@@ -918,6 +920,37 @@ run("mobile shelter view folds shelter map into segmented ops and map modes", ()
   assert.match(tabMarkup, /mobile-structure-sheet/);
   assert.match(tabMarkup, /Campfire/);
   assert.equal(harness.elements.get("tab-content").dataset.tab, "shelter");
+});
+
+run("player tab renders loadout, field stats, and tools", () => {
+  const bundle = readFileSync(path.join(projectRoot, "dist", "js", "game.js"), "utf8");
+  const state = createInitialState();
+  state.ui.activeTab = "player";
+  state.unlockedSections = ["inventory", "shelter", "survivors"];
+  state.inventory.rusty_knife = 1;
+  state.inventory.first_aid_rag = 1;
+  state.inventory.pry_bar = 1;
+  state.equipped.weapon = "rusty_knife";
+  state.resources.ammo = 3;
+
+  const harness = createBundleHarness(SEARCH_PATTERN, { initialSave: state });
+  vm.runInNewContext(bundle, harness.context, { filename: "game.js" });
+  const markup = harness.elements.get("tab-content").innerHTML;
+
+  assert.match(markup, /Current loadout/);
+  assert.match(markup, /Field stats/);
+  assert.match(markup, /Tool belt/);
+  assert.match(markup, /Equipment locker/);
+  assert.match(markup, /Rusty Knife/);
+  assert.match(markup, /Pry Bar/);
+});
+
+run("non-defense support builds do not report fake defense bonuses", () => {
+  assert.equal(UPGRADES_BY_ID.campfire.effects.defense, undefined);
+  assert.equal(UPGRADES_BY_ID.shelter_stash.effects.defense, undefined);
+  assert.equal(UPGRADES_BY_ID.weapon_rack.effects.attack, undefined);
+  assert.equal(UPGRADES_BY_ID.armor_hooks.effects.defense, undefined);
+  assert.equal(UPGRADES_BY_ID.flood_lights.effects.defense, undefined);
 });
 
 let failures = 0;

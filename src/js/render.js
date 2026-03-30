@@ -27,6 +27,7 @@ import {
   renderHelpTab,
   renderLeaderboardTab,
   renderLogTab,
+  renderPlayerTab,
   renderRadioTab,
   renderSettingsTab,
   renderSurvivorTab,
@@ -36,6 +37,8 @@ import {
 function renderTabContent(state, derived) {
   const isMobile = isMobileViewport();
   switch (state.ui.activeTab) {
+    case "player":
+      return renderPlayerTab(state, derived, isMobile);
     case "craft":
       return renderCraftTab(state, isMobile);
     case "inventory":

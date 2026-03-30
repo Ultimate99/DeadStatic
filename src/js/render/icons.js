@@ -7,6 +7,11 @@ const ICONS = {
     <rect x="13" y="10" width="7" height="10" rx="1.5"></rect>
     <rect x="4" y="13" width="7" height="7" rx="1.5"></rect>
   `,
+  player: `
+    <circle cx="12" cy="8" r="3"></circle>
+    <path d="M6.5 19a5.5 5.5 0 0 1 11 0"></path>
+    <path d="M17 6.5 19.5 9 17 11.5"></path>
+  `,
   craft: `
     <path d="M7 18l10-10"></path>
     <path d="M14 5l5 5"></path>

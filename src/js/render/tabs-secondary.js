@@ -1,10 +1,11 @@
-import { SURVIVOR_ROLES, SURVIVOR_TRAITS } from "../data.js";
+import { ITEMS, SURVIVOR_ROLES, SURVIVOR_TRAITS } from "../data.js";
 import { ENEMIES, FACTIONS, RADIO_INVESTIGATIONS, TRADER_OFFERS } from "../content.js";
 import {
   canAfford,
   formatCost,
   getAvailableRadioInvestigations,
   getRadioBoard,
+  getShelterUpkeep,
   getAvailableTraderChannels,
   getTraderOfferCost,
   hasItem,
@@ -153,6 +154,119 @@ function leaderboardRunSummary(snapshot, username) {
       <div class="fact"><span>Nights</span><strong>${snapshot.summary.nightsSurvived}</strong></div>
       <div class="fact"><span>Zones</span><strong>${snapshot.summary.zonesVisited}</strong></div>
       <div class="fact"><span>Signal</span><strong>${snapshot.summary.radioProgress}</strong></div>
+    </div>
+  `;
+}
+
+function playerGearRows(state) {
+  const weapons = Object.entries(state.inventory)
+    .filter(([itemId, amount]) => amount > 0 && ITEMS[itemId]?.type === "weapon")
+    .map(([itemId, amount]) => renderInventoryItemCard(itemId, amount));
+  const armor = Object.entries(state.inventory)
+    .filter(([itemId, amount]) => amount > 0 && ITEMS[itemId]?.type === "armor")
+    .map(([itemId, amount]) => renderInventoryItemCard(itemId, amount));
+  const tools = Object.entries(state.inventory)
+    .filter(([itemId, amount]) => amount > 0 && ITEMS[itemId]?.type === "tool")
+    .map(([itemId, amount]) => renderInventoryItemCard(itemId, amount));
+  const consumables = Object.entries(state.inventory)
+    .filter(([itemId, amount]) => amount > 0 && ITEMS[itemId]?.type === "consumable")
+    .map(([itemId, amount]) => renderInventoryItemCard(itemId, amount));
+
+  return {
+    weapons,
+    armor,
+    tools,
+    consumables,
+  };
+}
+
+export function renderPlayerTab(state, derived, isMobile = false) {
+  const upkeep = getShelterUpkeep(state);
+  const gear = playerGearRows(state);
+  const weaponName = state.equipped.weapon ? ITEMS[state.equipped.weapon]?.name : "Bare hands";
+  const armorName = state.equipped.armor ? ITEMS[state.equipped.armor]?.name : "Street clothes";
+  const stressedCount = state.survivors.roster.filter((survivor) => survivor.stress >= 4).length;
+  const woundedCount = state.survivors.roster.filter((survivor) => survivor.wounded > 0).length;
+  const statusCards = `
+    <div class="fact-grid">
+      <div class="fact"><span>Attack</span><strong>${derived.attack}</strong></div>
+      <div class="fact"><span>Defense</span><strong>${derived.defense}</strong></div>
+      <div class="fact"><span>Condition</span><strong>${state.resources.condition}</strong></div>
+      <div class="fact"><span>Ammo</span><strong>${state.resources.ammo}</strong></div>
+      <div class="fact"><span>Meal due</span><strong>${upkeep.foodDueInHours}h</strong></div>
+      <div class="fact"><span>Water due</span><strong>${upkeep.waterDueInHours}h</strong></div>
+      <div class="fact"><span>Crew stress</span><strong>${stressedCount}</strong></div>
+      <div class="fact"><span>Crew wounds</span><strong>${woundedCount}</strong></div>
+    </div>
+  `;
+  const loadoutCard = (className = "") => surfaceCard({
+    title: "Current loadout",
+    meta: `${weaponName} / ${armorName}`,
+    className,
+    body: `
+      <div class="fact-grid">
+        <div class="fact"><span>Weapon</span><strong>${weaponName}</strong></div>
+        <div class="fact"><span>Armor</span><strong>${armorName}</strong></div>
+        <div class="fact"><span>Food cost</span><strong>${upkeep.mealCost}/cycle</strong></div>
+        <div class="fact"><span>Water cost</span><strong>${upkeep.waterCost}/cycle</strong></div>
+      </div>
+    `,
+  });
+  const combatCard = (className = "") => surfaceCard({
+    title: "Field stats",
+    meta: "live",
+    className,
+    body: statusCards,
+  });
+  const toolCard = (className = "") => surfaceCard({
+    title: "Tool belt",
+    meta: `${gear.tools.length} tools`,
+    className,
+    body: gear.tools.length
+      ? `<div class="inventory-card-grid">${gear.tools.join("")}</div>`
+      : `<p class="empty-state">No field tools packed yet.</p>`,
+  });
+  const gearCard = (className = "") => surfaceCard({
+    title: "Equipment locker",
+    meta: `${gear.weapons.length + gear.armor.length} pieces`,
+    className,
+    body: gear.weapons.length || gear.armor.length
+      ? `
+        <div class="detail-list">
+          ${gear.weapons.length ? `<div class="list-block compact-block"><div class="surface-head"><h4>Weapons</h4><span class="tag">${gear.weapons.length}</span></div><div class="inventory-card-grid">${gear.weapons.join("")}</div></div>` : ""}
+          ${gear.armor.length ? `<div class="list-block compact-block"><div class="surface-head"><h4>Armor</h4><span class="tag">${gear.armor.length}</span></div><div class="inventory-card-grid">${gear.armor.join("")}</div></div>` : ""}
+        </div>
+      `
+      : `<p class="empty-state">You are still fighting with whatever you woke up wearing.</p>`,
+  });
+  const consumableCard = (className = "") => surfaceCard({
+    title: "Field care",
+    meta: `${gear.consumables.length} ready`,
+    className,
+    body: gear.consumables.length
+      ? `<div class="inventory-card-grid">${gear.consumables.join("")}</div>`
+      : `<p class="empty-state">No bandages or field meds packed right now.</p>`,
+  });
+
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-player">
+        ${loadoutCard()}
+        ${combatCard()}
+        ${toolCard()}
+        ${gearCard()}
+        ${consumableCard()}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="tab-grid tab-grid-tight">
+      ${loadoutCard("span-4")}
+      ${combatCard("span-4")}
+      ${toolCard("span-4")}
+      ${gearCard("span-8")}
+      ${consumableCard("span-4")}
     </div>
   `;
 }

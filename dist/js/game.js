@@ -408,19 +408,17 @@ const UPGRADES = [
     effects: {
       unlockSections: ["shelter"],
       discoverResources: ["food"],
-      defense: 1,
     },
   },
   {
     id: "campfire",
     name: "Campfire",
-    description: "Improves burn relief, adds minor defense, and reveals Fuel.",
+    description: "Improves burn relief, keeps the room warm, and reveals Fuel.",
     verb: "Assemble",
     cost: { scrap: 18, wood: 3, fuel: 2, cloth: 1 },
     requires: { upgrades: ["shelter_stash"], burnUses: 1 },
     effects: {
       burnCondition: 5,
-      defense: 1,
       discoverResources: ["fuel"],
       unlockSections: ["shelter"],
     },
@@ -554,13 +552,12 @@ const UPGRADES = [
   {
     id: "weapon_rack",
     name: "Weapon Slot",
-    description: "Unlocks weapon loadout and adds +1 attack.",
+    description: "Unlocks weapon loadout and keeps melee gear ready.",
     cost: { scrap: 34, wood: 2, parts: 6, wire: 1 },
     requires: { upgrades: ["crafting_bench"] },
     effects: {
       weaponSlot: true,
       unlockSections: ["inventory"],
-      attack: 1,
     },
   },
   {
@@ -593,13 +590,12 @@ const UPGRADES = [
   {
     id: "armor_hooks",
     name: "Armor Slot",
-    description: "Unlocks armor loadout and adds +1 defense.",
+    description: "Unlocks armor loadout and keeps protective gear ready.",
     cost: { scrap: 34, wood: 2, parts: 6, cloth: 2 },
     requires: { upgrades: ["crafting_bench"] },
     effects: {
       armorSlot: true,
       unlockSections: ["inventory"],
-      defense: 1,
     },
   },
   {
@@ -729,11 +725,10 @@ const UPGRADES = [
   {
     id: "flood_lights",
     name: "Flood Lights",
-    description: "Boosts perimeter coverage, defense, and night resistance.",
+    description: "Boosts perimeter coverage and night resistance.",
     cost: { scrap: 34, parts: 8, wire: 5, electronics: 2, fuel: 3 },
     requires: { upgrades: ["watch_post", "radio_rig"] },
     effects: {
-      defense: 1,
       coverage: 0.7,
       nightMitigation: 0.3,
     },
@@ -4097,30 +4092,30 @@ function applyZoneRewards(state, zoneId, rewards) {
 function sourceEncounterProfile(sourceId) {
   switch (sourceId) {
     case "vehicle_shells":
-      return { zoneId: "abandoned_gas_station", enemies: ["walker", "stalker"], rewards: { resources: { parts: 1 } } };
+      return { zoneId: "abandoned_gas_station", enemies: ["walker", "screecher"], rewards: { resources: { parts: 1 } } };
     case "dead_pantries":
       return { zoneId: "burned_apartments", enemies: ["walker"], rewards: { resources: { food: 1 } } };
     case "clinic_drawers":
       return { zoneId: "hospital_wing", enemies: ["walker", "screecher"], rewards: { resources: { medicine: 1 } } };
     case "signal_wrecks":
-      return { zoneId: "radio_tower_perimeter", enemies: ["stalker", "static_touched"], rewards: { resources: { wire: 1 } } };
+      return { zoneId: "radio_tower_perimeter", enemies: ["screecher", "bloated_carrier"], rewards: { resources: { wire: 1 } } };
     case "sealed_caches":
-      return { zoneId: "radio_tower_perimeter", enemies: ["stalker", "relay_brute"], rewards: { resources: { ammo: 1, parts: 1 } } };
+      return { zoneId: "radio_tower_perimeter", enemies: ["screecher", "bloated_carrier"], rewards: { resources: { ammo: 1, parts: 1 } } };
     case "rubble":
     default:
-      return { zoneId: "ruined_street", enemies: ["walker", "screecher"], rewards: { resources: { wood: 1 } } };
+      return { zoneId: "ruined_street", enemies: ["walker"], rewards: { resources: { wood: 1 } } };
   }
 }
 
 function sourceEncounterChance(state, source) {
-  const searchPressure = Math.max(0, state.stats.searches - 2) * 0.022;
-  const shelterPressure = state.shelter.threat * 0.03 + state.shelter.noise * 0.024;
+  const searchPressure = Math.max(0, state.stats.searches - 2) * 0.018;
+  const shelterPressure = state.shelter.threat * 0.022 + state.shelter.noise * 0.018;
   const lanePressure = (source.threat || 0.3) * 0.12 + (source.noise || 0.3) * 0.08;
 
   return clamp(
-    0.015 + searchPressure + shelterPressure + lanePressure,
-    0.05,
-    source.id === "rubble" ? 0.24 : 0.38,
+    0.01 + searchPressure + shelterPressure + lanePressure,
+    0.03,
+    source.id === "rubble" ? 0.16 : 0.24,
   );
 }
 
@@ -5293,6 +5288,7 @@ function processRealtimeTick(state, seconds = 1) {
 // render/shared.js
 const TAB_DEFS = [
   { id: "overview", label: "Overview", hint: "control", count: (state) => state.stats.searches || null },
+  { id: "player", label: "Player", hint: "loadout" },
   { id: "craft", label: "Craft", hint: "build queue", unlock: "upgrades", count: (state) => getVisibleUpgrades(state).filter((upgrade) => !state.upgrades.includes(upgrade.id)).length || null },
   { id: "inventory", label: "Inventory", hint: "gear hold", unlock: "inventory" },
   { id: "shelter", label: "Shelter", hint: "survival", unlock: "shelter" },
@@ -5307,7 +5303,7 @@ const TAB_DEFS = [
 ];
 
 const MOBILE_PRIMARY_TABS = ["overview", "craft", "shelter", "map"];
-const MOBILE_MORE_TABS = ["inventory", "survivors", "radio", "leaderboard", "log", "help", "settings"];
+const MOBILE_MORE_TABS = ["player", "inventory", "survivors", "radio", "leaderboard", "log", "help", "settings"];
 
 function byId(id) {
   return document.getElementById(id);
@@ -5315,6 +5311,14 @@ function byId(id) {
 
 function isMobileViewport() {
   return typeof window !== "undefined" && Number(window.innerWidth || 0) <= 720;
+}
+
+function escapeAttribute(value = "") {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 function meterClass(percent) {
@@ -5340,17 +5344,18 @@ function conditionLabel(percent) {
   return "Stable";
 }
 
-function actionButton({ action, label, meta = "", disabled = false, variant = "", data = {} }) {
+function actionButton({ action, label, meta = "", disabled = false, variant = "", data = {}, title = "" }) {
   const dataAttrs = Object.entries(data)
     .map(([key, value]) => ` data-${key}="${value}"`)
     .join("");
   const classes = ["action-button", variant].filter(Boolean).join(" ");
+  const titleAttr = title ? ` title="${escapeAttribute(title)}"` : "";
 
   return `
     <button
       type="button"
       class="${classes}"
-      data-action="${action}"${dataAttrs}
+      data-action="${action}"${dataAttrs}${titleAttr}
       ${disabled ? "disabled" : ""}
     >
       <span class="action-label">${label}</span>
@@ -5432,6 +5437,20 @@ function itemSummaryChips(item) {
   }
 
   return chips;
+}
+
+function itemTooltipText(item, amount) {
+  const lines = [`${item.name} x${amount}`, `Type: ${item.type}`];
+  const summary = itemSummaryChips(item).filter((chip) => chip !== item.type);
+
+  if (summary.length) {
+    lines.push(`Effects: ${summary.join(" | ")}`);
+  }
+  if (item.description) {
+    lines.push(item.description);
+  }
+
+  return lines.join(" | ");
 }
 
 function contentAvailable(state, requirements = {}) {
@@ -6321,32 +6340,36 @@ function renderCommandDesk(state, derived, availableSources, availableUpgrades) 
 function renderInventoryItemCard(itemId, amount) {
   const item = ITEMS[itemId];
   let actionMarkup = "";
+  const tooltip = itemTooltipText(item, amount);
   if (item.type === "weapon" || item.type === "armor") {
     actionMarkup = actionButton({
       action: "equip-item",
-      label: `Equip ${item.name}`,
+      label: "Equip",
       meta: item.type,
       data: { item: itemId },
+      title: tooltip,
     });
   } else if (item.type === "consumable") {
     actionMarkup = actionButton({
       action: "use-item",
-      label: `Use ${item.name}`,
+      label: "Use",
       meta: item.type,
       data: { item: itemId },
+      title: tooltip,
     });
   }
 
-  const summary = itemSummaryChips(item);
+  const summary = itemSummaryChips(item)
+    .filter((chip) => chip !== item.type)
+    .slice(0, 2);
 
   return `
-    <div class="list-block inventory-item-card">
+    <div class="list-block inventory-item-card" title="${escapeAttribute(tooltip)}">
       <div class="surface-head">
         <h4>${item.name}</h4>
         <span class="tag">${item.type} x${amount}</span>
       </div>
       ${summary.length ? `<div class="chip-row">${tagList(summary)}</div>` : ""}
-      ${item.description ? `<p class="note">${item.description}</p>` : ""}
       ${actionMarkup}
     </div>
   `;
@@ -7562,6 +7585,18 @@ function tabStageMeta(state, derived) {
   const activeCount = builtStructures.length + (perimeter ? 1 : 0);
 
   switch (state.ui.activeTab) {
+    case "player":
+      return {
+        label: "Field profile",
+        title: "What you can carry into the dark",
+        detail: "Your weapon, armor, tools, and survival profile in one place.",
+        stats: [
+          ["Attack", derived.attack],
+          ["Defense", derived.defense],
+          ["Condition", state.resources.condition],
+          ["Ammo", state.resources.ammo],
+        ],
+      };
     case "craft":
       return {
         label: "Build queue",
@@ -7902,6 +7937,35 @@ function getUpgradeMissingNotes(state, upgrade) {
   return missing;
 }
 
+function upgradeTooltipText(state, upgrade, built, ready, missing) {
+  const lines = [upgrade.name];
+
+  if (upgrade.description) {
+    lines.push(upgrade.description);
+  }
+
+  const effectChips = upgradeEffectChips(upgrade);
+  if (effectChips.length) {
+    lines.push(`Effects: ${effectChips.join(" | ")}`);
+  }
+
+  if (upgrade.materials && Object.keys(upgrade.materials).length) {
+    lines.push(`Needs: ${Object.entries(upgrade.materials).map(([itemId, amount]) => `${ITEMS[itemId]?.name || itemId} x${amount}`).join(" / ")}`);
+  }
+
+  if (missing.length) {
+    lines.push(`Missing: ${missing.join(" | ")}`);
+  } else if (!built && ready) {
+    lines.push("Ready to build.");
+  }
+
+  if (built) {
+    lines.push("Installed.");
+  }
+
+  return lines.join(" | ");
+}
+
 function renderUpgradeQueue(state, title, ready, blocked, emptyText) {
   return `
     <div class="queue-column">
@@ -8015,7 +8079,7 @@ function renderUpgradeCard(state, upgrade) {
   const discipline = upgradeDisciplineLabel(upgrade);
   const meta = [];
   const missing = getUpgradeMissingNotes(state, upgrade);
-  const effectChips = upgradeEffectChips(upgrade);
+  const tooltip = upgradeTooltipText(state, upgrade, built, ready, missing);
 
   meta.push(discipline);
   if (Object.keys(upgrade.cost || {}).length) {
@@ -8026,20 +8090,19 @@ function renderUpgradeCard(state, upgrade) {
   }
 
   return `
-    <div class="list-block upgrade-card ${built ? "is-built-upgrade" : ready ? "is-ready-upgrade" : "is-blocked-upgrade"}">
+    <div class="list-block upgrade-card ${built ? "is-built-upgrade" : ready ? "is-ready-upgrade" : "is-blocked-upgrade"}" title="${escapeAttribute(tooltip)}">
       <div class="surface-head">
         <h4>${upgrade.name}</h4>
         <span class="tag">${built ? "built" : ready ? "ready" : "blocked"}</span>
       </div>
       ${meta.length ? `<div class="chip-row">${tagList(meta)}</div>` : ""}
-      ${effectChips.length ? `<div class="chip-row">${tagList(effectChips)}</div>` : ""}
-      ${!built && missing.length ? `<div class="chip-row">${tagList(missing)}</div>` : ""}
       ${built ? "" : actionButton({
         action: "buy-upgrade",
         label: `${upgrade.verb || "Build"} ${upgrade.name}`,
-        meta: ready ? "Permanent unlock" : missing[0] || "Need salvage or tools",
+        meta: ready ? "unlock" : missing[0] || "Need salvage or tools",
         disabled: !ready,
         data: { upgrade: upgrade.id },
+        title: tooltip,
       })}
     </div>
   `;
@@ -8925,6 +8988,119 @@ function leaderboardRunSummary(snapshot, username) {
       <div class="fact"><span>Nights</span><strong>${snapshot.summary.nightsSurvived}</strong></div>
       <div class="fact"><span>Zones</span><strong>${snapshot.summary.zonesVisited}</strong></div>
       <div class="fact"><span>Signal</span><strong>${snapshot.summary.radioProgress}</strong></div>
+    </div>
+  `;
+}
+
+function playerGearRows(state) {
+  const weapons = Object.entries(state.inventory)
+    .filter(([itemId, amount]) => amount > 0 && ITEMS[itemId]?.type === "weapon")
+    .map(([itemId, amount]) => renderInventoryItemCard(itemId, amount));
+  const armor = Object.entries(state.inventory)
+    .filter(([itemId, amount]) => amount > 0 && ITEMS[itemId]?.type === "armor")
+    .map(([itemId, amount]) => renderInventoryItemCard(itemId, amount));
+  const tools = Object.entries(state.inventory)
+    .filter(([itemId, amount]) => amount > 0 && ITEMS[itemId]?.type === "tool")
+    .map(([itemId, amount]) => renderInventoryItemCard(itemId, amount));
+  const consumables = Object.entries(state.inventory)
+    .filter(([itemId, amount]) => amount > 0 && ITEMS[itemId]?.type === "consumable")
+    .map(([itemId, amount]) => renderInventoryItemCard(itemId, amount));
+
+  return {
+    weapons,
+    armor,
+    tools,
+    consumables,
+  };
+}
+
+function renderPlayerTab(state, derived, isMobile = false) {
+  const upkeep = getShelterUpkeep(state);
+  const gear = playerGearRows(state);
+  const weaponName = state.equipped.weapon ? ITEMS[state.equipped.weapon]?.name : "Bare hands";
+  const armorName = state.equipped.armor ? ITEMS[state.equipped.armor]?.name : "Street clothes";
+  const stressedCount = state.survivors.roster.filter((survivor) => survivor.stress >= 4).length;
+  const woundedCount = state.survivors.roster.filter((survivor) => survivor.wounded > 0).length;
+  const statusCards = `
+    <div class="fact-grid">
+      <div class="fact"><span>Attack</span><strong>${derived.attack}</strong></div>
+      <div class="fact"><span>Defense</span><strong>${derived.defense}</strong></div>
+      <div class="fact"><span>Condition</span><strong>${state.resources.condition}</strong></div>
+      <div class="fact"><span>Ammo</span><strong>${state.resources.ammo}</strong></div>
+      <div class="fact"><span>Meal due</span><strong>${upkeep.foodDueInHours}h</strong></div>
+      <div class="fact"><span>Water due</span><strong>${upkeep.waterDueInHours}h</strong></div>
+      <div class="fact"><span>Crew stress</span><strong>${stressedCount}</strong></div>
+      <div class="fact"><span>Crew wounds</span><strong>${woundedCount}</strong></div>
+    </div>
+  `;
+  const loadoutCard = (className = "") => surfaceCard({
+    title: "Current loadout",
+    meta: `${weaponName} / ${armorName}`,
+    className,
+    body: `
+      <div class="fact-grid">
+        <div class="fact"><span>Weapon</span><strong>${weaponName}</strong></div>
+        <div class="fact"><span>Armor</span><strong>${armorName}</strong></div>
+        <div class="fact"><span>Food cost</span><strong>${upkeep.mealCost}/cycle</strong></div>
+        <div class="fact"><span>Water cost</span><strong>${upkeep.waterCost}/cycle</strong></div>
+      </div>
+    `,
+  });
+  const combatCard = (className = "") => surfaceCard({
+    title: "Field stats",
+    meta: "live",
+    className,
+    body: statusCards,
+  });
+  const toolCard = (className = "") => surfaceCard({
+    title: "Tool belt",
+    meta: `${gear.tools.length} tools`,
+    className,
+    body: gear.tools.length
+      ? `<div class="inventory-card-grid">${gear.tools.join("")}</div>`
+      : `<p class="empty-state">No field tools packed yet.</p>`,
+  });
+  const gearCard = (className = "") => surfaceCard({
+    title: "Equipment locker",
+    meta: `${gear.weapons.length + gear.armor.length} pieces`,
+    className,
+    body: gear.weapons.length || gear.armor.length
+      ? `
+        <div class="detail-list">
+          ${gear.weapons.length ? `<div class="list-block compact-block"><div class="surface-head"><h4>Weapons</h4><span class="tag">${gear.weapons.length}</span></div><div class="inventory-card-grid">${gear.weapons.join("")}</div></div>` : ""}
+          ${gear.armor.length ? `<div class="list-block compact-block"><div class="surface-head"><h4>Armor</h4><span class="tag">${gear.armor.length}</span></div><div class="inventory-card-grid">${gear.armor.join("")}</div></div>` : ""}
+        </div>
+      `
+      : `<p class="empty-state">You are still fighting with whatever you woke up wearing.</p>`,
+  });
+  const consumableCard = (className = "") => surfaceCard({
+    title: "Field care",
+    meta: `${gear.consumables.length} ready`,
+    className,
+    body: gear.consumables.length
+      ? `<div class="inventory-card-grid">${gear.consumables.join("")}</div>`
+      : `<p class="empty-state">No bandages or field meds packed right now.</p>`,
+  });
+
+  if (isMobile) {
+    return `
+      <div class="tab-mobile-flow tab-mobile-flow-player">
+        ${loadoutCard()}
+        ${combatCard()}
+        ${toolCard()}
+        ${gearCard()}
+        ${consumableCard()}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="tab-grid tab-grid-tight">
+      ${loadoutCard("span-4")}
+      ${combatCard("span-4")}
+      ${toolCard("span-4")}
+      ${gearCard("span-8")}
+      ${consumableCard("span-4")}
     </div>
   `;
 }
@@ -9923,6 +10099,8 @@ function renderCombatBanner(state) {
 function renderTabContent(state, derived) {
   const isMobile = isMobileViewport();
   switch (state.ui.activeTab) {
+    case "player":
+      return renderPlayerTab(state, derived, isMobile);
     case "craft":
       return renderCraftTab(state, isMobile);
     case "inventory":

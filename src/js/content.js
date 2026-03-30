@@ -32,19 +32,17 @@ export const UPGRADES = [
     effects: {
       unlockSections: ["shelter"],
       discoverResources: ["food"],
-      defense: 1,
     },
   },
   {
     id: "campfire",
     name: "Campfire",
-    description: "Improves burn relief, adds minor defense, and reveals Fuel.",
+    description: "Improves burn relief, keeps the room warm, and reveals Fuel.",
     verb: "Assemble",
     cost: { scrap: 18, wood: 3, fuel: 2, cloth: 1 },
     requires: { upgrades: ["shelter_stash"], burnUses: 1 },
     effects: {
       burnCondition: 5,
-      defense: 1,
       discoverResources: ["fuel"],
       unlockSections: ["shelter"],
     },
@@ -178,13 +176,12 @@ export const UPGRADES = [
   {
     id: "weapon_rack",
     name: "Weapon Slot",
-    description: "Unlocks weapon loadout and adds +1 attack.",
+    description: "Unlocks weapon loadout and keeps melee gear ready.",
     cost: { scrap: 34, wood: 2, parts: 6, wire: 1 },
     requires: { upgrades: ["crafting_bench"] },
     effects: {
       weaponSlot: true,
       unlockSections: ["inventory"],
-      attack: 1,
     },
   },
   {
@@ -217,13 +214,12 @@ export const UPGRADES = [
   {
     id: "armor_hooks",
     name: "Armor Slot",
-    description: "Unlocks armor loadout and adds +1 defense.",
+    description: "Unlocks armor loadout and keeps protective gear ready.",
     cost: { scrap: 34, wood: 2, parts: 6, cloth: 2 },
     requires: { upgrades: ["crafting_bench"] },
     effects: {
       armorSlot: true,
       unlockSections: ["inventory"],
-      defense: 1,
     },
   },
   {
@@ -353,11 +349,10 @@ export const UPGRADES = [
   {
     id: "flood_lights",
     name: "Flood Lights",
-    description: "Boosts perimeter coverage, defense, and night resistance.",
+    description: "Boosts perimeter coverage and night resistance.",
     cost: { scrap: 34, parts: 8, wire: 5, electronics: 2, fuel: 3 },
     requires: { upgrades: ["watch_post", "radio_rig"] },
     effects: {
-      defense: 1,
       coverage: 0.7,
       nightMitigation: 0.3,
     },

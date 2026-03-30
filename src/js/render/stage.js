@@ -27,6 +27,18 @@ function tabStageMeta(state, derived) {
   const activeCount = builtStructures.length + (perimeter ? 1 : 0);
 
   switch (state.ui.activeTab) {
+    case "player":
+      return {
+        label: "Field profile",
+        title: "What you can carry into the dark",
+        detail: "Your weapon, armor, tools, and survival profile in one place.",
+        stats: [
+          ["Attack", derived.attack],
+          ["Defense", derived.defense],
+          ["Condition", state.resources.condition],
+          ["Ammo", state.resources.ammo],
+        ],
+      };
     case "craft":
       return {
         label: "Build queue",

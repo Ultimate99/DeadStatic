@@ -26,6 +26,7 @@ import {
 import {
   actionButton,
   describeSourceUnlock,
+  escapeAttribute,
   itemLabel,
   lootBandMarkup,
   renderCommandDesk,
@@ -177,6 +178,35 @@ function getUpgradeMissingNotes(state, upgrade) {
   return missing;
 }
 
+function upgradeTooltipText(state, upgrade, built, ready, missing) {
+  const lines = [upgrade.name];
+
+  if (upgrade.description) {
+    lines.push(upgrade.description);
+  }
+
+  const effectChips = upgradeEffectChips(upgrade);
+  if (effectChips.length) {
+    lines.push(`Effects: ${effectChips.join(" | ")}`);
+  }
+
+  if (upgrade.materials && Object.keys(upgrade.materials).length) {
+    lines.push(`Needs: ${Object.entries(upgrade.materials).map(([itemId, amount]) => `${ITEMS[itemId]?.name || itemId} x${amount}`).join(" / ")}`);
+  }
+
+  if (missing.length) {
+    lines.push(`Missing: ${missing.join(" | ")}`);
+  } else if (!built && ready) {
+    lines.push("Ready to build.");
+  }
+
+  if (built) {
+    lines.push("Installed.");
+  }
+
+  return lines.join(" | ");
+}
+
 function renderUpgradeQueue(state, title, ready, blocked, emptyText) {
   return `
     <div class="queue-column">
@@ -290,7 +320,7 @@ function renderUpgradeCard(state, upgrade) {
   const discipline = upgradeDisciplineLabel(upgrade);
   const meta = [];
   const missing = getUpgradeMissingNotes(state, upgrade);
-  const effectChips = upgradeEffectChips(upgrade);
+  const tooltip = upgradeTooltipText(state, upgrade, built, ready, missing);
 
   meta.push(discipline);
   if (Object.keys(upgrade.cost || {}).length) {
@@ -301,20 +331,19 @@ function renderUpgradeCard(state, upgrade) {
   }
 
   return `
-    <div class="list-block upgrade-card ${built ? "is-built-upgrade" : ready ? "is-ready-upgrade" : "is-blocked-upgrade"}">
+    <div class="list-block upgrade-card ${built ? "is-built-upgrade" : ready ? "is-ready-upgrade" : "is-blocked-upgrade"}" title="${escapeAttribute(tooltip)}">
       <div class="surface-head">
         <h4>${upgrade.name}</h4>
         <span class="tag">${built ? "built" : ready ? "ready" : "blocked"}</span>
       </div>
       ${meta.length ? `<div class="chip-row">${tagList(meta)}</div>` : ""}
-      ${effectChips.length ? `<div class="chip-row">${tagList(effectChips)}</div>` : ""}
-      ${!built && missing.length ? `<div class="chip-row">${tagList(missing)}</div>` : ""}
       ${built ? "" : actionButton({
         action: "buy-upgrade",
         label: `${upgrade.verb || "Build"} ${upgrade.name}`,
-        meta: ready ? "Permanent unlock" : missing[0] || "Need salvage or tools",
+        meta: ready ? "unlock" : missing[0] || "Need salvage or tools",
         disabled: !ready,
         data: { upgrade: upgrade.id },
+        title: tooltip,
       })}
     </div>
   `;
