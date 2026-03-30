@@ -21,8 +21,9 @@ export function registerRenderTests(run) {
     assert.match(html, /<script>/);
     assert.match(html, /viewport-fit=cover/);
     assert.match(html, /theme-color/);
-    assert.match(html, /DEAD_STATIC_CONFIG/);
+    assert.match(html, /window\.DEAD_STATIC_CONFIG/);
     assert.match(html, /site\.webmanifest/);
+    assert.match(html, /ujyjwzqvqcybkwqixweb/);
     assert.match(html, /apple-touch-icon/);
     assert.match(html, /social-card\.png/);
     assert.doesNotMatch(html, /href="\.\/css\/ui\.css"/);

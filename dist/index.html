@@ -4473,6 +4473,20 @@ body[data-mobile="true"] .mobile-structure-sheet .mobile-sheet-body {
   <nav id="mobile-bottom-nav" class="mobile-bottom-nav" aria-label="Mobile sections"></nav>
 
   <script>
+window.DEAD_STATIC_CONFIG = {
+  ...(window.DEAD_STATIC_CONFIG || {}),
+  leaderboard: {
+    enabled: true,
+    functionsBaseUrl: "https://ujyjwzqvqcybkwqixweb.supabase.co/functions/v1",
+    publicToken: "sb_publishable_LQJj5sKJWFkyQjxn4eOoBg_mKKQCvbi",
+    listPath: "leaderboard-list",
+    submitPath: "leaderboard-submit",
+    limit: 10,
+  },
+};
+
+</script>
+  <script>
 /* Dead Static bundled runtime for direct file-open compatibility. */
 
 // data.js

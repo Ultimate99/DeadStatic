@@ -76,10 +76,16 @@ async function buildStandalone() {
     readFile(path.join(distDir, "js", "game.js"), "utf8"),
   ]);
 
-  const html = template
-    .replace('<link rel="stylesheet" href="./css/ui.css">', `<style>\n${css}\n</style>`)
-    .replace('<script src="./runtime-config.js"></script>', `<script>\n${runtimeConfig}\n</script>`)
-    .replace('<script defer src="./js/game.js"></script>', `<script>\n${js}\n</script>`);
+  const htmlWithCss = template
+    .replace('<link rel="stylesheet" href="./css/ui.css">', `<style>\n${css}\n</style>`);
+
+  const htmlWithRuntime = htmlWithCss.includes('<script src="./runtime-config.js"></script>')
+    ? htmlWithCss.replace('<script src="./runtime-config.js"></script>', `<script>\n${runtimeConfig}\n</script>`)
+    : htmlWithCss.replace('</body>', `  <script>\n${runtimeConfig}\n</script>\n</body>`);
+
+  const html = htmlWithRuntime.includes('<script defer src="./js/game.js"></script>')
+    ? htmlWithRuntime.replace('<script defer src="./js/game.js"></script>', `<script>\n${js}\n</script>`)
+    : htmlWithRuntime.replace('</body>', `  <script>\n${js}\n</script>\n</body>`);
 
   await writeFile(path.join(distDir, "index.html"), html, "utf8");
   await writeFile(path.join(distDir, ".nojekyll"), "", "utf8");
