@@ -157,6 +157,18 @@ function clearDragState() {
   clearDropHighlights();
 }
 
+function slotHoverTarget(target) {
+  return target?.closest?.(".equipment-slot-card[data-slot]") || null;
+}
+
+function setHoverSlot(slotId = "") {
+  if (!slotId) {
+    delete document.body.dataset.hoverSlot;
+    return;
+  }
+  document.body.dataset.hoverSlot = slotId;
+}
+
 function placementTileTarget(target) {
   return target?.closest?.('button[data-action="place-structure"]') || null;
 }
@@ -580,6 +592,10 @@ document.body.addEventListener("click", (event) => {
 document.body.addEventListener("mouseover", (event) => {
   const nextTarget = tooltipSource(event.target);
   const placementTile = placementTileTarget(event.target);
+  const slot = slotHoverTarget(event.target);
+  if (slot?.dataset.slot) {
+    setHoverSlot(slot.dataset.slot);
+  }
   if (placementTile && state.ui.pendingPlacementStructureId) {
     if (placementTile.dataset.valid === "true") {
       setPlacementPreviewState(
@@ -606,8 +622,12 @@ document.body.addEventListener("mousemove", (event) => {
 
 document.body.addEventListener("mouseout", (event) => {
   const placementTile = placementTileTarget(event.target);
+  const slot = slotHoverTarget(event.target);
   if (placementTile && !placementTileTarget(event.relatedTarget)) {
     clearPlacementPreviewState({ rerenderView: true });
+  }
+  if (slot && !slot.contains(event.relatedTarget)) {
+    setHoverSlot("");
   }
   const nextTarget = tooltipSource(event.target);
   if (!nextTarget || tooltipTarget !== nextTarget) {
@@ -619,6 +639,10 @@ document.body.addEventListener("mouseout", (event) => {
 document.body.addEventListener("focusin", (event) => {
   const nextTarget = tooltipSource(event.target);
   const placementTile = placementTileTarget(event.target);
+  const slot = slotHoverTarget(event.target);
+  if (slot?.dataset.slot) {
+    setHoverSlot(slot.dataset.slot);
+  }
   if (placementTile && state.ui.pendingPlacementStructureId && placementTile.dataset.valid === "true") {
     setPlacementPreviewState(
       placementTile.dataset.structure || state.ui.pendingPlacementStructureId,
@@ -633,6 +657,9 @@ document.body.addEventListener("focusin", (event) => {
 });
 
 document.body.addEventListener("focusout", (event) => {
+  if (slotHoverTarget(event.target)) {
+    setHoverSlot("");
+  }
   if (placementTileTarget(event.target)) {
     clearPlacementPreviewState({ rerenderView: true });
   }

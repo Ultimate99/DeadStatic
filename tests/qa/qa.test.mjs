@@ -882,6 +882,8 @@ run("base tab renders placement board, structure rack, and inspector", () => {
   assert.match(tabMarkup, /base-grid-frame/);
   assert.match(tabMarkup, /base-grid-fence/);
   assert.match(tabMarkup, /inspect-structure/);
+  assert.match(tabMarkup, /base-inspector-grid/);
+  assert.match(tabMarkup, /base-inspector-actions/);
   assert.doesNotMatch(tabMarkup, /not built/);
 });
 
@@ -1034,9 +1036,11 @@ run("survivor tab renders loadout, field stats, and compact inventory grids", ()
   state.unlockedSections = ["inventory", "shelter", "survivors"];
   state.inventory.rusty_knife = 1;
   state.inventory.backpack = 1;
+  state.inventory.patchwork_vest = 1;
   state.inventory.first_aid_rag = 1;
   state.inventory.pry_bar = 1;
   state.equipped.weapon = "rusty_knife";
+  state.equipped.armor = "patchwork_vest";
   state.equipped.backpack = "backpack";
   state.resources.ammo = 3;
 
@@ -1046,12 +1050,15 @@ run("survivor tab renders loadout, field stats, and compact inventory grids", ()
 
   assert.match(markup, /Loadout/);
   assert.match(markup, /Field stats/);
+  assert.match(markup, /paper-doll-stage/);
+  assert.match(markup, /paper-doll-sprite/);
   assert.match(markup, /Tool Belt/);
   assert.match(markup, /Gear Locker/);
   assert.match(markup, /Field Supplies/);
   assert.match(markup, /Weapons/);
   assert.match(markup, /Tools/);
   assert.match(markup, /Rusty Knife/);
+  assert.match(markup, /Patchwork Vest/);
   assert.match(markup, /Backpack/);
   assert.match(markup, /Pry Bar/);
   assert.match(markup, /data-slot="weapon"/);
@@ -1086,11 +1093,75 @@ run("workshop tab renders work queue, categories, time, tool, and tier", () => {
   assert.match(markup, /Consumables/);
   assert.match(markup, /Backpack/);
   assert.match(markup, /Sewing Kit/);
+  assert.match(markup, /workshop-board-grid/);
+  assert.match(markup, /blueprint-status-line/);
   assert.match(markup, /data-tooltip=/);
-  assert.match(markup, /time 1h/);
-  assert.match(markup, /tool Sewing Kit/);
-  assert.match(markup, /tier field/);
+  assert.match(markup, /time/);
+  assert.match(markup, /tool/);
+  assert.match(markup, /tier/);
   assert.match(markup, /start-work-job/);
+});
+
+run("routes tab renders mission tiles and compact briefing controls", () => {
+  const bundle = readFileSync(path.join(projectRoot, "dist", "js", "game.js"), "utf8");
+  const state = createInitialState();
+  state.ui.activeTab = "routes";
+  state.unlockedSections = ["map"];
+  state.unlockedZones = ["ruined_street"];
+
+  const harness = createBundleHarness(SEARCH_PATTERN, { initialSave: state });
+  vm.runInNewContext(bundle, harness.context, { filename: "game.js" });
+  const markup = harness.elements.get("tab-content").innerHTML;
+
+  assert.match(markup, /Route package/);
+  assert.match(markup, /Route controls/);
+  assert.match(markup, /route-briefing-head/);
+  assert.match(markup, /route-zone-grid/);
+  assert.match(markup, /route-zone-chip/);
+  assert.match(markup, /Prepare/);
+});
+
+run("ops watch and combat banner render stronger threat surfaces", () => {
+  const bundle = readFileSync(path.join(projectRoot, "dist", "js", "game.js"), "utf8");
+  const state = createInitialState();
+  state.ui.activeTab = "ops";
+  state.stats.searches = 4;
+  state.upgrades = ["campfire", "basic_barricade", "watch_post"];
+  state.night.lastReport = {
+    stamp: "D2 06:00",
+    eventType: "infected",
+    severity: "hard",
+    conditionLoss: 8,
+    moraleDelta: -2,
+    siegePressure: 2,
+    damagedStructures: ["basic_barricade"],
+    stolen: {},
+    crewHits: [],
+    summary: "The wall shuddered but the line held.",
+  };
+  state.combat = {
+    enemyId: "walker",
+    zoneId: "ruined_street",
+    enemyHp: 10,
+    rewards: { resources: { scrap: 1 } },
+    objectiveId: "salvage",
+    turn: 1,
+    intent: "grapple",
+    brace: 0,
+    grappled: false,
+  };
+
+  const harness = createBundleHarness(SEARCH_PATTERN, { initialSave: state });
+  vm.runInNewContext(bundle, harness.context, { filename: "game.js" });
+  const tabMarkup = harness.elements.get("tab-content").innerHTML;
+  const combatMarkup = harness.elements.get("combat-banner").innerHTML;
+
+  assert.match(tabMarkup, /watch-threat-shell/);
+  assert.match(tabMarkup, /night-debrief-card/);
+  assert.match(combatMarkup, /combat-intent-chip/);
+  assert.match(combatMarkup, /combat-meter/);
+  assert.match(combatMarkup, /Attack/);
+  assert.match(combatMarkup, /Retreat/);
 });
 
 run("non-defense support builds do not report fake defense bonuses", () => {

@@ -1,7 +1,8 @@
+import { ENEMIES } from "../content.js";
 import { ITEMS, SURVIVOR_ROLES, SURVIVOR_TRAITS } from "../data.js";
-import { getAvailableRadioInvestigations, getRadioBoard, getShelterUpkeep } from "../engine.js";
+import { getDerivedState, getRadioBoard, getShelterUpkeep } from "../engine.js";
 import { getLeaderboardSnapshot, getLeaderboardState } from "../services/leaderboard.js";
-import { renderEnemySprite, renderItemSprite, renderSlotFrame, renderStructureSprite } from "./sprites.js";
+import { renderEnemySprite, renderItemSprite, renderPaperDoll, renderSlotFrame, renderStructureSprite } from "./sprites.js";
 import {
   actionButton,
   renderInventoryItemCard,
@@ -71,7 +72,7 @@ function groupedInventory(state) {
   };
 }
 
-function slotCard(label, slotId, itemId, fallbackLabel, { droppable = false } = {}) {
+function slotCard(label, slotId, itemId, fallbackLabel, { droppable = false, className = "" } = {}) {
   const item = itemId ? ITEMS[itemId] : null;
   const sprite = item ? renderItemSprite(itemId, item, 42) : `<span class="slot-fallback">${fallbackLabel}</span>`;
   const tooltip = item
@@ -79,7 +80,7 @@ function slotCard(label, slotId, itemId, fallbackLabel, { droppable = false } = 
     : { title: label, meta: "baseline", body: fallbackLabel };
   return `
     <div
-      class="equipment-slot-card ${droppable ? "is-drop-slot" : ""} ${item ? "is-occupied" : "is-empty"}"
+      class="equipment-slot-card ${className} ${droppable ? "is-drop-slot" : ""} ${item ? "is-occupied" : "is-empty"}"
       ${droppable ? `data-slot="${slotId}" data-slot-filled="${item ? "true" : "false"}"` : ""}
       ${tooltipAttrs(tooltip)}
     >
@@ -111,9 +112,9 @@ function slotCard(label, slotId, itemId, fallbackLabel, { droppable = false } = 
   `;
 }
 
-function infoSlotCard(label, slotId, amount, spriteMarkup, fallbackLabel, tooltip) {
+function infoSlotCard(label, slotId, amount, spriteMarkup, fallbackLabel, tooltip, className = "") {
   return `
-    <div class="equipment-slot-card"${tooltipAttrs(tooltip)}>
+    <div class="equipment-slot-card ${className}"${tooltipAttrs(tooltip)}>
       <div class="equipment-slot-shell">
         ${renderSlotFrame(slotId, amount > 0)}
         <div class="equipment-slot-sprite">${spriteMarkup}</div>
@@ -126,31 +127,44 @@ function infoSlotCard(label, slotId, amount, spriteMarkup, fallbackLabel, toolti
   `;
 }
 
-function mannequinMarkup(state, groups) {
+function paperDollMarkup(state, groups) {
+  const equippedNames = [
+    state.equipped.weapon ? ITEMS[state.equipped.weapon]?.name : "Bare Hands",
+    state.equipped.armor ? ITEMS[state.equipped.armor]?.name : "Street Clothes",
+    state.equipped.backpack ? ITEMS[state.equipped.backpack]?.name : "No Pack",
+  ];
+
   return `
-    <div class="survivor-mannequin">
-      <div class="mannequin-figure">
-        <span class="mannequin-head"></span>
-        <span class="mannequin-torso"></span>
-        <span class="mannequin-arm mannequin-arm-left"></span>
-        <span class="mannequin-arm mannequin-arm-right"></span>
-        <span class="mannequin-leg mannequin-leg-left"></span>
-        <span class="mannequin-leg mannequin-leg-right"></span>
+    <div class="survivor-mannequin survivor-paper-doll">
+      <div class="paper-doll-stage"${tooltipAttrs({
+        title: state.player.username || "Survivor",
+        meta: "loadout",
+        body: `Weapon ${equippedNames[0]}. Armor ${equippedNames[1]}. Pack ${equippedNames[2]}.`,
+      })}>
+        <div class="paper-doll-hero">
+          ${renderPaperDoll(state.equipped, 300)}
+        </div>
+        <div class="paper-doll-readout">
+          <span class="note-label">Field body</span>
+          <div class="chip-row">${tagList(equippedNames)}</div>
+        </div>
       </div>
       <div class="mannequin-slots">
-        ${slotCard("Weapon", "weapon", state.equipped.weapon, "Bare Hands", { droppable: true })}
-        ${slotCard("Armor", "armor", state.equipped.armor, "Street Clothes", { droppable: true })}
-        ${slotCard("Backpack", "backpack", state.equipped.backpack, "No Pack", { droppable: true })}
+        ${slotCard("Weapon", "weapon", state.equipped.weapon, "Bare Hands", { droppable: true, className: "equipment-slot-card-primary" })}
+        ${slotCard("Armor", "armor", state.equipped.armor, "Street Clothes", { droppable: true, className: "equipment-slot-card-primary" })}
+        ${slotCard("Backpack", "backpack", state.equipped.backpack, "No Pack", { droppable: true, className: "equipment-slot-card-primary" })}
+      </div>
+      <div class="survivor-utility-row">
         ${infoSlotCard("Tool Belt", "tool_belt", groups.tools.length, renderStructureSprite("bench", 42), "No tools", {
           title: "Tool Belt",
           meta: "kit",
           body: `${groups.tools.length || 0} tools packed for field use.`,
-        })}
+        }, "equipment-slot-card-utility")}
         ${infoSlotCard("Field Aid", "field_care", groups.consumables.length, renderItemSprite("first_aid_rag", ITEMS.first_aid_rag, 42), "No aid ready", {
           title: "Field Aid",
           meta: "supplies",
           body: `${groups.consumables.length || 0} consumables ready for treatment or emergency use.`,
-        })}
+        }, "equipment-slot-card-utility")}
       </div>
     </div>
   `;
@@ -191,7 +205,7 @@ export function renderSurvivorTab(state, derived, isMobile = false) {
     meta: state.player.username || "unnamed",
     className: "survivor-stats-card",
     body: `
-      <div class="fact-grid compact-grid">
+      <div class="fact-grid compact-grid survivor-fact-grid">
         <div class="fact"><span>Condition</span><strong>${state.condition}/${derived.maxCondition}</strong></div>
         <div class="fact"><span>Attack</span><strong>${derived.attack}</strong></div>
         <div class="fact"><span>Defense</span><strong>${derived.defense}</strong></div>
@@ -199,6 +213,11 @@ export function renderSurvivorTab(state, derived, isMobile = false) {
         <div class="fact"><span>Meal due</span><strong>${upkeep.mealHoursLeft}h</strong></div>
         <div class="fact"><span>Water due</span><strong>${upkeep.waterHoursLeft}h</strong></div>
       </div>
+      <div class="chip-row compact-chip-row">${tagList([
+        state.equipped.weapon ? `weapon ${ITEMS[state.equipped.weapon]?.name}` : "weapon bare hands",
+        state.equipped.armor ? `armor ${ITEMS[state.equipped.armor]?.name}` : "armor street clothes",
+        state.equipped.backpack ? "carry packed" : "carry light",
+      ])}</div>
     `,
   });
 
@@ -206,7 +225,7 @@ export function renderSurvivorTab(state, derived, isMobile = false) {
     title: "Loadout",
     meta: state.player.username || "survivor",
     className: "survivor-mannequin-card",
-    body: mannequinMarkup(state, groups),
+    body: paperDollMarkup(state, groups),
   });
 
   const gearLocker = storagePanel(
@@ -532,23 +551,50 @@ export function renderCombatBanner(state) {
     return;
   }
 
+  const enemy = ENEMIES[state.combat.enemyId] || ENEMIES.walker;
+  const intent = state.combat.intent || enemy.behavior?.defaultIntent || "advance";
+  const enemyHp = state.combat.enemyHp;
+  const enemyMax = enemy.hp || enemyHp || 1;
+  const derived = getDerivedState(state);
+  const playerPercent = Math.max(0, Math.min(100, Math.round((state.condition / derived.maxCondition) * 100)));
+  const enemyPercent = Math.max(0, Math.min(100, Math.round((enemyHp / enemyMax) * 100)));
+
   banner.classList.remove("is-hidden");
   banner.innerHTML = `
     <div class="combat-banner-shell">
-      <div class="combat-banner-head">
-        <span class="combat-banner-sprite">${renderEnemySprite(state.combat.enemy?.id || "generic", 52)}</span>
-        <div>
-          <span class="note-label">Contact</span>
-          <h3>${state.combat.enemy?.name || "Unknown threat"}</h3>
-          <p class="note">${state.combat.enemy?.description || "The infected are inside your reach now."}</p>
+      <div class="combat-banner-head combat-threat-head">
+        <div class="combat-banner-hero">
+          <span class="combat-banner-sprite">${renderEnemySprite(enemy.id || "generic", 66)}</span>
+          <div class="combat-banner-copy">
+            <span class="note-label">Contact</span>
+            <h3>${enemy.name}</h3>
+            <p class="note">${enemy.description || "The infected are inside your reach now."}</p>
+          </div>
+        </div>
+        <div class="combat-intent-chip">${intent}</div>
+      </div>
+      <div class="combat-banner-grid">
+        <div class="combat-side-card">
+          <div class="combat-side-top">
+            <span class="note-label">You</span>
+            <strong>${state.condition}</strong>
+          </div>
+          <div class="combat-meter"><span class="combat-meter-fill is-player" style="width:${playerPercent}%"></span></div>
+        </div>
+        <div class="combat-side-card combat-side-card-enemy">
+          <div class="combat-side-top">
+            <span class="note-label">${enemy.name}</span>
+            <strong>${enemyHp}/${enemyMax}</strong>
+          </div>
+          <div class="combat-meter"><span class="combat-meter-fill is-enemy" style="width:${enemyPercent}%"></span></div>
         </div>
       </div>
-      <div class="chip-row">${tagList([
-        `enemy hp ${state.combat.enemyHp}`,
-        `player hp ${state.condition}`,
-        state.combat.enemy?.intent || "advance",
+      <div class="chip-row compact-chip-row">${tagList([
+        enemy.behavior?.summary || "close pressure",
+        `objective ${state.combat.objectiveId || "salvage"}`,
+        state.combat.grappled ? "grappled" : "mobile",
       ])}</div>
-      <div class="action-row action-row-wrap">
+      <div class="action-row action-row-wrap combat-command-row">
         ${actionButton({ action: "combat-attack", label: "Attack", icon: "combat", variant: "compact" })}
         ${actionButton({ action: "combat-brace", label: "Brace", icon: "barricade", variant: "compact secondary" })}
         ${actionButton({ action: "combat-heal", label: "Heal", icon: "heal", variant: "compact secondary" })}

@@ -256,25 +256,47 @@ function renderStructureInspector(state, derived) {
   const positionLabel = placed ? `${placed.x},${placed.y}` : structure.placeable ? "unplaced" : "fixed";
   const body = `
     <div class="base-inspector-hero">
-      <span class="base-inspector-sprite">${renderStructureSprite(structure.spriteId, 72)}</span>
-      <div>
+      <span class="base-inspector-sprite">${renderStructureSprite(structure.spriteId, 96)}</span>
+      <div class="base-inspector-copy">
         <span class="note-label">${structure.kind}</span>
         <h3>${structure.label}</h3>
         <p class="note">${structure.detail}</p>
+        <div class="chip-row compact-chip-row">${tagList([
+          status.label,
+          structure.placeable ? "placeable" : "fixed",
+          structure.footprint.join("x"),
+        ])}</div>
       </div>
     </div>
-    <div class="fact-grid compact-grid">
-      <div class="fact"><span>Status</span><strong>${status.label}</strong></div>
-      <div class="fact"><span>Footprint</span><strong>${structure.footprint.join("x")}</strong></div>
-      <div class="fact"><span>Position</span><strong>${positionLabel}</strong></div>
-      <div class="fact"><span>Damage</span><strong>${getStructureDamage(state, structure.id)}</strong></div>
+    <div class="base-inspector-grid">
+      <div class="base-inspector-block">
+        <span>Condition</span>
+        <strong>${status.label}</strong>
+        <small>${status.detail}</small>
+      </div>
+      <div class="base-inspector-block">
+        <span>Position</span>
+        <strong>${positionLabel}</strong>
+        <small>${structure.placeable ? "grid anchor" : "fixed support line"}</small>
+      </div>
+      <div class="base-inspector-block">
+        <span>Damage</span>
+        <strong>${getStructureDamage(state, structure.id)}</strong>
+        <small>${Object.keys(cost).length ? Object.entries(cost).map(([resourceId, amount]) => `${resourceLabel(resourceId)} ${amount}`).join(" / ") : "no repair cost"}</small>
+      </div>
+      <div class="base-inspector-block">
+        <span>Effects</span>
+        <strong>${chips.length || 0}</strong>
+        <small>${chips.length ? "active shelter outputs" : "no listed effects"}</small>
+      </div>
     </div>
-    ${chips.length ? `<div class="chip-row">${tagList(chips)}</div>` : ""}
+    ${chips.length ? `<div class="base-inspector-effects">${chips.map((chip) => `<span class="base-inspector-chip">${chip}</span>`).join("")}</div>` : ""}
     ${state.ui.pendingPlacementStructureId === structure.id ? `<p class="placement-note">Placement armed. Click a highlighted top-left tile on the board.</p>` : ""}
-    <div class="detail-list">
+    <div class="base-inspector-actions">
       ${structure.placeable ? actionButton({
         action: "start-placing-structure",
         label: state.shelter.layout?.placed?.[structure.id] ? "Move structure" : "Place structure",
+        meta: `${structure.footprint.join("x")} footprint`,
         icon: "build",
         variant: "compact",
         data: { structure: structure.id },

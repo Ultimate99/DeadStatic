@@ -42,6 +42,21 @@
   background: rgba(9, 11, 11, 0.86);
 }
 
+.tab-stage-survivor .tab-stage-head,
+.tab-stage-workshop .tab-stage-head,
+.tab-stage-routes .tab-stage-head,
+.tab-stage-base .tab-stage-head {
+  padding: 8px 10px;
+  gap: 8px;
+}
+
+.tab-stage-survivor .tab-stage-copy .note,
+.tab-stage-workshop .tab-stage-copy .note,
+.tab-stage-routes .tab-stage-copy .note,
+.tab-stage-base .tab-stage-copy .note {
+  font-size: 11px;
+}
+
 .ops-screen,
 .workshop-screen,
 .routes-screen,
@@ -103,8 +118,6 @@
 .crew-portrait,
 .rack-sprite,
 .blueprint-sprite,
-.base-inspector-sprite,
-.combat-banner-sprite,
 .inventory-sprite-wrap {
   display: inline-flex;
   align-items: center;
@@ -172,7 +185,7 @@
 }
 
 .survivor-screen {
-  grid-template-columns: minmax(300px, 0.9fr) minmax(240px, 0.72fr) minmax(0, 1.18fr);
+  grid-template-columns: minmax(340px, 0.95fr) minmax(250px, 0.72fr) minmax(0, 1.16fr);
   align-items: start;
 }
 
@@ -186,77 +199,84 @@
 
 .survivor-mannequin {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
-.mannequin-figure {
+.paper-doll-stage {
   position: relative;
-  height: 240px;
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+  padding: 14px;
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 18px;
   background:
-    radial-gradient(circle at 50% 25%, rgba(208, 164, 107, 0.05), transparent 20%),
+    radial-gradient(circle at 50% 18%, rgba(208, 164, 107, 0.08), transparent 22%),
+    radial-gradient(circle at 50% 82%, rgba(152, 177, 162, 0.045), transparent 26%),
     rgba(9, 11, 11, 0.9);
 }
 
-.mannequin-head,
-.mannequin-torso,
-.mannequin-arm,
-.mannequin-leg {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.08);
+.paper-doll-hero {
+  display: grid;
+  place-items: center;
+  min-height: 290px;
 }
 
-.mannequin-head {
-  top: 24px;
-  width: 42px;
-  height: 42px;
-  border-radius: 999px;
+.paper-doll-sprite {
+  width: min(100%, 280px);
+  height: auto;
+  color: rgba(255, 255, 255, 0.82);
+  --paper-gear: #f1cb87;
+  --paper-trim: #98b1a2;
+  --paper-pack: rgba(152, 177, 162, 0.92);
+  --paper-pack-shadow: rgba(152, 177, 162, 0.24);
 }
 
-.mannequin-torso {
-  top: 72px;
-  width: 56px;
-  height: 82px;
-  border-radius: 24px;
+.paper-doll-zone {
+  opacity: 0.86;
+  transition: opacity 120ms ease, filter 120ms ease, transform 120ms ease;
 }
 
-.mannequin-arm {
-  top: 84px;
-  width: 18px;
-  height: 94px;
-  border-radius: 18px;
+.paper-doll-clothes-base {
+  opacity: 0.95;
 }
 
-.mannequin-arm-left {
-  margin-left: -52px;
+.paper-doll-weapon-shape,
+.paper-doll-armor-shape,
+.paper-doll-backpack-shape {
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.24));
 }
 
-.mannequin-arm-right {
-  margin-left: 52px;
+body[data-hover-slot="weapon"] .paper-doll-zone-weapon,
+body[data-drag-type="weapon"] .paper-doll-zone-weapon,
+body[data-hover-slot="armor"] .paper-doll-zone-armor,
+body[data-drag-type="armor"] .paper-doll-zone-armor,
+body[data-hover-slot="backpack"] .paper-doll-zone-backpack,
+body[data-drag-type="backpack"] .paper-doll-zone-backpack {
+  opacity: 1;
+  filter: drop-shadow(0 0 10px rgba(241, 203, 135, 0.24));
+  transform: translateY(-1px);
 }
 
-.mannequin-leg {
-  top: 156px;
-  width: 22px;
-  height: 70px;
-  border-radius: 18px;
-}
-
-.mannequin-leg-left {
-  margin-left: -18px;
-}
-
-.mannequin-leg-right {
-  margin-left: 18px;
+.paper-doll-readout {
+  display: grid;
+  gap: 8px;
 }
 
 .mannequin-slots {
   display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.survivor-utility-row {
+  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.survivor-fact-grid {
+  margin-bottom: 10px;
 }
 
 .equipment-slot-card {
@@ -266,6 +286,14 @@
   border: 1px solid rgba(255, 255, 255, 0.045);
   border-radius: 14px;
   background: rgba(14, 17, 17, 0.9);
+}
+
+.equipment-slot-card-primary {
+  min-height: 0;
+}
+
+.equipment-slot-card-utility .equipment-slot-shell {
+  min-height: 88px;
 }
 
 .equipment-slot-shell {
@@ -332,7 +360,9 @@ body[data-drag-type="backpack"] .equipment-slot-card[data-slot="backpack"] {
 }
 
 .inventory-card-grid {
+  display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
 }
 
 .inventory-sprite-card {
@@ -350,6 +380,10 @@ body[data-drag-type="backpack"] .equipment-slot-card[data-slot="backpack"] {
 
 .inventory-sprite-card .action-button {
   width: fit-content;
+}
+
+.inventory-sprite-card .surface-head {
+  align-items: start;
 }
 
 .inventory-sprite-wrap .ui-sprite,
@@ -664,6 +698,64 @@ body[data-drag-type="backpack"] .equipment-slot-card[data-slot="backpack"] {
   align-items: center;
 }
 
+.base-inspector-sprite,
+.combat-banner-sprite,
+.route-briefing-sprite {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.base-inspector-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.base-inspector-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.base-inspector-block {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.045);
+  border-radius: 12px;
+  background: rgba(10, 12, 12, 0.88);
+}
+
+.base-inspector-block span,
+.base-inspector-block small {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.base-inspector-effects,
+.base-inspector-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.base-inspector-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 999px;
+  background: rgba(10, 12, 12, 0.88);
+  color: var(--text-soft);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
 .blueprint-mini-grid {
   display: grid;
   gap: 8px;
@@ -707,10 +799,332 @@ body[data-drag-type="backpack"] .equipment-slot-card[data-slot="backpack"] {
 .combat-banner-shell {
   display: grid;
   gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 24%),
+    rgba(10, 12, 12, 0.94);
 }
 
-.combat-banner-head {
+.combat-threat-head,
+.combat-banner-hero,
+.watch-threat-head,
+.route-briefing-head {
+  display: flex;
   align-items: center;
+  gap: 12px;
+}
+
+.combat-banner-copy,
+.route-briefing-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.combat-intent-chip {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border: 1px solid rgba(208, 164, 107, 0.18);
+  border-radius: 999px;
+  background: rgba(208, 164, 107, 0.08);
+  color: var(--accent-strong);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.combat-banner-grid,
+.watch-threat-grid,
+.route-briefing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.combat-side-card,
+.watch-metric {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.045);
+  border-radius: 12px;
+  background: rgba(8, 10, 10, 0.9);
+}
+
+.combat-side-top,
+.night-debrief-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.combat-meter,
+.workshop-progress-bar {
+  position: relative;
+  overflow: hidden;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.combat-meter-fill,
+.workshop-progress-bar span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+}
+
+.combat-meter-fill.is-player {
+  background: linear-gradient(90deg, rgba(134, 185, 126, 0.9), rgba(173, 212, 141, 0.85));
+}
+
+.combat-meter-fill.is-enemy {
+  background: linear-gradient(90deg, rgba(208, 164, 107, 0.92), rgba(169, 104, 84, 0.88));
+}
+
+.workshop-progress-bar span {
+  background: linear-gradient(90deg, rgba(208, 164, 107, 0.92), rgba(152, 177, 162, 0.88));
+}
+
+.combat-command-row .action-button {
+  min-width: 0;
+}
+
+.watch-threat-shell {
+  display: grid;
+  gap: 10px;
+}
+
+.watch-threat-head small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.watch-metric.is-danger strong {
+  color: var(--accent-strong);
+}
+
+.watch-metric.is-breach strong {
+  color: #d9ac8a;
+}
+
+.night-debrief-card {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(208, 164, 107, 0.1);
+  border-radius: 14px;
+  background: rgba(16, 14, 12, 0.62);
+}
+
+.directive-stack,
+.directive-support-row,
+.route-toggle-row,
+.workshop-queue-main,
+.workshop-queue-empty {
+  display: grid;
+  gap: 8px;
+}
+
+.directive-support-row {
+  align-items: start;
+}
+
+.workshop-screen {
+  gap: 12px;
+}
+
+.workshop-board-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.workshop-section-card .surface-body,
+.workshop-queue-card .surface-body {
+  display: grid;
+  gap: 10px;
+}
+
+.workshop-queue-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, auto);
+  gap: 10px;
+  align-items: end;
+}
+
+.workshop-queue-main strong {
+  font-size: 18px;
+  line-height: 1.05;
+}
+
+.workshop-queue-main small,
+.workshop-queue-empty p {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.workshop-queue-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.blueprint-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
+}
+
+.blueprint-card {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+}
+
+.blueprint-sprite {
+  width: 32px;
+  height: 32px;
+}
+
+.blueprint-facts-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.blueprint-status-line {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.blueprint-card-ready {
+  border-color: rgba(208, 164, 107, 0.26);
+}
+
+.blueprint-card-tool {
+  border-color: rgba(208, 164, 107, 0.15);
+}
+
+.blueprint-card-materials {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.blueprint-card-queue {
+  border-color: rgba(152, 177, 162, 0.14);
+}
+
+.routes-screen {
+  gap: 12px;
+}
+
+.route-preview-card .surface-body,
+.route-controls-card .surface-body {
+  display: grid;
+  gap: 10px;
+}
+
+.route-briefing-grid,
+.route-zone-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.route-zone-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.route-zone-card {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 24%),
+    rgba(10, 12, 12, 0.92);
+}
+
+.route-zone-card.is-selected {
+  border-color: rgba(208, 164, 107, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(208, 164, 107, 0.12);
+}
+
+.route-zone-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.route-zone-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.route-zone-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 999px;
+  background: rgba(8, 10, 10, 0.92);
+  color: var(--text-soft);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.route-toggle-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.base-inspector-sprite {
+  width: 96px;
+  height: 96px;
+}
+
+.combat-banner-sprite {
+  width: 66px;
+  height: 66px;
+}
+
+.route-briefing-sprite {
+  width: 54px;
+  height: 54px;
+}
+
+.watch-metric span,
+.watch-metric small {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.watch-metric strong,
+.base-inspector-block strong {
+  font-size: 15px;
+}
+
+.watch-threat-shell-danger {
+  border-color: rgba(169, 104, 84, 0.2);
+}
+
+.watch-threat-shell-warn {
+  border-color: rgba(208, 164, 107, 0.14);
+}
+
+.watch-threat-shell-good {
+  border-color: rgba(152, 177, 162, 0.14);
 }
 
 .tab-mobile-flow {
@@ -743,7 +1157,8 @@ body[data-drag-type="backpack"] .equipment-slot-card[data-slot="backpack"] {
   .survivor-screen,
   .base-layout,
   .ops-top-row,
-  .routes-top-row {
+  .routes-top-row,
+  .workshop-board-grid {
     grid-template-columns: 1fr;
   }
 
@@ -760,7 +1175,14 @@ body[data-drag-type="backpack"] .equipment-slot-card[data-slot="backpack"] {
   .ops-top-row,
   .routes-top-row,
   .base-system-strip,
-  .mannequin-slots {
+  .mannequin-slots,
+  .survivor-utility-row,
+  .base-inspector-grid,
+  .combat-banner-grid,
+  .watch-threat-grid,
+  .route-briefing-grid,
+  .workshop-queue-strip,
+  .workshop-queue-metrics {
     grid-template-columns: 1fr;
   }
 
@@ -770,6 +1192,10 @@ body[data-drag-type="backpack"] .equipment-slot-card[data-slot="backpack"] {
 
   .tab-stage-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .paper-doll-hero {
+    min-height: 220px;
   }
 
   .base-board {

@@ -1,8 +1,8 @@
 import { iconMarkup } from "./icons.js";
 
-function spriteSvg(body, className, size) {
+function spriteSvg(body, className, size, viewBox = "0 0 64 64") {
   return `
-    <svg class="${className}" viewBox="0 0 64 64" width="${size}" height="${size}" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <svg class="${className}" viewBox="${viewBox}" width="${size}" height="${size}" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       ${body}
     </svg>
   `;
@@ -290,6 +290,117 @@ export function renderSlotFrame(slotId, filled, size = 96) {
       <path d="M28 28h40M28 68h40M28 28v40M68 28v40" stroke="rgba(255,255,255,0.05)" stroke-width="2"/>
     </svg>
   `;
+}
+
+function paperDollWeaponOverlay(weaponId) {
+  switch (weaponId) {
+    case "transit_pistol":
+    case "tower_rifle":
+      return `
+        <g class="paper-doll-weapon-shape">
+          <path d="M101 132h20l10 6-8 6H103l-5 10h-8l3-10h-8v-8h16Z" fill="var(--paper-gear, #f1cb87)"/>
+          <path d="M110 124h18" stroke="var(--paper-trim, #98b1a2)" stroke-width="4" stroke-linecap="round"/>
+        </g>
+      `;
+    case "fire_axe":
+      return `
+        <g class="paper-doll-weapon-shape">
+          <path d="M104 166 122 106" stroke="var(--paper-gear, #f1cb87)" stroke-width="5" stroke-linecap="round"/>
+          <path d="M118 112c8-6 15-7 21-2-1 8-8 12-19 14l-2-12Z" fill="var(--paper-trim, #98b1a2)"/>
+        </g>
+      `;
+    case "hunting_spear":
+      return `
+        <g class="paper-doll-weapon-shape">
+          <path d="M106 168 130 88" stroke="var(--paper-gear, #f1cb87)" stroke-width="5" stroke-linecap="round"/>
+          <path d="m128 90 9-10 4 12-10 7-3-9Z" fill="var(--paper-trim, #98b1a2)"/>
+        </g>
+      `;
+    case "nail_bat":
+      return `
+        <g class="paper-doll-weapon-shape">
+          <path d="M106 166 124 103c1-4 5-8 10-8h10l-11 72-27-4Z" fill="var(--paper-gear, #f1cb87)"/>
+          <path d="m129 101 4-8m9 11 8-5m-1 14 9-2" stroke="var(--paper-trim, #98b1a2)" stroke-width="3" stroke-linecap="round"/>
+        </g>
+      `;
+    case "rusty_knife":
+    default:
+      return `
+        <g class="paper-doll-weapon-shape">
+          <path d="M104 162 124 134l13-3-3 12-20 27-10-8Z" fill="var(--paper-gear, #f1cb87)"/>
+          <path d="M122 135 133 143" stroke="var(--paper-trim, #98b1a2)" stroke-width="4" stroke-linecap="round"/>
+        </g>
+      `;
+  }
+}
+
+function paperDollArmorOverlay(armorId) {
+  switch (armorId) {
+    case "riot_padding":
+      return `
+        <g class="paper-doll-armor-shape">
+          <path d="M56 52h48l14 18-10 62H52L42 70l14-18Z" fill="var(--paper-gear, #f1cb87)"/>
+          <path d="M62 76h36v18H62Zm2 28h32v22H64Z" fill="var(--paper-trim, #98b1a2)" opacity=".9"/>
+          <path d="M48 78h12v40H48Zm52 0h12v40h-12Z" fill="var(--paper-trim, #98b1a2)" opacity=".78"/>
+        </g>
+      `;
+    case "signal_cloak":
+      return `
+        <g class="paper-doll-armor-shape">
+          <path d="M50 52h60l16 18-12 70H46L34 70l16-18Z" fill="var(--paper-gear, #98b1a2)" opacity=".88"/>
+          <path d="m64 74 16 18 16-18m-28 34h24" stroke="var(--paper-trim, #f1cb87)" stroke-width="4" stroke-linecap="round"/>
+        </g>
+      `;
+    case "patchwork_vest":
+      return `
+        <g class="paper-doll-armor-shape">
+          <path d="M56 54h48l10 16-8 58H54L46 70l10-16Z" fill="var(--paper-gear, #f1cb87)"/>
+          <path d="M70 54v24m20-24v24M62 100h36" stroke="var(--paper-trim, #98b1a2)" stroke-width="4" stroke-linecap="round"/>
+        </g>
+      `;
+    default:
+      return "";
+  }
+}
+
+function paperDollBackpackOverlay(backpackId) {
+  if (!backpackId) {
+    return "";
+  }
+  return `
+    <g class="paper-doll-backpack-shape">
+      <path d="M50 58h16v70H50c-8 0-14-6-14-14V80c0-12 6-22 14-22Zm60 0h-16v70h16c8 0 14-6 14-14V80c0-12-6-22-14-22Z" fill="var(--paper-pack-shadow, rgba(152, 177, 162, 0.35))"/>
+      <path d="M54 56h52l10 12v56l-10 12H54l-10-12V68l10-12Z" fill="var(--paper-pack, #98b1a2)" opacity=".9"/>
+      <path d="M66 56V42h28v14M64 86h42M68 102h30" stroke="var(--paper-trim, #f1cb87)" stroke-width="4" stroke-linecap="round"/>
+    </g>
+  `;
+}
+
+export function renderPaperDoll(equipped = {}, size = 300) {
+  const armorId = equipped.armor || null;
+  const backpackId = equipped.backpack || null;
+  const weaponId = equipped.weapon || null;
+
+  const body = `
+    <g class="paper-doll-zone paper-doll-zone-backpack">${paperDollBackpackOverlay(backpackId)}</g>
+    <g class="paper-doll-body">
+      <circle cx="80" cy="28" r="18" fill="rgba(255,255,255,0.11)"/>
+      <path d="M52 56c0-13 12-24 28-24s28 11 28 24v42c0 10-8 18-18 18H70c-10 0-18-8-18-18V56Z" fill="rgba(255,255,255,0.095)"/>
+      <rect x="30" y="56" width="16" height="70" rx="10" fill="rgba(255,255,255,0.09)"/>
+      <rect x="114" y="56" width="16" height="70" rx="10" fill="rgba(255,255,255,0.09)"/>
+      <rect x="60" y="116" width="18" height="74" rx="10" fill="rgba(255,255,255,0.09)"/>
+      <rect x="82" y="116" width="18" height="74" rx="10" fill="rgba(255,255,255,0.09)"/>
+    </g>
+    <g class="paper-doll-zone paper-doll-zone-armor paper-doll-clothes-base">
+      <path d="M54 54h52l10 16-8 58H52L44 70l10-16Z" fill="rgba(255,255,255,0.06)"/>
+      <path d="M60 126h40v54H60Z" fill="rgba(255,255,255,0.05)"/>
+      <path d="M67 58h26M66 92h28" stroke="rgba(241,203,135,0.28)" stroke-width="4" stroke-linecap="round"/>
+    </g>
+    <g class="paper-doll-zone paper-doll-zone-armor">${paperDollArmorOverlay(armorId)}</g>
+    <g class="paper-doll-zone paper-doll-zone-weapon">${weaponId ? paperDollWeaponOverlay(weaponId) : ""}</g>
+  `;
+
+  return spriteSvg(body, "ui-sprite paper-doll-sprite", size, "0 0 160 200");
 }
 
 export function navSprite(name) {

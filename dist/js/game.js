@@ -6193,9 +6193,9 @@ function iconMarkup(name = "generic") {
 
 
 // render/sprites.js
-function spriteSvg(body, className, size) {
+function spriteSvg(body, className, size, viewBox = "0 0 64 64") {
   return `
-    <svg class="${className}" viewBox="0 0 64 64" width="${size}" height="${size}" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <svg class="${className}" viewBox="${viewBox}" width="${size}" height="${size}" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       ${body}
     </svg>
   `;
@@ -6483,6 +6483,117 @@ function renderSlotFrame(slotId, filled, size = 96) {
       <path d="M28 28h40M28 68h40M28 28v40M68 28v40" stroke="rgba(255,255,255,0.05)" stroke-width="2"/>
     </svg>
   `;
+}
+
+function paperDollWeaponOverlay(weaponId) {
+  switch (weaponId) {
+    case "transit_pistol":
+    case "tower_rifle":
+      return `
+        <g class="paper-doll-weapon-shape">
+          <path d="M101 132h20l10 6-8 6H103l-5 10h-8l3-10h-8v-8h16Z" fill="var(--paper-gear, #f1cb87)"/>
+          <path d="M110 124h18" stroke="var(--paper-trim, #98b1a2)" stroke-width="4" stroke-linecap="round"/>
+        </g>
+      `;
+    case "fire_axe":
+      return `
+        <g class="paper-doll-weapon-shape">
+          <path d="M104 166 122 106" stroke="var(--paper-gear, #f1cb87)" stroke-width="5" stroke-linecap="round"/>
+          <path d="M118 112c8-6 15-7 21-2-1 8-8 12-19 14l-2-12Z" fill="var(--paper-trim, #98b1a2)"/>
+        </g>
+      `;
+    case "hunting_spear":
+      return `
+        <g class="paper-doll-weapon-shape">
+          <path d="M106 168 130 88" stroke="var(--paper-gear, #f1cb87)" stroke-width="5" stroke-linecap="round"/>
+          <path d="m128 90 9-10 4 12-10 7-3-9Z" fill="var(--paper-trim, #98b1a2)"/>
+        </g>
+      `;
+    case "nail_bat":
+      return `
+        <g class="paper-doll-weapon-shape">
+          <path d="M106 166 124 103c1-4 5-8 10-8h10l-11 72-27-4Z" fill="var(--paper-gear, #f1cb87)"/>
+          <path d="m129 101 4-8m9 11 8-5m-1 14 9-2" stroke="var(--paper-trim, #98b1a2)" stroke-width="3" stroke-linecap="round"/>
+        </g>
+      `;
+    case "rusty_knife":
+    default:
+      return `
+        <g class="paper-doll-weapon-shape">
+          <path d="M104 162 124 134l13-3-3 12-20 27-10-8Z" fill="var(--paper-gear, #f1cb87)"/>
+          <path d="M122 135 133 143" stroke="var(--paper-trim, #98b1a2)" stroke-width="4" stroke-linecap="round"/>
+        </g>
+      `;
+  }
+}
+
+function paperDollArmorOverlay(armorId) {
+  switch (armorId) {
+    case "riot_padding":
+      return `
+        <g class="paper-doll-armor-shape">
+          <path d="M56 52h48l14 18-10 62H52L42 70l14-18Z" fill="var(--paper-gear, #f1cb87)"/>
+          <path d="M62 76h36v18H62Zm2 28h32v22H64Z" fill="var(--paper-trim, #98b1a2)" opacity=".9"/>
+          <path d="M48 78h12v40H48Zm52 0h12v40h-12Z" fill="var(--paper-trim, #98b1a2)" opacity=".78"/>
+        </g>
+      `;
+    case "signal_cloak":
+      return `
+        <g class="paper-doll-armor-shape">
+          <path d="M50 52h60l16 18-12 70H46L34 70l16-18Z" fill="var(--paper-gear, #98b1a2)" opacity=".88"/>
+          <path d="m64 74 16 18 16-18m-28 34h24" stroke="var(--paper-trim, #f1cb87)" stroke-width="4" stroke-linecap="round"/>
+        </g>
+      `;
+    case "patchwork_vest":
+      return `
+        <g class="paper-doll-armor-shape">
+          <path d="M56 54h48l10 16-8 58H54L46 70l10-16Z" fill="var(--paper-gear, #f1cb87)"/>
+          <path d="M70 54v24m20-24v24M62 100h36" stroke="var(--paper-trim, #98b1a2)" stroke-width="4" stroke-linecap="round"/>
+        </g>
+      `;
+    default:
+      return "";
+  }
+}
+
+function paperDollBackpackOverlay(backpackId) {
+  if (!backpackId) {
+    return "";
+  }
+  return `
+    <g class="paper-doll-backpack-shape">
+      <path d="M50 58h16v70H50c-8 0-14-6-14-14V80c0-12 6-22 14-22Zm60 0h-16v70h16c8 0 14-6 14-14V80c0-12-6-22-14-22Z" fill="var(--paper-pack-shadow, rgba(152, 177, 162, 0.35))"/>
+      <path d="M54 56h52l10 12v56l-10 12H54l-10-12V68l10-12Z" fill="var(--paper-pack, #98b1a2)" opacity=".9"/>
+      <path d="M66 56V42h28v14M64 86h42M68 102h30" stroke="var(--paper-trim, #f1cb87)" stroke-width="4" stroke-linecap="round"/>
+    </g>
+  `;
+}
+
+function renderPaperDoll(equipped = {}, size = 300) {
+  const armorId = equipped.armor || null;
+  const backpackId = equipped.backpack || null;
+  const weaponId = equipped.weapon || null;
+
+  const body = `
+    <g class="paper-doll-zone paper-doll-zone-backpack">${paperDollBackpackOverlay(backpackId)}</g>
+    <g class="paper-doll-body">
+      <circle cx="80" cy="28" r="18" fill="rgba(255,255,255,0.11)"/>
+      <path d="M52 56c0-13 12-24 28-24s28 11 28 24v42c0 10-8 18-18 18H70c-10 0-18-8-18-18V56Z" fill="rgba(255,255,255,0.095)"/>
+      <rect x="30" y="56" width="16" height="70" rx="10" fill="rgba(255,255,255,0.09)"/>
+      <rect x="114" y="56" width="16" height="70" rx="10" fill="rgba(255,255,255,0.09)"/>
+      <rect x="60" y="116" width="18" height="74" rx="10" fill="rgba(255,255,255,0.09)"/>
+      <rect x="82" y="116" width="18" height="74" rx="10" fill="rgba(255,255,255,0.09)"/>
+    </g>
+    <g class="paper-doll-zone paper-doll-zone-armor paper-doll-clothes-base">
+      <path d="M54 54h52l10 16-8 58H52L44 70l10-16Z" fill="rgba(255,255,255,0.06)"/>
+      <path d="M60 126h40v54H60Z" fill="rgba(255,255,255,0.05)"/>
+      <path d="M67 58h26M66 92h28" stroke="rgba(241,203,135,0.28)" stroke-width="4" stroke-linecap="round"/>
+    </g>
+    <g class="paper-doll-zone paper-doll-zone-armor">${paperDollArmorOverlay(armorId)}</g>
+    <g class="paper-doll-zone paper-doll-zone-weapon">${weaponId ? paperDollWeaponOverlay(weaponId) : ""}</g>
+  `;
+
+  return spriteSvg(body, "ui-sprite paper-doll-sprite", size, "0 0 160 200");
 }
 
 function navSprite(name) {
@@ -7924,25 +8035,47 @@ function renderStructureInspector(state, derived) {
   const positionLabel = placed ? `${placed.x},${placed.y}` : structure.placeable ? "unplaced" : "fixed";
   const body = `
     <div class="base-inspector-hero">
-      <span class="base-inspector-sprite">${renderStructureSprite(structure.spriteId, 72)}</span>
-      <div>
+      <span class="base-inspector-sprite">${renderStructureSprite(structure.spriteId, 96)}</span>
+      <div class="base-inspector-copy">
         <span class="note-label">${structure.kind}</span>
         <h3>${structure.label}</h3>
         <p class="note">${structure.detail}</p>
+        <div class="chip-row compact-chip-row">${tagList([
+          status.label,
+          structure.placeable ? "placeable" : "fixed",
+          structure.footprint.join("x"),
+        ])}</div>
       </div>
     </div>
-    <div class="fact-grid compact-grid">
-      <div class="fact"><span>Status</span><strong>${status.label}</strong></div>
-      <div class="fact"><span>Footprint</span><strong>${structure.footprint.join("x")}</strong></div>
-      <div class="fact"><span>Position</span><strong>${positionLabel}</strong></div>
-      <div class="fact"><span>Damage</span><strong>${getStructureDamage(state, structure.id)}</strong></div>
+    <div class="base-inspector-grid">
+      <div class="base-inspector-block">
+        <span>Condition</span>
+        <strong>${status.label}</strong>
+        <small>${status.detail}</small>
+      </div>
+      <div class="base-inspector-block">
+        <span>Position</span>
+        <strong>${positionLabel}</strong>
+        <small>${structure.placeable ? "grid anchor" : "fixed support line"}</small>
+      </div>
+      <div class="base-inspector-block">
+        <span>Damage</span>
+        <strong>${getStructureDamage(state, structure.id)}</strong>
+        <small>${Object.keys(cost).length ? Object.entries(cost).map(([resourceId, amount]) => `${resourceLabel(resourceId)} ${amount}`).join(" / ") : "no repair cost"}</small>
+      </div>
+      <div class="base-inspector-block">
+        <span>Effects</span>
+        <strong>${chips.length || 0}</strong>
+        <small>${chips.length ? "active shelter outputs" : "no listed effects"}</small>
+      </div>
     </div>
-    ${chips.length ? `<div class="chip-row">${tagList(chips)}</div>` : ""}
+    ${chips.length ? `<div class="base-inspector-effects">${chips.map((chip) => `<span class="base-inspector-chip">${chip}</span>`).join("")}</div>` : ""}
     ${state.ui.pendingPlacementStructureId === structure.id ? `<p class="placement-note">Placement armed. Click a highlighted top-left tile on the board.</p>` : ""}
-    <div class="detail-list">
+    <div class="base-inspector-actions">
       ${structure.placeable ? actionButton({
         action: "start-placing-structure",
         label: state.shelter.layout?.placed?.[structure.id] ? "Move structure" : "Place structure",
+        meta: `${structure.footprint.join("x")} footprint`,
         icon: "build",
         variant: "compact",
         data: { structure: structure.id },
@@ -8173,7 +8306,7 @@ function sourceCard(state, source) {
           <small>${source.description || source.id.replace(/_/g, " ")}</small>
         </div>
       </div>
-      <div class="chip-row">${tagList(chips)}</div>
+      <div class="chip-row compact-chip-row">${tagList(chips)}</div>
       ${actionButton({
         action: action.action,
         label: action.label,
@@ -8186,11 +8319,18 @@ function sourceCard(state, source) {
   `;
 }
 
+function watchThreatTone(forecast) {
+  if (forecast.siege) return "danger";
+  if (forecast.breachChance >= 0.34) return "warn";
+  return "good";
+}
+
 function renderOpsBoard(state, derived) {
   const sources = getAvailableScavengeSources(state);
   const activeJob = getActiveWorkJob(state);
   const forecast = getNightForecast(state);
   const upkeep = getShelterUpkeep(state);
+  const lastReport = state.night?.lastReport || null;
   const mainActions = [];
 
   mainActions.push(actionButton({
@@ -8228,28 +8368,61 @@ function renderOpsBoard(state, derived) {
     className: "ops-directive-card",
     body: `
       <div class="directive-compact">
-        <p class="directive-line">${directiveText(state)}</p>
-        <div class="chip-row compact-chip-row">${tagList([
-          activeJob ? `${activeJob.label} ${activeJob.hoursRemaining}h` : "queue open",
-          `meal ${upkeep.mealHoursLeft}h`,
-          `water ${upkeep.waterHoursLeft}h`,
-          forecast.siege ? "siege risk" : "watch line",
-        ])}</div>
-        <div class="action-row action-row-wrap ops-directive-actions">${mainActions.join("")}</div>
+        <div class="directive-stack">
+          <p class="directive-line">${directiveText(state)}</p>
+          <div class="chip-row compact-chip-row">${tagList([
+            state.player.username ? `user ${state.player.username}` : "user unset",
+            state.equipped.weapon ? `armed ${itemLabel(state.equipped.weapon)}` : "unarmed",
+            activeJob ? activeJob.kind : "queue open",
+          ])}</div>
+        </div>
+        <div class="directive-support-row">
+          <div class="chip-row compact-chip-row">${tagList([
+            activeJob ? `${activeJob.label} ${activeJob.hoursRemaining}h` : "queue open",
+            `meal ${upkeep.mealHoursLeft}h`,
+            `water ${upkeep.waterHoursLeft}h`,
+            forecast.siege ? "siege risk" : "watch line",
+          ])}</div>
+          <div class="action-row action-row-wrap ops-directive-actions">${mainActions.join("")}</div>
+        </div>
       </div>
     `,
   });
+
+  const watchTone = watchThreatTone(forecast);
+  const threatSprite = forecast.siege
+    ? renderEnemySprite("screecher", 46)
+    : forecast.breachChance >= 0.34
+      ? renderEnemySprite("stalker", 46)
+      : renderEnemySprite("walker", 46);
 
   const watch = surfaceCard({
     title: "Watch",
     meta: forecast.siege ? "siege" : "night",
     className: "ops-watch-card",
     body: `
-      <div class="fact-grid compact-grid">
-        <div class="fact"><span>Danger</span><strong>${forecast.dangerScore.toFixed(1)}</strong></div>
-        <div class="fact"><span>Breach</span><strong>${Math.round(forecast.breachChance * 100)}%</strong></div>
-        <div class="fact"><span>Queue</span><strong>${activeJob ? `${activeJob.hoursRemaining}h` : "idle"}</strong></div>
-        <div class="fact"><span>Cond</span><strong>${state.condition}/${derived.maxCondition}</strong></div>
+      <div class="watch-threat-shell watch-threat-shell-${watchTone}">
+        <div class="watch-threat-head">
+          <span class="watch-threat-sprite">${threatSprite}</span>
+          <div>
+            <span class="note-label">Night state</span>
+            <strong>${forecast.severity.toUpperCase()}</strong>
+            <small>${forecast.siege ? "Compound under siege pressure." : "Forecast built from threat, noise, and defenses."}</small>
+          </div>
+          <span class="tag">${forecast.plan.label}</span>
+        </div>
+        <div class="watch-threat-grid">
+          <div class="watch-metric is-danger"><span>Danger</span><strong>${forecast.dangerScore.toFixed(1)}</strong></div>
+          <div class="watch-metric is-breach"><span>Breach</span><strong>${Math.round(forecast.breachChance * 100)}%</strong></div>
+          <div class="watch-metric"><span>Queue</span><strong>${activeJob ? `${activeJob.hoursRemaining}h` : "idle"}</strong></div>
+          <div class="watch-metric"><span>Defense</span><strong>${forecast.adjustedDefense.toFixed(1)}</strong></div>
+        </div>
+        <div class="chip-row compact-chip-row">${tagList([
+          `coverage ${forecast.systems.coverage.toFixed(1)}`,
+          `power ${forecast.systems.powerState}`,
+          `maint ${forecast.systems.maintenanceState}`,
+          forecast.siege ? "breach line hot" : "perimeter holding",
+        ])}</div>
       </div>
     `,
   });
@@ -8265,7 +8438,24 @@ function renderOpsBoard(state, derived) {
     title: "Recent feed",
     meta: `${state.log.length}`,
     className: "ops-log-card",
-    body: renderMiniLog(state, 5),
+    body: `
+      ${lastReport ? `
+        <div class="night-debrief-card">
+          <div class="night-debrief-head">
+            <span class="note-label">Last night</span>
+            <strong>${lastReport.eventType}</strong>
+            <span class="tag">${lastReport.severity}</span>
+          </div>
+          <p>${lastReport.summary}</p>
+          <div class="chip-row compact-chip-row">${tagList([
+            lastReport.conditionLoss ? `cond -${lastReport.conditionLoss}` : "line held",
+            lastReport.damagedStructures?.length ? `damage ${lastReport.damagedStructures.length}` : "no structural hits",
+            lastReport.crewHits?.length ? `crew ${lastReport.crewHits.length}` : "crew intact",
+          ])}</div>
+        </div>
+      ` : ""}
+      ${renderMiniLog(state, 5)}
+    `,
   });
 
   return `
@@ -8331,14 +8521,16 @@ function upgradeSprite(upgrade) {
   return renderStructureSprite("bench", 36);
 }
 
-function renderBlueprintCard(state, upgrade) {
+function blueprintStatus(state, upgrade) {
   const built = state.upgrades.includes(upgrade.id);
-  const ready = !built
-    && !getActiveWorkJob(state)
-    && canAfford(state, upgrade.cost)
-    && hasMaterials(state, upgrade.materials)
-    && hasRequiredTools(state, upgrade.requiredTools);
+  const queueBusy = Boolean(getActiveWorkJob(state));
+  const hasCost = canAfford(state, upgrade.cost);
+  const hasMats = hasMaterials(state, upgrade.materials);
+  const missingTools = missingRequiredTools(state, upgrade.requiredTools || []);
+  const hasTools = missingTools.length === 0;
+  const ready = !built && !queueBusy && hasCost && hasMats && hasTools;
   const missing = [];
+
   if (!built) {
     Object.entries(upgrade.cost || {}).forEach(([resourceId, amount]) => {
       const have = state.resources[resourceId] || 0;
@@ -8348,38 +8540,68 @@ function renderBlueprintCard(state, upgrade) {
       const have = state.inventory[itemId] || 0;
       if (have < amount) missing.push(`${itemLabel(itemId)} ${have}/${amount}`);
     });
-    missingRequiredTools(state, upgrade.requiredTools || []).forEach((itemId) => missing.push(itemLabel(itemId)));
-    if (getActiveWorkJob(state) && !ready) {
-      missing.push(`queue busy`);
+    missingTools.forEach((itemId) => missing.push(itemLabel(itemId)));
+    if (queueBusy && !ready) {
+      missing.push("queue busy");
     }
   }
+
+  let status = "ready";
+  let blocker = "ready to queue";
+  if (built) {
+    status = "built";
+    blocker = "already completed";
+  } else if (!hasTools) {
+    status = "tool";
+    blocker = `need ${missingTools.map((itemId) => itemLabel(itemId)).join(" + ")}`;
+  } else if (!hasCost || !hasMats) {
+    status = "materials";
+    blocker = missing.find((entry) => entry !== "queue busy") || "missing materials";
+  } else if (queueBusy) {
+    status = "queue";
+    blocker = "queue busy";
+  }
+
+  return {
+    built,
+    ready,
+    queueBusy,
+    missing,
+    status,
+    blocker,
+  };
+}
+
+function renderBlueprintCard(state, upgrade) {
+  const info = blueprintStatus(state, upgrade);
   const toolText = upgrade.requiredTools?.length ? upgrade.requiredTools.map((itemId) => itemLabel(itemId)).join(" + ") : "none";
 
   return `
-    <div class="blueprint-card ${built ? "is-built" : ready ? "is-ready" : "is-blocked"}"${tooltipAttrs(upgradeTooltip(state, upgrade, missing))}>
+    <div class="blueprint-card ${info.built ? "is-built" : info.ready ? "is-ready" : "is-blocked"} blueprint-card-${info.status}"${tooltipAttrs(upgradeTooltip(state, upgrade, info.missing))}>
       <div class="blueprint-card-top">
         <span class="blueprint-sprite">${upgradeSprite(upgrade)}</span>
         <div class="blueprint-copy">
           <strong>${upgrade.name}</strong>
           <small>${upgradeResultLabel(upgrade)}</small>
         </div>
-        <span class="tag">${built ? "built" : ready ? "ready" : "blocked"}</span>
+        <span class="tag">${info.built ? "built" : info.ready ? "ready" : info.status}</span>
       </div>
-      <div class="blueprint-facts">
-        <span><strong>${formatCost(upgrade.cost || {}) || "free"}</strong></span>
-        <span>time ${upgrade.hours || 1}h</span>
-        <span>tool ${toolText}</span>
-        <span>tier ${(upgrade.tier || "field").replace(/_/g, " ")}</span>
+      <div class="blueprint-facts blueprint-facts-grid">
+        <span>cost <strong>${formatCost(upgrade.cost || {}) || "free"}</strong></span>
+        <span>time <strong>${upgrade.hours || 1}h</strong></span>
+        <span>tool <strong>${toolText}</strong></span>
+        <span>tier <strong>${(upgrade.tier || "field").replace(/_/g, " ")}</strong></span>
       </div>
-      ${!built ? actionButton({
+      <div class="blueprint-status-line">${info.blocker}</div>
+      ${!info.built ? actionButton({
         action: "start-work-job",
-        label: ready ? "Queue" : "Blocked",
-        meta: ready ? "start job" : missing[0] || "requirements",
+        label: info.ready ? "Queue" : "Blocked",
+        meta: info.ready ? "start job" : info.blocker,
         icon: "build",
         variant: "compact",
-        disabled: !ready,
+        disabled: !info.ready,
         data: { upgrade: upgrade.id },
-        tooltip: upgradeTooltip(state, upgrade, missing),
+        tooltip: upgradeTooltip(state, upgrade, info.missing),
       }) : ""}
     </div>
   `;
@@ -8398,17 +8620,33 @@ function renderWorkshopSection(state, title, upgrades) {
 
 function renderWorkshopQueue(state) {
   const activeJob = getActiveWorkJob(state);
+  const progress = activeJob
+    ? Math.max(0, Math.min(100, Math.round(((activeJob.hoursTotal - activeJob.hoursRemaining) / activeJob.hoursTotal) * 100)))
+    : 0;
   const body = activeJob
     ? `
-      <div class="fact-grid compact-grid">
-        <div class="fact"><span>Job</span><strong>${activeJob.label}</strong></div>
-        <div class="fact"><span>Kind</span><strong>${activeJob.kind}</strong></div>
-        <div class="fact"><span>Left</span><strong>${activeJob.hoursRemaining}h</strong></div>
-        <div class="fact"><span>Due</span><strong>${activeJob.completesAt}</strong></div>
+      <div class="workshop-queue-strip">
+        <div class="workshop-queue-main">
+          <span class="note-label">${activeJob.kind}</span>
+          <strong>${activeJob.label}</strong>
+          <small>Due ${activeJob.completesAt}</small>
+        </div>
+        <div class="workshop-queue-metrics">
+          <div class="watch-metric"><span>Left</span><strong>${activeJob.hoursRemaining}h</strong></div>
+          <div class="watch-metric"><span>Tier</span><strong>${activeJob.tier.replace(/_/g, " ")}</strong></div>
+          <div class="watch-metric"><span>Tool</span><strong>${activeJob.requiredTools?.length ? activeJob.requiredTools.map((itemId) => itemLabel(itemId)).join(" + ") : "none"}</strong></div>
+        </div>
       </div>
-      <div class="chip-row">${tagList(activeJob.requiredTools?.length ? activeJob.requiredTools.map((itemId) => itemLabel(itemId)) : ["no tool gate"])}</div>
+      <div class="workshop-progress-bar"><span style="width:${progress}%"></span></div>
+      <div class="chip-row compact-chip-row">${tagList(activeJob.requiredTools?.length ? activeJob.requiredTools.map((itemId) => itemLabel(itemId)) : ["no tool gate"])}</div>
     `
-    : `<p class="empty-state">Queue open. Start one build or craft job, then let time pass while the shelter survives.</p>`;
+    : `
+      <div class="workshop-queue-empty">
+        <strong>Queue open</strong>
+        <p class="note">Pin one job, then use field lanes or the Base board while the bench works.</p>
+        <div class="chip-row compact-chip-row">${tagList(["1 shared queue", "strict tool gates", "time passes during work"])}</div>
+      </div>
+    `;
 
   return surfaceCard({
     title: "Work in Progress",
@@ -8434,7 +8672,9 @@ function renderWorkshopTab(state) {
   return `
     <div class="workshop-screen">
       ${renderWorkshopQueue(state)}
-      ${Object.entries(sections).map(([title, upgrades]) => renderWorkshopSection(state, title, upgrades)).join("")}
+      <div class="workshop-board-grid">
+        ${Object.entries(sections).map(([title, upgrades]) => renderWorkshopSection(state, title, upgrades)).join("")}
+      </div>
     </div>
   `;
 }
@@ -8482,14 +8722,20 @@ function zoneCard(state, zone) {
       body: `${zone.description || zone.name}. Objective ${EXPEDITION_OBJECTIVES.find((objective) => objective.id === state.expedition.objective)?.label || state.expedition.objective}.`,
     })}>
       <div class="route-zone-head">
-        <span class="route-zone-icon">${enemy ? renderEnemySprite(enemy, 38) : renderStructureSprite("watch_post", 38)}</span>
-        <div>
+        <span class="route-zone-icon">${enemy ? renderEnemySprite(enemy, 42) : renderStructureSprite("watch_post", 42)}</span>
+        <div class="route-zone-copy">
+          <span class="note-label">${preview?.riskBand || zone.tier || "zone"}</span>
           <strong>${zone.name}</strong>
           <small>${zone.description || zone.id.replace(/_/g, " ")}</small>
         </div>
         <span class="tag">${zone.tier || "zone"}</span>
       </div>
-      <div class="chip-row">${tagList([
+      <div class="route-zone-metrics">
+        <span class="route-zone-chip">time ${preview ? `${preview.timeCost}h` : "--"}</span>
+        <span class="route-zone-chip">risk ${preview ? preview.riskBand : "--"}</span>
+        <span class="route-zone-chip">loot ${preview ? preview.lootBand : "--"}</span>
+      </div>
+      <div class="chip-row compact-chip-row">${tagList([
         preview ? `time ${preview.timeCost}h` : null,
         preview ? `risk ${preview.riskBand}` : null,
         preview ? `loot ${preview.lootBand}` : null,
@@ -8516,19 +8762,33 @@ function zoneCard(state, zone) {
 function renderRoutesTab(state, _derived, isMobile = false) {
   const selectedZoneId = state.expedition.selectedZone || state.unlockedZones[0];
   const preview = selectedZoneId ? getExpeditionPreview(state, selectedZoneId, state.expedition.approach) : null;
+  const selectedEnemy = preview?.zone?.enemies?.[0] || null;
   const previewCard = surfaceCard({
     title: "Route package",
     meta: preview ? preview.zone.name : "none",
     className: "route-preview-card",
     body: preview
       ? `
-        <div class="fact-grid compact-grid">
-          <div class="fact"><span>Objective</span><strong>${EXPEDITION_OBJECTIVES.find((entry) => entry.id === state.expedition.objective)?.label || state.expedition.objective}</strong></div>
-          <div class="fact"><span>Approach</span><strong>${preview.approach.label}</strong></div>
-          <div class="fact"><span>Time</span><strong>${preview.timeCost}h</strong></div>
-          <div class="fact"><span>Risk</span><strong>${preview.riskBand}</strong></div>
+        <div class="route-briefing-head">
+          <span class="route-briefing-sprite">${selectedEnemy ? renderEnemySprite(selectedEnemy, 54) : renderStructureSprite("watch_post", 54)}</span>
+          <div class="route-briefing-copy">
+            <span class="note-label">Mission brief</span>
+            <strong>${preview.zone.name}</strong>
+            <small>${preview.zone.description || "Push a route and get back before the line buckles."}</small>
+          </div>
         </div>
-        <div class="action-row action-row-wrap">
+        <div class="route-briefing-grid">
+          <div class="watch-metric"><span>Objective</span><strong>${EXPEDITION_OBJECTIVES.find((entry) => entry.id === state.expedition.objective)?.label || state.expedition.objective}</strong></div>
+          <div class="watch-metric"><span>Approach</span><strong>${preview.approach.label}</strong></div>
+          <div class="watch-metric"><span>Time</span><strong>${preview.timeCost}h</strong></div>
+          <div class="watch-metric"><span>Risk</span><strong>${preview.riskBand}</strong></div>
+        </div>
+        <div class="chip-row compact-chip-row">${tagList([
+          `loot ${preview.lootBand}`,
+          `encounter ${(preview.encounterChance * 100).toFixed(0)}%`,
+          `cost ${Object.entries(preview.cost || {}).map(([key, value]) => `${resourceLabel(key)} ${value}`).join(" / ") || "none"}`,
+        ])}</div>
+        <div class="action-row action-row-wrap route-launch-row">
           ${actionButton({
             action: "launch-prepared",
             label: "Launch run",
@@ -8548,11 +8808,11 @@ function renderRoutesTab(state, _derived, isMobile = false) {
     body: `
       <div class="route-control-group">
         <span class="note-label">Objective</span>
-        <div class="action-row action-row-wrap">${routeObjectiveButtons(state)}</div>
+        <div class="route-toggle-row">${routeObjectiveButtons(state)}</div>
       </div>
       <div class="route-control-group">
         <span class="note-label">Approach</span>
-        <div class="action-row action-row-wrap">${routeApproachButtons(state)}</div>
+        <div class="route-toggle-row">${routeApproachButtons(state)}</div>
       </div>
     `,
   });
@@ -9068,7 +9328,7 @@ function groupedInventory(state) {
   };
 }
 
-function slotCard(label, slotId, itemId, fallbackLabel, { droppable = false } = {}) {
+function slotCard(label, slotId, itemId, fallbackLabel, { droppable = false, className = "" } = {}) {
   const item = itemId ? ITEMS[itemId] : null;
   const sprite = item ? renderItemSprite(itemId, item, 42) : `<span class="slot-fallback">${fallbackLabel}</span>`;
   const tooltip = item
@@ -9076,7 +9336,7 @@ function slotCard(label, slotId, itemId, fallbackLabel, { droppable = false } = 
     : { title: label, meta: "baseline", body: fallbackLabel };
   return `
     <div
-      class="equipment-slot-card ${droppable ? "is-drop-slot" : ""} ${item ? "is-occupied" : "is-empty"}"
+      class="equipment-slot-card ${className} ${droppable ? "is-drop-slot" : ""} ${item ? "is-occupied" : "is-empty"}"
       ${droppable ? `data-slot="${slotId}" data-slot-filled="${item ? "true" : "false"}"` : ""}
       ${tooltipAttrs(tooltip)}
     >
@@ -9108,9 +9368,9 @@ function slotCard(label, slotId, itemId, fallbackLabel, { droppable = false } = 
   `;
 }
 
-function infoSlotCard(label, slotId, amount, spriteMarkup, fallbackLabel, tooltip) {
+function infoSlotCard(label, slotId, amount, spriteMarkup, fallbackLabel, tooltip, className = "") {
   return `
-    <div class="equipment-slot-card"${tooltipAttrs(tooltip)}>
+    <div class="equipment-slot-card ${className}"${tooltipAttrs(tooltip)}>
       <div class="equipment-slot-shell">
         ${renderSlotFrame(slotId, amount > 0)}
         <div class="equipment-slot-sprite">${spriteMarkup}</div>
@@ -9123,31 +9383,44 @@ function infoSlotCard(label, slotId, amount, spriteMarkup, fallbackLabel, toolti
   `;
 }
 
-function mannequinMarkup(state, groups) {
+function paperDollMarkup(state, groups) {
+  const equippedNames = [
+    state.equipped.weapon ? ITEMS[state.equipped.weapon]?.name : "Bare Hands",
+    state.equipped.armor ? ITEMS[state.equipped.armor]?.name : "Street Clothes",
+    state.equipped.backpack ? ITEMS[state.equipped.backpack]?.name : "No Pack",
+  ];
+
   return `
-    <div class="survivor-mannequin">
-      <div class="mannequin-figure">
-        <span class="mannequin-head"></span>
-        <span class="mannequin-torso"></span>
-        <span class="mannequin-arm mannequin-arm-left"></span>
-        <span class="mannequin-arm mannequin-arm-right"></span>
-        <span class="mannequin-leg mannequin-leg-left"></span>
-        <span class="mannequin-leg mannequin-leg-right"></span>
+    <div class="survivor-mannequin survivor-paper-doll">
+      <div class="paper-doll-stage"${tooltipAttrs({
+        title: state.player.username || "Survivor",
+        meta: "loadout",
+        body: `Weapon ${equippedNames[0]}. Armor ${equippedNames[1]}. Pack ${equippedNames[2]}.`,
+      })}>
+        <div class="paper-doll-hero">
+          ${renderPaperDoll(state.equipped, 300)}
+        </div>
+        <div class="paper-doll-readout">
+          <span class="note-label">Field body</span>
+          <div class="chip-row">${tagList(equippedNames)}</div>
+        </div>
       </div>
       <div class="mannequin-slots">
-        ${slotCard("Weapon", "weapon", state.equipped.weapon, "Bare Hands", { droppable: true })}
-        ${slotCard("Armor", "armor", state.equipped.armor, "Street Clothes", { droppable: true })}
-        ${slotCard("Backpack", "backpack", state.equipped.backpack, "No Pack", { droppable: true })}
+        ${slotCard("Weapon", "weapon", state.equipped.weapon, "Bare Hands", { droppable: true, className: "equipment-slot-card-primary" })}
+        ${slotCard("Armor", "armor", state.equipped.armor, "Street Clothes", { droppable: true, className: "equipment-slot-card-primary" })}
+        ${slotCard("Backpack", "backpack", state.equipped.backpack, "No Pack", { droppable: true, className: "equipment-slot-card-primary" })}
+      </div>
+      <div class="survivor-utility-row">
         ${infoSlotCard("Tool Belt", "tool_belt", groups.tools.length, renderStructureSprite("bench", 42), "No tools", {
           title: "Tool Belt",
           meta: "kit",
           body: `${groups.tools.length || 0} tools packed for field use.`,
-        })}
+        }, "equipment-slot-card-utility")}
         ${infoSlotCard("Field Aid", "field_care", groups.consumables.length, renderItemSprite("first_aid_rag", ITEMS.first_aid_rag, 42), "No aid ready", {
           title: "Field Aid",
           meta: "supplies",
           body: `${groups.consumables.length || 0} consumables ready for treatment or emergency use.`,
-        })}
+        }, "equipment-slot-card-utility")}
       </div>
     </div>
   `;
@@ -9188,7 +9461,7 @@ function renderSurvivorTab(state, derived, isMobile = false) {
     meta: state.player.username || "unnamed",
     className: "survivor-stats-card",
     body: `
-      <div class="fact-grid compact-grid">
+      <div class="fact-grid compact-grid survivor-fact-grid">
         <div class="fact"><span>Condition</span><strong>${state.condition}/${derived.maxCondition}</strong></div>
         <div class="fact"><span>Attack</span><strong>${derived.attack}</strong></div>
         <div class="fact"><span>Defense</span><strong>${derived.defense}</strong></div>
@@ -9196,6 +9469,11 @@ function renderSurvivorTab(state, derived, isMobile = false) {
         <div class="fact"><span>Meal due</span><strong>${upkeep.mealHoursLeft}h</strong></div>
         <div class="fact"><span>Water due</span><strong>${upkeep.waterHoursLeft}h</strong></div>
       </div>
+      <div class="chip-row compact-chip-row">${tagList([
+        state.equipped.weapon ? `weapon ${ITEMS[state.equipped.weapon]?.name}` : "weapon bare hands",
+        state.equipped.armor ? `armor ${ITEMS[state.equipped.armor]?.name}` : "armor street clothes",
+        state.equipped.backpack ? "carry packed" : "carry light",
+      ])}</div>
     `,
   });
 
@@ -9203,7 +9481,7 @@ function renderSurvivorTab(state, derived, isMobile = false) {
     title: "Loadout",
     meta: state.player.username || "survivor",
     className: "survivor-mannequin-card",
-    body: mannequinMarkup(state, groups),
+    body: paperDollMarkup(state, groups),
   });
 
   const gearLocker = storagePanel(
@@ -9529,23 +9807,50 @@ function renderCombatBanner(state) {
     return;
   }
 
+  const enemy = ENEMIES[state.combat.enemyId] || ENEMIES.walker;
+  const intent = state.combat.intent || enemy.behavior?.defaultIntent || "advance";
+  const enemyHp = state.combat.enemyHp;
+  const enemyMax = enemy.hp || enemyHp || 1;
+  const derived = getDerivedState(state);
+  const playerPercent = Math.max(0, Math.min(100, Math.round((state.condition / derived.maxCondition) * 100)));
+  const enemyPercent = Math.max(0, Math.min(100, Math.round((enemyHp / enemyMax) * 100)));
+
   banner.classList.remove("is-hidden");
   banner.innerHTML = `
     <div class="combat-banner-shell">
-      <div class="combat-banner-head">
-        <span class="combat-banner-sprite">${renderEnemySprite(state.combat.enemy?.id || "generic", 52)}</span>
-        <div>
-          <span class="note-label">Contact</span>
-          <h3>${state.combat.enemy?.name || "Unknown threat"}</h3>
-          <p class="note">${state.combat.enemy?.description || "The infected are inside your reach now."}</p>
+      <div class="combat-banner-head combat-threat-head">
+        <div class="combat-banner-hero">
+          <span class="combat-banner-sprite">${renderEnemySprite(enemy.id || "generic", 66)}</span>
+          <div class="combat-banner-copy">
+            <span class="note-label">Contact</span>
+            <h3>${enemy.name}</h3>
+            <p class="note">${enemy.description || "The infected are inside your reach now."}</p>
+          </div>
+        </div>
+        <div class="combat-intent-chip">${intent}</div>
+      </div>
+      <div class="combat-banner-grid">
+        <div class="combat-side-card">
+          <div class="combat-side-top">
+            <span class="note-label">You</span>
+            <strong>${state.condition}</strong>
+          </div>
+          <div class="combat-meter"><span class="combat-meter-fill is-player" style="width:${playerPercent}%"></span></div>
+        </div>
+        <div class="combat-side-card combat-side-card-enemy">
+          <div class="combat-side-top">
+            <span class="note-label">${enemy.name}</span>
+            <strong>${enemyHp}/${enemyMax}</strong>
+          </div>
+          <div class="combat-meter"><span class="combat-meter-fill is-enemy" style="width:${enemyPercent}%"></span></div>
         </div>
       </div>
-      <div class="chip-row">${tagList([
-        `enemy hp ${state.combat.enemyHp}`,
-        `player hp ${state.condition}`,
-        state.combat.enemy?.intent || "advance",
+      <div class="chip-row compact-chip-row">${tagList([
+        enemy.behavior?.summary || "close pressure",
+        `objective ${state.combat.objectiveId || "salvage"}`,
+        state.combat.grappled ? "grappled" : "mobile",
       ])}</div>
-      <div class="action-row action-row-wrap">
+      <div class="action-row action-row-wrap combat-command-row">
         ${actionButton({ action: "combat-attack", label: "Attack", icon: "combat", variant: "compact" })}
         ${actionButton({ action: "combat-brace", label: "Brace", icon: "barricade", variant: "compact secondary" })}
         ${actionButton({ action: "combat-heal", label: "Heal", icon: "heal", variant: "compact secondary" })}
@@ -10221,6 +10526,18 @@ function clearDragState() {
   clearDropHighlights();
 }
 
+function slotHoverTarget(target) {
+  return target?.closest?.(".equipment-slot-card[data-slot]") || null;
+}
+
+function setHoverSlot(slotId = "") {
+  if (!slotId) {
+    delete document.body.dataset.hoverSlot;
+    return;
+  }
+  document.body.dataset.hoverSlot = slotId;
+}
+
 function placementTileTarget(target) {
   return target?.closest?.('button[data-action="place-structure"]') || null;
 }
@@ -10644,6 +10961,10 @@ document.body.addEventListener("click", (event) => {
 document.body.addEventListener("mouseover", (event) => {
   const nextTarget = tooltipSource(event.target);
   const placementTile = placementTileTarget(event.target);
+  const slot = slotHoverTarget(event.target);
+  if (slot?.dataset.slot) {
+    setHoverSlot(slot.dataset.slot);
+  }
   if (placementTile && state.ui.pendingPlacementStructureId) {
     if (placementTile.dataset.valid === "true") {
       setPlacementPreviewState(
@@ -10670,8 +10991,12 @@ document.body.addEventListener("mousemove", (event) => {
 
 document.body.addEventListener("mouseout", (event) => {
   const placementTile = placementTileTarget(event.target);
+  const slot = slotHoverTarget(event.target);
   if (placementTile && !placementTileTarget(event.relatedTarget)) {
     clearPlacementPreviewState({ rerenderView: true });
+  }
+  if (slot && !slot.contains(event.relatedTarget)) {
+    setHoverSlot("");
   }
   const nextTarget = tooltipSource(event.target);
   if (!nextTarget || tooltipTarget !== nextTarget) {
@@ -10683,6 +11008,10 @@ document.body.addEventListener("mouseout", (event) => {
 document.body.addEventListener("focusin", (event) => {
   const nextTarget = tooltipSource(event.target);
   const placementTile = placementTileTarget(event.target);
+  const slot = slotHoverTarget(event.target);
+  if (slot?.dataset.slot) {
+    setHoverSlot(slot.dataset.slot);
+  }
   if (placementTile && state.ui.pendingPlacementStructureId && placementTile.dataset.valid === "true") {
     setPlacementPreviewState(
       placementTile.dataset.structure || state.ui.pendingPlacementStructureId,
@@ -10697,6 +11026,9 @@ document.body.addEventListener("focusin", (event) => {
 });
 
 document.body.addEventListener("focusout", (event) => {
+  if (slotHoverTarget(event.target)) {
+    setHoverSlot("");
+  }
   if (placementTileTarget(event.target)) {
     clearPlacementPreviewState({ rerenderView: true });
   }

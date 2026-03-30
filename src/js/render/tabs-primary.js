@@ -121,7 +121,7 @@ function sourceCard(state, source) {
           <small>${source.description || source.id.replace(/_/g, " ")}</small>
         </div>
       </div>
-      <div class="chip-row">${tagList(chips)}</div>
+      <div class="chip-row compact-chip-row">${tagList(chips)}</div>
       ${actionButton({
         action: action.action,
         label: action.label,
@@ -134,11 +134,18 @@ function sourceCard(state, source) {
   `;
 }
 
+function watchThreatTone(forecast) {
+  if (forecast.siege) return "danger";
+  if (forecast.breachChance >= 0.34) return "warn";
+  return "good";
+}
+
 function renderOpsBoard(state, derived) {
   const sources = getAvailableScavengeSources(state);
   const activeJob = getActiveWorkJob(state);
   const forecast = getNightForecast(state);
   const upkeep = getShelterUpkeep(state);
+  const lastReport = state.night?.lastReport || null;
   const mainActions = [];
 
   mainActions.push(actionButton({
@@ -176,28 +183,61 @@ function renderOpsBoard(state, derived) {
     className: "ops-directive-card",
     body: `
       <div class="directive-compact">
-        <p class="directive-line">${directiveText(state)}</p>
-        <div class="chip-row compact-chip-row">${tagList([
-          activeJob ? `${activeJob.label} ${activeJob.hoursRemaining}h` : "queue open",
-          `meal ${upkeep.mealHoursLeft}h`,
-          `water ${upkeep.waterHoursLeft}h`,
-          forecast.siege ? "siege risk" : "watch line",
-        ])}</div>
-        <div class="action-row action-row-wrap ops-directive-actions">${mainActions.join("")}</div>
+        <div class="directive-stack">
+          <p class="directive-line">${directiveText(state)}</p>
+          <div class="chip-row compact-chip-row">${tagList([
+            state.player.username ? `user ${state.player.username}` : "user unset",
+            state.equipped.weapon ? `armed ${itemLabel(state.equipped.weapon)}` : "unarmed",
+            activeJob ? activeJob.kind : "queue open",
+          ])}</div>
+        </div>
+        <div class="directive-support-row">
+          <div class="chip-row compact-chip-row">${tagList([
+            activeJob ? `${activeJob.label} ${activeJob.hoursRemaining}h` : "queue open",
+            `meal ${upkeep.mealHoursLeft}h`,
+            `water ${upkeep.waterHoursLeft}h`,
+            forecast.siege ? "siege risk" : "watch line",
+          ])}</div>
+          <div class="action-row action-row-wrap ops-directive-actions">${mainActions.join("")}</div>
+        </div>
       </div>
     `,
   });
+
+  const watchTone = watchThreatTone(forecast);
+  const threatSprite = forecast.siege
+    ? renderEnemySprite("screecher", 46)
+    : forecast.breachChance >= 0.34
+      ? renderEnemySprite("stalker", 46)
+      : renderEnemySprite("walker", 46);
 
   const watch = surfaceCard({
     title: "Watch",
     meta: forecast.siege ? "siege" : "night",
     className: "ops-watch-card",
     body: `
-      <div class="fact-grid compact-grid">
-        <div class="fact"><span>Danger</span><strong>${forecast.dangerScore.toFixed(1)}</strong></div>
-        <div class="fact"><span>Breach</span><strong>${Math.round(forecast.breachChance * 100)}%</strong></div>
-        <div class="fact"><span>Queue</span><strong>${activeJob ? `${activeJob.hoursRemaining}h` : "idle"}</strong></div>
-        <div class="fact"><span>Cond</span><strong>${state.condition}/${derived.maxCondition}</strong></div>
+      <div class="watch-threat-shell watch-threat-shell-${watchTone}">
+        <div class="watch-threat-head">
+          <span class="watch-threat-sprite">${threatSprite}</span>
+          <div>
+            <span class="note-label">Night state</span>
+            <strong>${forecast.severity.toUpperCase()}</strong>
+            <small>${forecast.siege ? "Compound under siege pressure." : "Forecast built from threat, noise, and defenses."}</small>
+          </div>
+          <span class="tag">${forecast.plan.label}</span>
+        </div>
+        <div class="watch-threat-grid">
+          <div class="watch-metric is-danger"><span>Danger</span><strong>${forecast.dangerScore.toFixed(1)}</strong></div>
+          <div class="watch-metric is-breach"><span>Breach</span><strong>${Math.round(forecast.breachChance * 100)}%</strong></div>
+          <div class="watch-metric"><span>Queue</span><strong>${activeJob ? `${activeJob.hoursRemaining}h` : "idle"}</strong></div>
+          <div class="watch-metric"><span>Defense</span><strong>${forecast.adjustedDefense.toFixed(1)}</strong></div>
+        </div>
+        <div class="chip-row compact-chip-row">${tagList([
+          `coverage ${forecast.systems.coverage.toFixed(1)}`,
+          `power ${forecast.systems.powerState}`,
+          `maint ${forecast.systems.maintenanceState}`,
+          forecast.siege ? "breach line hot" : "perimeter holding",
+        ])}</div>
       </div>
     `,
   });
@@ -213,7 +253,24 @@ function renderOpsBoard(state, derived) {
     title: "Recent feed",
     meta: `${state.log.length}`,
     className: "ops-log-card",
-    body: renderMiniLog(state, 5),
+    body: `
+      ${lastReport ? `
+        <div class="night-debrief-card">
+          <div class="night-debrief-head">
+            <span class="note-label">Last night</span>
+            <strong>${lastReport.eventType}</strong>
+            <span class="tag">${lastReport.severity}</span>
+          </div>
+          <p>${lastReport.summary}</p>
+          <div class="chip-row compact-chip-row">${tagList([
+            lastReport.conditionLoss ? `cond -${lastReport.conditionLoss}` : "line held",
+            lastReport.damagedStructures?.length ? `damage ${lastReport.damagedStructures.length}` : "no structural hits",
+            lastReport.crewHits?.length ? `crew ${lastReport.crewHits.length}` : "crew intact",
+          ])}</div>
+        </div>
+      ` : ""}
+      ${renderMiniLog(state, 5)}
+    `,
   });
 
   return `
@@ -279,14 +336,16 @@ function upgradeSprite(upgrade) {
   return renderStructureSprite("bench", 36);
 }
 
-function renderBlueprintCard(state, upgrade) {
+function blueprintStatus(state, upgrade) {
   const built = state.upgrades.includes(upgrade.id);
-  const ready = !built
-    && !getActiveWorkJob(state)
-    && canAfford(state, upgrade.cost)
-    && hasMaterials(state, upgrade.materials)
-    && hasRequiredTools(state, upgrade.requiredTools);
+  const queueBusy = Boolean(getActiveWorkJob(state));
+  const hasCost = canAfford(state, upgrade.cost);
+  const hasMats = hasMaterials(state, upgrade.materials);
+  const missingTools = missingRequiredTools(state, upgrade.requiredTools || []);
+  const hasTools = missingTools.length === 0;
+  const ready = !built && !queueBusy && hasCost && hasMats && hasTools;
   const missing = [];
+
   if (!built) {
     Object.entries(upgrade.cost || {}).forEach(([resourceId, amount]) => {
       const have = state.resources[resourceId] || 0;
@@ -296,38 +355,68 @@ function renderBlueprintCard(state, upgrade) {
       const have = state.inventory[itemId] || 0;
       if (have < amount) missing.push(`${itemLabel(itemId)} ${have}/${amount}`);
     });
-    missingRequiredTools(state, upgrade.requiredTools || []).forEach((itemId) => missing.push(itemLabel(itemId)));
-    if (getActiveWorkJob(state) && !ready) {
-      missing.push(`queue busy`);
+    missingTools.forEach((itemId) => missing.push(itemLabel(itemId)));
+    if (queueBusy && !ready) {
+      missing.push("queue busy");
     }
   }
+
+  let status = "ready";
+  let blocker = "ready to queue";
+  if (built) {
+    status = "built";
+    blocker = "already completed";
+  } else if (!hasTools) {
+    status = "tool";
+    blocker = `need ${missingTools.map((itemId) => itemLabel(itemId)).join(" + ")}`;
+  } else if (!hasCost || !hasMats) {
+    status = "materials";
+    blocker = missing.find((entry) => entry !== "queue busy") || "missing materials";
+  } else if (queueBusy) {
+    status = "queue";
+    blocker = "queue busy";
+  }
+
+  return {
+    built,
+    ready,
+    queueBusy,
+    missing,
+    status,
+    blocker,
+  };
+}
+
+function renderBlueprintCard(state, upgrade) {
+  const info = blueprintStatus(state, upgrade);
   const toolText = upgrade.requiredTools?.length ? upgrade.requiredTools.map((itemId) => itemLabel(itemId)).join(" + ") : "none";
 
   return `
-    <div class="blueprint-card ${built ? "is-built" : ready ? "is-ready" : "is-blocked"}"${tooltipAttrs(upgradeTooltip(state, upgrade, missing))}>
+    <div class="blueprint-card ${info.built ? "is-built" : info.ready ? "is-ready" : "is-blocked"} blueprint-card-${info.status}"${tooltipAttrs(upgradeTooltip(state, upgrade, info.missing))}>
       <div class="blueprint-card-top">
         <span class="blueprint-sprite">${upgradeSprite(upgrade)}</span>
         <div class="blueprint-copy">
           <strong>${upgrade.name}</strong>
           <small>${upgradeResultLabel(upgrade)}</small>
         </div>
-        <span class="tag">${built ? "built" : ready ? "ready" : "blocked"}</span>
+        <span class="tag">${info.built ? "built" : info.ready ? "ready" : info.status}</span>
       </div>
-      <div class="blueprint-facts">
-        <span><strong>${formatCost(upgrade.cost || {}) || "free"}</strong></span>
-        <span>time ${upgrade.hours || 1}h</span>
-        <span>tool ${toolText}</span>
-        <span>tier ${(upgrade.tier || "field").replace(/_/g, " ")}</span>
+      <div class="blueprint-facts blueprint-facts-grid">
+        <span>cost <strong>${formatCost(upgrade.cost || {}) || "free"}</strong></span>
+        <span>time <strong>${upgrade.hours || 1}h</strong></span>
+        <span>tool <strong>${toolText}</strong></span>
+        <span>tier <strong>${(upgrade.tier || "field").replace(/_/g, " ")}</strong></span>
       </div>
-      ${!built ? actionButton({
+      <div class="blueprint-status-line">${info.blocker}</div>
+      ${!info.built ? actionButton({
         action: "start-work-job",
-        label: ready ? "Queue" : "Blocked",
-        meta: ready ? "start job" : missing[0] || "requirements",
+        label: info.ready ? "Queue" : "Blocked",
+        meta: info.ready ? "start job" : info.blocker,
         icon: "build",
         variant: "compact",
-        disabled: !ready,
+        disabled: !info.ready,
         data: { upgrade: upgrade.id },
-        tooltip: upgradeTooltip(state, upgrade, missing),
+        tooltip: upgradeTooltip(state, upgrade, info.missing),
       }) : ""}
     </div>
   `;
@@ -346,17 +435,33 @@ function renderWorkshopSection(state, title, upgrades) {
 
 function renderWorkshopQueue(state) {
   const activeJob = getActiveWorkJob(state);
+  const progress = activeJob
+    ? Math.max(0, Math.min(100, Math.round(((activeJob.hoursTotal - activeJob.hoursRemaining) / activeJob.hoursTotal) * 100)))
+    : 0;
   const body = activeJob
     ? `
-      <div class="fact-grid compact-grid">
-        <div class="fact"><span>Job</span><strong>${activeJob.label}</strong></div>
-        <div class="fact"><span>Kind</span><strong>${activeJob.kind}</strong></div>
-        <div class="fact"><span>Left</span><strong>${activeJob.hoursRemaining}h</strong></div>
-        <div class="fact"><span>Due</span><strong>${activeJob.completesAt}</strong></div>
+      <div class="workshop-queue-strip">
+        <div class="workshop-queue-main">
+          <span class="note-label">${activeJob.kind}</span>
+          <strong>${activeJob.label}</strong>
+          <small>Due ${activeJob.completesAt}</small>
+        </div>
+        <div class="workshop-queue-metrics">
+          <div class="watch-metric"><span>Left</span><strong>${activeJob.hoursRemaining}h</strong></div>
+          <div class="watch-metric"><span>Tier</span><strong>${activeJob.tier.replace(/_/g, " ")}</strong></div>
+          <div class="watch-metric"><span>Tool</span><strong>${activeJob.requiredTools?.length ? activeJob.requiredTools.map((itemId) => itemLabel(itemId)).join(" + ") : "none"}</strong></div>
+        </div>
       </div>
-      <div class="chip-row">${tagList(activeJob.requiredTools?.length ? activeJob.requiredTools.map((itemId) => itemLabel(itemId)) : ["no tool gate"])}</div>
+      <div class="workshop-progress-bar"><span style="width:${progress}%"></span></div>
+      <div class="chip-row compact-chip-row">${tagList(activeJob.requiredTools?.length ? activeJob.requiredTools.map((itemId) => itemLabel(itemId)) : ["no tool gate"])}</div>
     `
-    : `<p class="empty-state">Queue open. Start one build or craft job, then let time pass while the shelter survives.</p>`;
+    : `
+      <div class="workshop-queue-empty">
+        <strong>Queue open</strong>
+        <p class="note">Pin one job, then use field lanes or the Base board while the bench works.</p>
+        <div class="chip-row compact-chip-row">${tagList(["1 shared queue", "strict tool gates", "time passes during work"])}</div>
+      </div>
+    `;
 
   return surfaceCard({
     title: "Work in Progress",
@@ -382,7 +487,9 @@ export function renderWorkshopTab(state) {
   return `
     <div class="workshop-screen">
       ${renderWorkshopQueue(state)}
-      ${Object.entries(sections).map(([title, upgrades]) => renderWorkshopSection(state, title, upgrades)).join("")}
+      <div class="workshop-board-grid">
+        ${Object.entries(sections).map(([title, upgrades]) => renderWorkshopSection(state, title, upgrades)).join("")}
+      </div>
     </div>
   `;
 }
@@ -430,14 +537,20 @@ function zoneCard(state, zone) {
       body: `${zone.description || zone.name}. Objective ${EXPEDITION_OBJECTIVES.find((objective) => objective.id === state.expedition.objective)?.label || state.expedition.objective}.`,
     })}>
       <div class="route-zone-head">
-        <span class="route-zone-icon">${enemy ? renderEnemySprite(enemy, 38) : renderStructureSprite("watch_post", 38)}</span>
-        <div>
+        <span class="route-zone-icon">${enemy ? renderEnemySprite(enemy, 42) : renderStructureSprite("watch_post", 42)}</span>
+        <div class="route-zone-copy">
+          <span class="note-label">${preview?.riskBand || zone.tier || "zone"}</span>
           <strong>${zone.name}</strong>
           <small>${zone.description || zone.id.replace(/_/g, " ")}</small>
         </div>
         <span class="tag">${zone.tier || "zone"}</span>
       </div>
-      <div class="chip-row">${tagList([
+      <div class="route-zone-metrics">
+        <span class="route-zone-chip">time ${preview ? `${preview.timeCost}h` : "--"}</span>
+        <span class="route-zone-chip">risk ${preview ? preview.riskBand : "--"}</span>
+        <span class="route-zone-chip">loot ${preview ? preview.lootBand : "--"}</span>
+      </div>
+      <div class="chip-row compact-chip-row">${tagList([
         preview ? `time ${preview.timeCost}h` : null,
         preview ? `risk ${preview.riskBand}` : null,
         preview ? `loot ${preview.lootBand}` : null,
@@ -464,19 +577,33 @@ function zoneCard(state, zone) {
 export function renderRoutesTab(state, _derived, isMobile = false) {
   const selectedZoneId = state.expedition.selectedZone || state.unlockedZones[0];
   const preview = selectedZoneId ? getExpeditionPreview(state, selectedZoneId, state.expedition.approach) : null;
+  const selectedEnemy = preview?.zone?.enemies?.[0] || null;
   const previewCard = surfaceCard({
     title: "Route package",
     meta: preview ? preview.zone.name : "none",
     className: "route-preview-card",
     body: preview
       ? `
-        <div class="fact-grid compact-grid">
-          <div class="fact"><span>Objective</span><strong>${EXPEDITION_OBJECTIVES.find((entry) => entry.id === state.expedition.objective)?.label || state.expedition.objective}</strong></div>
-          <div class="fact"><span>Approach</span><strong>${preview.approach.label}</strong></div>
-          <div class="fact"><span>Time</span><strong>${preview.timeCost}h</strong></div>
-          <div class="fact"><span>Risk</span><strong>${preview.riskBand}</strong></div>
+        <div class="route-briefing-head">
+          <span class="route-briefing-sprite">${selectedEnemy ? renderEnemySprite(selectedEnemy, 54) : renderStructureSprite("watch_post", 54)}</span>
+          <div class="route-briefing-copy">
+            <span class="note-label">Mission brief</span>
+            <strong>${preview.zone.name}</strong>
+            <small>${preview.zone.description || "Push a route and get back before the line buckles."}</small>
+          </div>
         </div>
-        <div class="action-row action-row-wrap">
+        <div class="route-briefing-grid">
+          <div class="watch-metric"><span>Objective</span><strong>${EXPEDITION_OBJECTIVES.find((entry) => entry.id === state.expedition.objective)?.label || state.expedition.objective}</strong></div>
+          <div class="watch-metric"><span>Approach</span><strong>${preview.approach.label}</strong></div>
+          <div class="watch-metric"><span>Time</span><strong>${preview.timeCost}h</strong></div>
+          <div class="watch-metric"><span>Risk</span><strong>${preview.riskBand}</strong></div>
+        </div>
+        <div class="chip-row compact-chip-row">${tagList([
+          `loot ${preview.lootBand}`,
+          `encounter ${(preview.encounterChance * 100).toFixed(0)}%`,
+          `cost ${Object.entries(preview.cost || {}).map(([key, value]) => `${resourceLabel(key)} ${value}`).join(" / ") || "none"}`,
+        ])}</div>
+        <div class="action-row action-row-wrap route-launch-row">
           ${actionButton({
             action: "launch-prepared",
             label: "Launch run",
@@ -496,11 +623,11 @@ export function renderRoutesTab(state, _derived, isMobile = false) {
     body: `
       <div class="route-control-group">
         <span class="note-label">Objective</span>
-        <div class="action-row action-row-wrap">${routeObjectiveButtons(state)}</div>
+        <div class="route-toggle-row">${routeObjectiveButtons(state)}</div>
       </div>
       <div class="route-control-group">
         <span class="note-label">Approach</span>
-        <div class="action-row action-row-wrap">${routeApproachButtons(state)}</div>
+        <div class="route-toggle-row">${routeApproachButtons(state)}</div>
       </div>
     `,
   });
