@@ -62,10 +62,25 @@
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
   gap: 10px;
+  align-items: start;
 }
 
 .directive-line {
   font-size: 13px;
+  line-height: 1.35;
+}
+
+.directive-compact {
+  display: grid;
+  gap: 8px;
+}
+
+.ops-directive-card .surface-body {
+  align-content: start;
+}
+
+.ops-directive-actions .action-button {
+  min-width: 0;
 }
 
 .ops-source-head,
@@ -154,13 +169,16 @@
 }
 
 .survivor-screen {
-  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(300px, 0.9fr) minmax(240px, 0.72fr) minmax(0, 1.18fr);
   align-items: start;
 }
 
-.survivor-mannequin-card,
-.survivor-stats-card {
-  min-height: 100%;
+.survivor-left-column,
+.survivor-mid-column,
+.survivor-right-column {
+  display: grid;
+  gap: 10px;
+  align-content: start;
 }
 
 .survivor-mannequin {
@@ -274,6 +292,62 @@
   gap: 2px;
 }
 
+.slot-card-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.equipment-slot-card.is-drop-slot {
+  transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+
+.equipment-slot-card.is-drop-slot.is-drag-over {
+  border-color: rgba(208, 164, 107, 0.34);
+  background: rgba(19, 22, 22, 0.96);
+  box-shadow: inset 0 0 0 1px rgba(208, 164, 107, 0.12);
+}
+
+body[data-drag-type="weapon"] .equipment-slot-card[data-slot="weapon"],
+body[data-drag-type="armor"] .equipment-slot-card[data-slot="armor"],
+body[data-drag-type="backpack"] .equipment-slot-card[data-slot="backpack"] {
+  border-color: rgba(208, 164, 107, 0.22);
+}
+
+.survivor-storage-card .surface-body,
+.inventory-stack,
+.inventory-section {
+  display: grid;
+  gap: 8px;
+}
+
+.inventory-section {
+  padding: 0;
+}
+
+.inventory-section-head {
+  padding: 0 2px;
+}
+
+.inventory-card-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.inventory-sprite-card {
+  align-content: start;
+}
+
+.inventory-sprite-card.is-draggable {
+  cursor: grab;
+}
+
+.inventory-sprite-card.is-equipped {
+  border-color: rgba(208, 164, 107, 0.22);
+}
+
+.inventory-sprite-card .action-button {
+  width: fit-content;
+}
+
 .base-screen {
   display: grid;
   gap: 10px;
@@ -336,6 +410,7 @@
 
 .base-grid-frame,
 .base-grid-tiles,
+.base-preview-layer,
 .base-grid-fence,
 .base-grid-gate,
 .base-structure {
@@ -344,6 +419,8 @@
 }
 
 .base-grid-frame {
+  z-index: 0;
+  pointer-events: none;
   border: 1px solid rgba(255, 255, 255, 0.03);
   border-radius: 14px;
 }
@@ -353,6 +430,12 @@
   grid-template-columns: repeat(12, minmax(0, 1fr));
   grid-template-rows: repeat(8, minmax(0, 1fr));
   gap: 4px;
+  z-index: 4;
+}
+
+.base-preview-layer {
+  z-index: 3;
+  pointer-events: none;
 }
 
 .base-tile {
@@ -370,6 +453,7 @@
 
 .base-tile.is-placement.is-invalid {
   cursor: not-allowed;
+  opacity: 0.72;
 }
 
 .base-tile.is-placement:hover {
@@ -377,12 +461,16 @@
 }
 
 .base-grid-fence {
+  z-index: 1;
+  pointer-events: none;
   inset: 18px;
   border: 2px dashed rgba(208, 164, 107, 0.16);
   border-radius: 16px;
 }
 
 .base-grid-gate {
+  z-index: 5;
+  pointer-events: none;
   left: 50%;
   right: auto;
   bottom: 4px;
@@ -403,6 +491,7 @@
 }
 
 .base-structure {
+  z-index: 2;
   display: grid;
   grid-template-columns: 1fr;
   align-items: end;
@@ -430,6 +519,33 @@
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 22%),
     rgba(15, 18, 18, 0.96);
+}
+
+.base-board.is-placement-armed .base-structure {
+  pointer-events: none;
+  opacity: 0.26;
+}
+
+.base-board.is-placement-armed .base-grid-tiles {
+  z-index: 6;
+}
+
+.base-placement-preview {
+  position: absolute;
+  left: calc((var(--x) - 1) * (100% / 12));
+  top: calc((var(--y) - 1) * (100% / 8));
+  width: calc(var(--w) * (100% / 12) - 4px);
+  height: calc(var(--h) * (100% / 8) - 4px);
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(208, 164, 107, 0.34);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(208, 164, 107, 0.1), rgba(208, 164, 107, 0.04));
+  box-shadow: inset 0 0 0 1px rgba(208, 164, 107, 0.12);
+}
+
+.base-placement-preview-sprite {
+  opacity: 0.92;
 }
 
 .structure-status {
@@ -513,13 +629,8 @@
 }
 
 .rack-actions {
-  justify-content: flex-end;
+  justify-content: flex-start;
   align-items: end;
-}
-
-.rack-actions .action-button {
-  min-width: 0;
-  width: 100%;
 }
 
 .placement-note {
@@ -542,24 +653,6 @@
   display: grid;
   gap: 2px;
   padding: 10px;
-}
-
-.inventory-panel-card,
-.workshop-section-card,
-.base-rack-card,
-.base-inspector-card,
-.route-controls-card,
-.route-preview-card,
-.radio-board-card,
-.crew-assignment-card,
-.crew-roster-card,
-.leaderboard-summary-card,
-.leaderboard-board-card,
-.log-archive-card,
-.log-patch-card,
-.help-guide-card,
-.settings-card {
-  min-height: 100%;
 }
 
 .crew-card-footer,

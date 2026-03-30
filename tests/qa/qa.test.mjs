@@ -469,6 +469,10 @@ run("save migration fills v6 defaults, migrates tabs, and seeds shelter layout",
     assert.equal(state.ui.inspectedStructure, "shelter_core");
     assert.equal(state.ui.selectedStructureId, "shelter_core");
     assert.equal(state.ui.pendingPlacementStructureId, null);
+    assert.equal(state.ui.placementPreview, null);
+    assert.equal(state.ui.dragItemId, null);
+    assert.equal(state.ui.dragItemType, null);
+    assert.equal(state.ui.dragSource, null);
     assert.equal(state.ui.notableFind, null);
     assert.equal(state.ui.mobileMoreOpen, false);
     assert.equal(state.ui.mobileResourceDrawerOpen, false);
@@ -581,6 +585,9 @@ run("base placement mode rejects overlap and exposes valid placement actions", (
 
   assert.match(markup, /data-action="place-structure"/);
   assert.match(markup, /data-structure="campfire"/);
+  assert.match(markup, /base-board is-placement-armed/);
+  assert.match(markup, /base-preview-layer/);
+  assert.match(markup, /data-valid="true"/);
   assert.match(markup, /is-invalid/);
 });
 
@@ -1037,11 +1044,16 @@ run("survivor tab renders loadout, field stats, and compact inventory grids", ()
   assert.match(markup, /Loadout/);
   assert.match(markup, /Field stats/);
   assert.match(markup, /Tool Belt/);
+  assert.match(markup, /Gear Locker/);
+  assert.match(markup, /Field Supplies/);
   assert.match(markup, /Weapons/);
   assert.match(markup, /Tools/);
   assert.match(markup, /Rusty Knife/);
   assert.match(markup, /Backpack/);
   assert.match(markup, /Pry Bar/);
+  assert.match(markup, /data-slot="weapon"/);
+  assert.match(markup, /draggable="true"/);
+  assert.match(markup, /Unequip/);
   assert.match(markup, /data-tooltip=/);
 });
 

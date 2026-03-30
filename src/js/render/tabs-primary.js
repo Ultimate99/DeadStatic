@@ -8,6 +8,7 @@ import {
   getAvailableScavengeSources,
   getExpeditionPreview,
   getNightForecast,
+  getShelterUpkeep,
   getVisibleUpgrades,
   hasMaterials,
   hasRequiredTools,
@@ -137,6 +138,7 @@ function renderOpsBoard(state, derived) {
   const sources = getAvailableScavengeSources(state);
   const activeJob = getActiveWorkJob(state);
   const forecast = getNightForecast(state);
+  const upkeep = getShelterUpkeep(state);
   const mainActions = [];
 
   mainActions.push(actionButton({
@@ -144,7 +146,7 @@ function renderOpsBoard(state, derived) {
     label: "Search rubble",
     meta: "salvage + pressure",
     icon: "search",
-    variant: "primary",
+    variant: "compact primary",
   }));
 
   if (sources.some((source) => source.id === "tree_line")) {
@@ -173,8 +175,16 @@ function renderOpsBoard(state, derived) {
     meta: activeJob ? activeJob.kind : "ops",
     className: "ops-directive-card",
     body: `
-      <p class="directive-line">${directiveText(state)}</p>
-      <div class="action-row action-row-wrap">${mainActions.join("")}</div>
+      <div class="directive-compact">
+        <p class="directive-line">${directiveText(state)}</p>
+        <div class="chip-row compact-chip-row">${tagList([
+          activeJob ? `${activeJob.label} ${activeJob.hoursRemaining}h` : "queue open",
+          `meal ${upkeep.mealHoursLeft}h`,
+          `water ${upkeep.waterHoursLeft}h`,
+          forecast.siege ? "siege risk" : "watch line",
+        ])}</div>
+        <div class="action-row action-row-wrap ops-directive-actions">${mainActions.join("")}</div>
+      </div>
     `,
   });
 

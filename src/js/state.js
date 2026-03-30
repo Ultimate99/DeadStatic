@@ -7,7 +7,7 @@ import {
 } from "./data.js";
 import { seedShelterPlacedLayout } from "./shelter-layout.js";
 
-const CURRENT_VERSION = 11;
+const CURRENT_VERSION = 12;
 
 const LEGACY_TAB_MAP = {
   overview: "ops",
@@ -232,6 +232,10 @@ export function createInitialState() {
       inspectedStructure: "shelter_core",
       selectedStructureId: "shelter_core",
       pendingPlacementStructureId: null,
+      placementPreview: null,
+      dragItemId: null,
+      dragItemType: null,
+      dragSource: null,
       notableFind: null,
       mobileMoreOpen: false,
       mobileResourceDrawerOpen: false,
@@ -356,6 +360,10 @@ function normalizeState(rawState) {
       pendingPlacementStructureId: typeof state.ui?.pendingPlacementStructureId === "string"
         ? state.ui.pendingPlacementStructureId
         : null,
+      placementPreview: null,
+      dragItemId: null,
+      dragItemType: null,
+      dragSource: null,
       mobileShelterMode: state.ui?.activeTab === "shelter_map"
         ? "map"
         : (state.ui?.mobileShelterMode || fresh.ui.mobileShelterMode),

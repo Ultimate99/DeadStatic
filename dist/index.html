@@ -205,9 +205,15 @@ h4 {
 .mini-log,
 .full-log,
 .fact-grid,
-.inventory-card-grid,
-.action-row-wrap {
+.inventory-card-grid {
   display: grid;
+  gap: 8px;
+}
+
+.action-row-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
 }
 
@@ -316,7 +322,9 @@ h4 {
 .action-button:hover:not(:disabled),
 .rail-button:hover,
 .mobile-nav-button:hover,
-.compact-stepper:hover {
+.compact-stepper:hover,
+.utility-button:hover,
+.resource-pill:hover {
   border-color: var(--line-strong);
   transform: translateY(-1px);
 }
@@ -344,6 +352,11 @@ h4 {
   font-weight: 600;
 }
 
+.button-copy small {
+  font-size: 10px;
+  line-height: 1.2;
+}
+
 .ui-icon-svg {
   width: 100%;
   height: 100%;
@@ -353,6 +366,20 @@ h4 {
   display: block;
   color: rgba(236, 229, 214, 0.92);
   --sprite-accent: var(--accent);
+}
+
+.item-state-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 18px;
+  padding: 0 6px;
+  border: 1px solid rgba(208, 164, 107, 0.22);
+  border-radius: 999px;
+  color: var(--accent-amber);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .enemy-sprite {
@@ -519,14 +546,14 @@ h4 {
   position: relative;
   max-width: 1480px;
   margin: 0 auto;
-  padding: 14px 16px 24px;
+  padding: 12px 14px 22px;
 }
 
 .masthead {
   display: grid;
-  grid-template-columns: minmax(240px, 0.7fr) minmax(0, 1.3fr);
-  gap: 10px;
-  margin-bottom: 10px;
+  grid-template-columns: minmax(280px, 0.66fr) minmax(0, 1.34fr);
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .brand-block,
@@ -534,52 +561,93 @@ h4 {
 .hero-panel,
 .tabs-shell,
 .combat-banner {
-  padding: 12px 14px;
+  padding: 10px 12px;
 }
 
 .brand-block {
   display: flex;
   align-items: center;
-  min-height: var(--topbar-height);
+  min-height: 96px;
 }
 
 .brand-copy {
   display: grid;
-  gap: 4px;
+  gap: 3px;
+}
+
+.brand-copy h1 {
+  font-size: clamp(1.9rem, 3.3vw, 2.85rem);
+  line-height: 0.92;
 }
 
 .subtitle {
-  max-width: 56ch;
-  font-size: 12px;
+  max-width: 42ch;
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 .utility-block {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   align-content: start;
 }
 
+.utility-row-top {
+  align-items: center;
+}
+
+.utility-cluster,
 .utility-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
   justify-content: flex-end;
 }
 
+.utility-cluster {
+  min-width: 0;
+  margin-left: auto;
+}
+
+.utility-button {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(12, 15, 15, 0.96);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.utility-button.danger {
+  border-color: rgba(207, 114, 100, 0.26);
+}
+
 .resource-bar {
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 6px;
 }
 
 .resource-pill {
+  appearance: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 34px;
-  padding: 6px 8px;
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  border-radius: 11px;
+  background: rgba(12, 15, 15, 0.96);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
 }
 
 .resource-pill.is-compact {
-  min-height: 30px;
+  min-height: 28px;
+  padding: 0 8px;
 }
 
 .resource-pill-key {
@@ -587,6 +655,17 @@ h4 {
   align-items: center;
   gap: 6px;
   min-width: 0;
+}
+
+.resource-pill-key span:last-child {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.resource-pill strong {
+  font-size: 12px;
+  letter-spacing: 0.04em;
 }
 
 .workspace {
@@ -859,6 +938,10 @@ h4 {
     display: none;
   }
 
+  .utility-cluster {
+    gap: 6px;
+  }
+
   .hero-strip {
     gap: 0;
   }
@@ -949,10 +1032,25 @@ h4 {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
   gap: 10px;
+  align-items: start;
 }
 
 .directive-line {
   font-size: 13px;
+  line-height: 1.35;
+}
+
+.directive-compact {
+  display: grid;
+  gap: 8px;
+}
+
+.ops-directive-card .surface-body {
+  align-content: start;
+}
+
+.ops-directive-actions .action-button {
+  min-width: 0;
 }
 
 .ops-source-head,
@@ -1041,13 +1139,16 @@ h4 {
 }
 
 .survivor-screen {
-  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(300px, 0.9fr) minmax(240px, 0.72fr) minmax(0, 1.18fr);
   align-items: start;
 }
 
-.survivor-mannequin-card,
-.survivor-stats-card {
-  min-height: 100%;
+.survivor-left-column,
+.survivor-mid-column,
+.survivor-right-column {
+  display: grid;
+  gap: 10px;
+  align-content: start;
 }
 
 .survivor-mannequin {
@@ -1161,6 +1262,62 @@ h4 {
   gap: 2px;
 }
 
+.slot-card-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.equipment-slot-card.is-drop-slot {
+  transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+
+.equipment-slot-card.is-drop-slot.is-drag-over {
+  border-color: rgba(208, 164, 107, 0.34);
+  background: rgba(19, 22, 22, 0.96);
+  box-shadow: inset 0 0 0 1px rgba(208, 164, 107, 0.12);
+}
+
+body[data-drag-type="weapon"] .equipment-slot-card[data-slot="weapon"],
+body[data-drag-type="armor"] .equipment-slot-card[data-slot="armor"],
+body[data-drag-type="backpack"] .equipment-slot-card[data-slot="backpack"] {
+  border-color: rgba(208, 164, 107, 0.22);
+}
+
+.survivor-storage-card .surface-body,
+.inventory-stack,
+.inventory-section {
+  display: grid;
+  gap: 8px;
+}
+
+.inventory-section {
+  padding: 0;
+}
+
+.inventory-section-head {
+  padding: 0 2px;
+}
+
+.inventory-card-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.inventory-sprite-card {
+  align-content: start;
+}
+
+.inventory-sprite-card.is-draggable {
+  cursor: grab;
+}
+
+.inventory-sprite-card.is-equipped {
+  border-color: rgba(208, 164, 107, 0.22);
+}
+
+.inventory-sprite-card .action-button {
+  width: fit-content;
+}
+
 .base-screen {
   display: grid;
   gap: 10px;
@@ -1223,6 +1380,7 @@ h4 {
 
 .base-grid-frame,
 .base-grid-tiles,
+.base-preview-layer,
 .base-grid-fence,
 .base-grid-gate,
 .base-structure {
@@ -1231,6 +1389,8 @@ h4 {
 }
 
 .base-grid-frame {
+  z-index: 0;
+  pointer-events: none;
   border: 1px solid rgba(255, 255, 255, 0.03);
   border-radius: 14px;
 }
@@ -1240,6 +1400,12 @@ h4 {
   grid-template-columns: repeat(12, minmax(0, 1fr));
   grid-template-rows: repeat(8, minmax(0, 1fr));
   gap: 4px;
+  z-index: 4;
+}
+
+.base-preview-layer {
+  z-index: 3;
+  pointer-events: none;
 }
 
 .base-tile {
@@ -1257,6 +1423,7 @@ h4 {
 
 .base-tile.is-placement.is-invalid {
   cursor: not-allowed;
+  opacity: 0.72;
 }
 
 .base-tile.is-placement:hover {
@@ -1264,12 +1431,16 @@ h4 {
 }
 
 .base-grid-fence {
+  z-index: 1;
+  pointer-events: none;
   inset: 18px;
   border: 2px dashed rgba(208, 164, 107, 0.16);
   border-radius: 16px;
 }
 
 .base-grid-gate {
+  z-index: 5;
+  pointer-events: none;
   left: 50%;
   right: auto;
   bottom: 4px;
@@ -1290,6 +1461,7 @@ h4 {
 }
 
 .base-structure {
+  z-index: 2;
   display: grid;
   grid-template-columns: 1fr;
   align-items: end;
@@ -1317,6 +1489,33 @@ h4 {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 22%),
     rgba(15, 18, 18, 0.96);
+}
+
+.base-board.is-placement-armed .base-structure {
+  pointer-events: none;
+  opacity: 0.26;
+}
+
+.base-board.is-placement-armed .base-grid-tiles {
+  z-index: 6;
+}
+
+.base-placement-preview {
+  position: absolute;
+  left: calc((var(--x) - 1) * (100% / 12));
+  top: calc((var(--y) - 1) * (100% / 8));
+  width: calc(var(--w) * (100% / 12) - 4px);
+  height: calc(var(--h) * (100% / 8) - 4px);
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(208, 164, 107, 0.34);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(208, 164, 107, 0.1), rgba(208, 164, 107, 0.04));
+  box-shadow: inset 0 0 0 1px rgba(208, 164, 107, 0.12);
+}
+
+.base-placement-preview-sprite {
+  opacity: 0.92;
 }
 
 .structure-status {
@@ -1400,13 +1599,8 @@ h4 {
 }
 
 .rack-actions {
-  justify-content: flex-end;
+  justify-content: flex-start;
   align-items: end;
-}
-
-.rack-actions .action-button {
-  min-width: 0;
-  width: 100%;
 }
 
 .placement-note {
@@ -1429,24 +1623,6 @@ h4 {
   display: grid;
   gap: 2px;
   padding: 10px;
-}
-
-.inventory-panel-card,
-.workshop-section-card,
-.base-rack-card,
-.base-inspector-card,
-.route-controls-card,
-.route-preview-card,
-.radio-board-card,
-.crew-assignment-card,
-.crew-roster-card,
-.leaderboard-summary-card,
-.leaderboard-board-card,
-.log-archive-card,
-.log-patch-card,
-.help-guide-card,
-.settings-card {
-  min-height: 100%;
 }
 
 .crew-card-footer,
@@ -1687,15 +1863,17 @@ body[data-motion="reduced"] .compact-stepper {
         </div>
       </div>
       <div class="utility-block">
-        <div class="utility-row">
+        <div class="utility-row utility-row-top">
           <span id="day-clock" class="clock">Day 1 / 07:00</span>
-          <span id="autosave-status" class="save-status">autosave armed</span>
+          <div class="utility-cluster">
+            <span id="autosave-status" class="save-status">autosave armed</span>
+            <div class="utility-actions">
+              <button type="button" class="utility-button" data-action="save-game">Save</button>
+              <button type="button" class="utility-button danger" data-action="reset-game">Reset</button>
+            </div>
+          </div>
         </div>
         <div id="resource-bar" class="resource-bar"></div>
-        <div class="utility-row utility-row-end utility-actions">
-          <button type="button" data-action="save-game">Save</button>
-          <button type="button" data-action="reset-game" class="danger">Reset</button>
-        </div>
       </div>
     </header>
 
@@ -7202,6 +7380,22 @@ function equipItem(state, itemId) {
   return false;
 }
 
+function unequipSlot(state, slotId) {
+  if (!["weapon", "armor", "backpack"].includes(slotId)) {
+    return false;
+  }
+
+  const equippedId = state.equipped?.[slotId];
+  if (!equippedId) {
+    return false;
+  }
+
+  const item = ITEMS[equippedId];
+  state.equipped[slotId] = null;
+  addLog(state, `${slotId === "backpack" ? "Unpacked" : "Unequipped"}: ${item?.name || equippedId}.`, "build");
+  return true;
+}
+
 function useItem(state, itemId) {
   const item = ITEMS[itemId];
   if (!item || !hasItem(state, itemId) || item.type !== "consumable") {
@@ -8357,6 +8551,12 @@ function resourceDef(resourceId) {
   return RESOURCE_DEFS[resourceId] || { label: resourceId.replace(/_/g, " "), icon: resourceId };
 }
 
+function compactResourceLabel(resourceId, label) {
+  if (resourceId === "water") return "Water";
+  if (resourceId === "electronics") return "Elect";
+  return label;
+}
+
 function resourceLabel(resourceId) {
   return resourceDef(resourceId).label;
 }
@@ -8460,6 +8660,7 @@ function countMarkup(tab, state) {
 function resourcePillMarkup(state, resourceId, compact = false) {
   const def = resourceDef(resourceId);
   const value = state.resources?.[resourceId] || 0;
+  const displayLabel = compactResourceLabel(resourceId, def.label);
   const tooltip = {
     title: def.label,
     meta: "resource",
@@ -8469,7 +8670,7 @@ function resourcePillMarkup(state, resourceId, compact = false) {
     <button type="button" class="resource-pill ${compact ? "is-compact" : ""}" ${tooltipAttrs(tooltip)}>
       <span class="resource-pill-key">
         <span class="resource-icon">${iconMarkup(def.icon || "generic")}</span>
-        <span>${def.label}</span>
+        <span>${displayLabel}</span>
       </span>
       <strong>${value}</strong>
     </button>
@@ -8769,6 +8970,9 @@ function renderInventoryItemCard(itemId, amount, options = {}) {
   if (!item) {
     return "";
   }
+  const isEquippable = item.type === "weapon" || item.type === "armor" || item.type === "backpack";
+  const isDraggable = Boolean(options.enableDrag && isEquippable);
+  const isEquipped = Boolean(options.equipped);
   const tooltip = {
     title: item.name,
     meta: item.type,
@@ -8776,14 +8980,15 @@ function renderInventoryItemCard(itemId, amount, options = {}) {
   };
   let actionMarkup = "";
   if (options.showAction !== false) {
-    if (item.type === "weapon" || item.type === "armor" || item.type === "backpack") {
+    if (isEquippable) {
       actionMarkup = actionButton({
         action: "equip-item",
-        label: "Equip",
+        label: isEquipped ? "Equipped" : "Equip",
         icon: "gear",
         variant: "compact",
         data: { item: itemId },
         tooltip,
+        disabled: isEquipped,
       });
     } else if (item.type === "consumable") {
       actionMarkup = actionButton({
@@ -8798,7 +9003,11 @@ function renderInventoryItemCard(itemId, amount, options = {}) {
   }
 
   return `
-    <div class="inventory-sprite-card"${tooltipAttrs(tooltip)}>
+    <div
+      class="inventory-sprite-card ${isDraggable ? "is-draggable" : ""} ${isEquipped ? "is-equipped" : ""}"
+      ${isDraggable ? `draggable="true" data-drag-item="${itemId}" data-drag-type="${item.type}" data-drag-source="inventory"` : ""}
+      ${tooltipAttrs(tooltip)}
+    >
       <div class="inventory-sprite-top">
         <span class="inventory-sprite-wrap">${renderItemSprite(itemId, item, options.large ? 40 : 24)}</span>
         <span class="inventory-amount">${amount}</span>
@@ -8807,6 +9016,7 @@ function renderInventoryItemCard(itemId, amount, options = {}) {
         <strong>${item.name}</strong>
         <small>${itemPrimaryLine(item, amount) || item.type}</small>
       </div>
+      ${isEquipped ? `<span class="item-state-badge">equipped</span>` : ""}
       ${actionMarkup}
     </div>
   `;
@@ -9475,13 +9685,31 @@ function renderBoardTiles(state, builtIds, pendingId) {
           type="button"
           class="base-tile ${pendingId ? "is-placement" : ""} ${valid ? "is-valid" : "is-invalid"}"
           ${pendingId
-            ? `data-action="place-structure" data-structure="${pendingId}" data-x="${col}" data-y="${row}" aria-label="Place ${pendingId} at ${col}, ${row}"`
+            ? `data-action="place-structure" data-structure="${pendingId}" data-x="${col}" data-y="${row}" data-valid="${valid ? "true" : "false"}" aria-label="Place ${pendingId} at ${col}, ${row}"`
             : "disabled"}
         ></button>
       `);
     }
   }
   return `<div class="base-grid-tiles">${tiles.join("")}</div>`;
+}
+
+function renderPlacementPreview(state, structure) {
+  const preview = state.ui.placementPreview;
+  if (!structure || !preview || preview.structureId !== structure.id) {
+    return `<div class="base-preview-layer"></div>`;
+  }
+
+  return `
+    <div class="base-preview-layer">
+      <div
+        class="base-placement-preview"
+        style="--x:${preview.x}; --y:${preview.y}; --w:${structure.footprint[0]}; --h:${structure.footprint[1]};"
+      >
+        <span class="base-placement-preview-sprite">${renderStructureSprite(structure.spriteId, 34)}</span>
+      </div>
+    </div>
+  `;
 }
 
 function renderFixedStructure(structure, state) {
@@ -9533,10 +9761,11 @@ function renderBaseBoard(state) {
     ? `${pendingStructure.label} ${pendingStructure.footprint.join("x")} armed`
     : outpostStage(structures.length + 1);
   return `
-    <div class="base-board"${tooltipAttrs({ title: "Shelter board", meta: placementMeta, body: pendingStructure ? `Move ${pendingStructure.label}. Click a highlighted anchor tile to place the full ${pendingStructure.footprint.join("x")} footprint.` : "Click a built module to inspect it. Arm placement from the rack or inspector, then click a valid tile." })}>
+    <div class="base-board ${pendingStructure ? "is-placement-armed" : ""}"${tooltipAttrs({ title: "Shelter board", meta: placementMeta, body: pendingStructure ? `Move ${pendingStructure.label}. Click a highlighted anchor tile to place the full ${pendingStructure.footprint.join("x")} footprint.` : "Click a built module to inspect it. Arm placement from the rack or inspector, then click a valid tile." })}>
       <div class="base-grid-frame"></div>
       <div class="base-grid-fence"></div>
       ${renderBoardTiles(state, builtIds, pendingId)}
+      ${renderPlacementPreview(state, pendingStructure)}
       ${SHELTER_FIXED_STRUCTURES.filter((structure) => structure.id !== "perimeter_fence" || state.upgrades.includes("basic_barricade")).map((structure) => renderFixedStructure(structure, state)).join("")}
       ${structures
         .filter((structure) => structure.id !== pendingId)
@@ -9890,6 +10119,7 @@ function renderOpsBoard(state, derived) {
   const sources = getAvailableScavengeSources(state);
   const activeJob = getActiveWorkJob(state);
   const forecast = getNightForecast(state);
+  const upkeep = getShelterUpkeep(state);
   const mainActions = [];
 
   mainActions.push(actionButton({
@@ -9897,7 +10127,7 @@ function renderOpsBoard(state, derived) {
     label: "Search rubble",
     meta: "salvage + pressure",
     icon: "search",
-    variant: "primary",
+    variant: "compact primary",
   }));
 
   if (sources.some((source) => source.id === "tree_line")) {
@@ -9926,8 +10156,16 @@ function renderOpsBoard(state, derived) {
     meta: activeJob ? activeJob.kind : "ops",
     className: "ops-directive-card",
     body: `
-      <p class="directive-line">${directiveText(state)}</p>
-      <div class="action-row action-row-wrap">${mainActions.join("")}</div>
+      <div class="directive-compact">
+        <p class="directive-line">${directiveText(state)}</p>
+        <div class="chip-row compact-chip-row">${tagList([
+          activeJob ? `${activeJob.label} ${activeJob.hoursRemaining}h` : "queue open",
+          `meal ${upkeep.mealHoursLeft}h`,
+          `water ${upkeep.waterHoursLeft}h`,
+          forecast.siege ? "siege risk" : "watch line",
+        ])}</div>
+        <div class="action-row action-row-wrap ops-directive-actions">${mainActions.join("")}</div>
+      </div>
     `,
   });
 
@@ -10759,14 +10997,18 @@ function groupedInventory(state) {
   };
 }
 
-function slotCard(label, slotId, itemId, fallbackLabel) {
+function slotCard(label, slotId, itemId, fallbackLabel, { droppable = false } = {}) {
   const item = itemId ? ITEMS[itemId] : null;
   const sprite = item ? renderItemSprite(itemId, item, 42) : `<span class="slot-fallback">${fallbackLabel}</span>`;
   const tooltip = item
     ? { title: item.name, meta: item.type, body: item.description || fallbackLabel }
     : { title: label, meta: "baseline", body: fallbackLabel };
   return `
-    <div class="equipment-slot-card"${tooltipAttrs(tooltip)}>
+    <div
+      class="equipment-slot-card ${droppable ? "is-drop-slot" : ""} ${item ? "is-occupied" : "is-empty"}"
+      ${droppable ? `data-slot="${slotId}" data-slot-filled="${item ? "true" : "false"}"` : ""}
+      ${tooltipAttrs(tooltip)}
+    >
       <div class="equipment-slot-shell">
         ${renderSlotFrame(slotId, Boolean(item))}
         <div class="equipment-slot-sprite">${sprite}</div>
@@ -10775,11 +11017,42 @@ function slotCard(label, slotId, itemId, fallbackLabel) {
         <span>${label}</span>
         <strong>${item ? item.name : fallbackLabel}</strong>
       </div>
+      ${item && droppable ? `
+        <div class="slot-card-actions">
+          ${actionButton({
+            action: "unequip-slot",
+            label: "Unequip",
+            icon: "retreat",
+            variant: "compact secondary",
+            data: { slot: slotId },
+            tooltip: {
+              title: `Unequip ${item.name}`,
+              meta: label,
+              body: `${item.name} will stay in your pack and the slot will return to its baseline state.`,
+            },
+          })}
+        </div>
+      ` : ""}
     </div>
   `;
 }
 
-function mannequinMarkup(state) {
+function infoSlotCard(label, slotId, amount, spriteMarkup, fallbackLabel, tooltip) {
+  return `
+    <div class="equipment-slot-card"${tooltipAttrs(tooltip)}>
+      <div class="equipment-slot-shell">
+        ${renderSlotFrame(slotId, amount > 0)}
+        <div class="equipment-slot-sprite">${spriteMarkup}</div>
+      </div>
+      <div class="equipment-slot-copy">
+        <span>${label}</span>
+        <strong>${amount > 0 ? `${amount} packed` : fallbackLabel}</strong>
+      </div>
+    </div>
+  `;
+}
+
+function mannequinMarkup(state, groups) {
   return `
     <div class="survivor-mannequin">
       <div class="mannequin-figure">
@@ -10791,42 +11064,48 @@ function mannequinMarkup(state) {
         <span class="mannequin-leg mannequin-leg-right"></span>
       </div>
       <div class="mannequin-slots">
-        ${slotCard("Weapon", "weapon", state.equipped.weapon, "Bare Hands")}
-        ${slotCard("Armor", "armor", state.equipped.armor, "Street Clothes")}
-        ${slotCard("Backpack", "backpack", state.equipped.backpack, "No Pack")}
-        <div class="equipment-slot-card">
-          <div class="equipment-slot-shell">
-            ${renderSlotFrame("tool_belt", groupedInventory(state).tools.length > 0)}
-            <div class="equipment-slot-sprite">${renderStructureSprite("bench", 42)}</div>
-          </div>
-          <div class="equipment-slot-copy">
-            <span>Tool Belt</span>
-            <strong>${groupedInventory(state).tools.length || 0} packed</strong>
-          </div>
-        </div>
-        <div class="equipment-slot-card">
-          <div class="equipment-slot-shell">
-            ${renderSlotFrame("field_care", groupedInventory(state).consumables.length > 0)}
-            <div class="equipment-slot-sprite">${renderItemSprite("first_aid_rag", ITEMS.first_aid_rag, 42)}</div>
-          </div>
-          <div class="equipment-slot-copy">
-            <span>Field Aid</span>
-            <strong>${groupedInventory(state).consumables.length || 0} ready</strong>
-          </div>
-        </div>
+        ${slotCard("Weapon", "weapon", state.equipped.weapon, "Bare Hands", { droppable: true })}
+        ${slotCard("Armor", "armor", state.equipped.armor, "Street Clothes", { droppable: true })}
+        ${slotCard("Backpack", "backpack", state.equipped.backpack, "No Pack", { droppable: true })}
+        ${infoSlotCard("Tool Belt", "tool_belt", groups.tools.length, renderStructureSprite("bench", 42), "No tools", {
+          title: "Tool Belt",
+          meta: "kit",
+          body: `${groups.tools.length || 0} tools packed for field use.`,
+        })}
+        ${infoSlotCard("Field Aid", "field_care", groups.consumables.length, renderItemSprite("first_aid_rag", ITEMS.first_aid_rag, 42), "No aid ready", {
+          title: "Field Aid",
+          meta: "supplies",
+          body: `${groups.consumables.length || 0} consumables ready for treatment or emergency use.`,
+        })}
       </div>
     </div>
   `;
 }
 
-function inventoryPanel(title, entries, meta) {
+function inventorySection(title, entries, state, isMobile = false) {
+  return `
+    <div class="inventory-section">
+      <div class="surface-head inventory-section-head">
+        <h4>${title}</h4>
+        <span class="tag">${entries.length}</span>
+      </div>
+      ${entries.length
+        ? `<div class="inventory-card-grid">${entries.map(([itemId, amount]) => renderInventoryItemCard(itemId, amount, {
+          showAction: true,
+          enableDrag: !isMobile,
+          equipped: state.equipped.weapon === itemId || state.equipped.armor === itemId || state.equipped.backpack === itemId,
+        })).join("")}</div>`
+        : `<p class="empty-state">No ${title.toLowerCase()} packed.</p>`}
+    </div>
+  `;
+}
+
+function storagePanel(title, meta, sections, className) {
   return surfaceCard({
     title,
     meta,
-    className: "inventory-panel-card",
-    body: entries.length
-      ? `<div class="inventory-card-grid">${entries.map(([itemId, amount]) => renderInventoryItemCard(itemId, amount, { showAction: true })).join("")}</div>`
-      : `<p class="empty-state">No ${title.toLowerCase()} packed.</p>`,
+    className,
+    body: `<div class="inventory-stack">${sections.join("")}</div>`,
   });
 }
 
@@ -10853,18 +11132,35 @@ function renderSurvivorTab(state, derived, isMobile = false) {
     title: "Loadout",
     meta: state.player.username || "survivor",
     className: "survivor-mannequin-card",
-    body: mannequinMarkup(state),
+    body: mannequinMarkup(state, groups),
   });
 
+  const gearLocker = storagePanel(
+    "Gear Locker",
+    `${groups.weapons.length + groups.armor.length + groups.backpacks.length}`,
+    [
+      inventorySection("Weapons", groups.weapons, state, isMobile),
+      inventorySection("Armor", groups.armor, state, isMobile),
+      inventorySection("Backpacks", groups.backpacks, state, isMobile),
+    ],
+    "inventory-panel-card survivor-storage-card",
+  );
+
+  const suppliesLocker = storagePanel(
+    "Field Supplies",
+    `${groups.tools.length + groups.consumables.length + groups.components.length}`,
+    [
+      inventorySection("Tools", groups.tools, state, isMobile),
+      inventorySection("Consumables", groups.consumables, state, isMobile),
+      inventorySection("Components", groups.components, state, isMobile),
+    ],
+    "inventory-panel-card survivor-storage-card",
+  );
+
   const layout = `
-    ${mannequinCard}
-    ${statsCard}
-    ${inventoryPanel("Weapons", groups.weapons, `${groups.weapons.length}`)}
-    ${inventoryPanel("Armor", groups.armor, `${groups.armor.length}`)}
-    ${inventoryPanel("Backpacks", groups.backpacks, `${groups.backpacks.length}`)}
-    ${inventoryPanel("Tools", groups.tools, `${groups.tools.length}`)}
-    ${inventoryPanel("Consumables", groups.consumables, `${groups.consumables.length}`)}
-    ${inventoryPanel("Components", groups.components, `${groups.components.length}`)}
+    <div class="survivor-left-column">${mannequinCard}</div>
+    <div class="survivor-mid-column">${statsCard}</div>
+    <div class="survivor-right-column">${gearLocker}${suppliesLocker}</div>
   `;
 
   return isMobile
@@ -11252,7 +11548,7 @@ function renderGame(state) {
 
 
 // state.js
-const CURRENT_VERSION = 11;
+const CURRENT_VERSION = 12;
 
 const LEGACY_TAB_MAP = {
   overview: "ops",
@@ -11477,6 +11773,10 @@ function createInitialState() {
       inspectedStructure: "shelter_core",
       selectedStructureId: "shelter_core",
       pendingPlacementStructureId: null,
+      placementPreview: null,
+      dragItemId: null,
+      dragItemType: null,
+      dragSource: null,
       notableFind: null,
       mobileMoreOpen: false,
       mobileResourceDrawerOpen: false,
@@ -11601,6 +11901,10 @@ function normalizeState(rawState) {
       pendingPlacementStructureId: typeof state.ui?.pendingPlacementStructureId === "string"
         ? state.ui.pendingPlacementStructureId
         : null,
+      placementPreview: null,
+      dragItemId: null,
+      dragItemType: null,
+      dragSource: null,
       mobileShelterMode: state.ui?.activeTab === "shelter_map"
         ? "map"
         : (state.ui?.mobileShelterMode || fresh.ui.mobileShelterMode),

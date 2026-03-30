@@ -2571,6 +2571,22 @@ export function equipItem(state, itemId) {
   return false;
 }
 
+export function unequipSlot(state, slotId) {
+  if (!["weapon", "armor", "backpack"].includes(slotId)) {
+    return false;
+  }
+
+  const equippedId = state.equipped?.[slotId];
+  if (!equippedId) {
+    return false;
+  }
+
+  const item = ITEMS[equippedId];
+  state.equipped[slotId] = null;
+  addLog(state, `${slotId === "backpack" ? "Unpacked" : "Unequipped"}: ${item?.name || equippedId}.`, "build");
+  return true;
+}
+
 export function useItem(state, itemId) {
   const item = ITEMS[itemId];
   if (!item || !hasItem(state, itemId) || item.type !== "consumable") {

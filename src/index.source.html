@@ -18,15 +18,17 @@
         </div>
       </div>
       <div class="utility-block">
-        <div class="utility-row">
+        <div class="utility-row utility-row-top">
           <span id="day-clock" class="clock">Day 1 / 07:00</span>
-          <span id="autosave-status" class="save-status">autosave armed</span>
+          <div class="utility-cluster">
+            <span id="autosave-status" class="save-status">autosave armed</span>
+            <div class="utility-actions">
+              <button type="button" class="utility-button" data-action="save-game">Save</button>
+              <button type="button" class="utility-button danger" data-action="reset-game">Reset</button>
+            </div>
+          </div>
         </div>
         <div id="resource-bar" class="resource-bar"></div>
-        <div class="utility-row utility-row-end utility-actions">
-          <button type="button" data-action="save-game">Save</button>
-          <button type="button" data-action="reset-game" class="danger">Reset</button>
-        </div>
       </div>
     </header>
 

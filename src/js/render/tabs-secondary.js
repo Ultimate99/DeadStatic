@@ -71,14 +71,18 @@ function groupedInventory(state) {
   };
 }
 
-function slotCard(label, slotId, itemId, fallbackLabel) {
+function slotCard(label, slotId, itemId, fallbackLabel, { droppable = false } = {}) {
   const item = itemId ? ITEMS[itemId] : null;
   const sprite = item ? renderItemSprite(itemId, item, 42) : `<span class="slot-fallback">${fallbackLabel}</span>`;
   const tooltip = item
     ? { title: item.name, meta: item.type, body: item.description || fallbackLabel }
     : { title: label, meta: "baseline", body: fallbackLabel };
   return `
-    <div class="equipment-slot-card"${tooltipAttrs(tooltip)}>
+    <div
+      class="equipment-slot-card ${droppable ? "is-drop-slot" : ""} ${item ? "is-occupied" : "is-empty"}"
+      ${droppable ? `data-slot="${slotId}" data-slot-filled="${item ? "true" : "false"}"` : ""}
+      ${tooltipAttrs(tooltip)}
+    >
       <div class="equipment-slot-shell">
         ${renderSlotFrame(slotId, Boolean(item))}
         <div class="equipment-slot-sprite">${sprite}</div>
@@ -87,11 +91,42 @@ function slotCard(label, slotId, itemId, fallbackLabel) {
         <span>${label}</span>
         <strong>${item ? item.name : fallbackLabel}</strong>
       </div>
+      ${item && droppable ? `
+        <div class="slot-card-actions">
+          ${actionButton({
+            action: "unequip-slot",
+            label: "Unequip",
+            icon: "retreat",
+            variant: "compact secondary",
+            data: { slot: slotId },
+            tooltip: {
+              title: `Unequip ${item.name}`,
+              meta: label,
+              body: `${item.name} will stay in your pack and the slot will return to its baseline state.`,
+            },
+          })}
+        </div>
+      ` : ""}
     </div>
   `;
 }
 
-function mannequinMarkup(state) {
+function infoSlotCard(label, slotId, amount, spriteMarkup, fallbackLabel, tooltip) {
+  return `
+    <div class="equipment-slot-card"${tooltipAttrs(tooltip)}>
+      <div class="equipment-slot-shell">
+        ${renderSlotFrame(slotId, amount > 0)}
+        <div class="equipment-slot-sprite">${spriteMarkup}</div>
+      </div>
+      <div class="equipment-slot-copy">
+        <span>${label}</span>
+        <strong>${amount > 0 ? `${amount} packed` : fallbackLabel}</strong>
+      </div>
+    </div>
+  `;
+}
+
+function mannequinMarkup(state, groups) {
   return `
     <div class="survivor-mannequin">
       <div class="mannequin-figure">
@@ -103,42 +138,48 @@ function mannequinMarkup(state) {
         <span class="mannequin-leg mannequin-leg-right"></span>
       </div>
       <div class="mannequin-slots">
-        ${slotCard("Weapon", "weapon", state.equipped.weapon, "Bare Hands")}
-        ${slotCard("Armor", "armor", state.equipped.armor, "Street Clothes")}
-        ${slotCard("Backpack", "backpack", state.equipped.backpack, "No Pack")}
-        <div class="equipment-slot-card">
-          <div class="equipment-slot-shell">
-            ${renderSlotFrame("tool_belt", groupedInventory(state).tools.length > 0)}
-            <div class="equipment-slot-sprite">${renderStructureSprite("bench", 42)}</div>
-          </div>
-          <div class="equipment-slot-copy">
-            <span>Tool Belt</span>
-            <strong>${groupedInventory(state).tools.length || 0} packed</strong>
-          </div>
-        </div>
-        <div class="equipment-slot-card">
-          <div class="equipment-slot-shell">
-            ${renderSlotFrame("field_care", groupedInventory(state).consumables.length > 0)}
-            <div class="equipment-slot-sprite">${renderItemSprite("first_aid_rag", ITEMS.first_aid_rag, 42)}</div>
-          </div>
-          <div class="equipment-slot-copy">
-            <span>Field Aid</span>
-            <strong>${groupedInventory(state).consumables.length || 0} ready</strong>
-          </div>
-        </div>
+        ${slotCard("Weapon", "weapon", state.equipped.weapon, "Bare Hands", { droppable: true })}
+        ${slotCard("Armor", "armor", state.equipped.armor, "Street Clothes", { droppable: true })}
+        ${slotCard("Backpack", "backpack", state.equipped.backpack, "No Pack", { droppable: true })}
+        ${infoSlotCard("Tool Belt", "tool_belt", groups.tools.length, renderStructureSprite("bench", 42), "No tools", {
+          title: "Tool Belt",
+          meta: "kit",
+          body: `${groups.tools.length || 0} tools packed for field use.`,
+        })}
+        ${infoSlotCard("Field Aid", "field_care", groups.consumables.length, renderItemSprite("first_aid_rag", ITEMS.first_aid_rag, 42), "No aid ready", {
+          title: "Field Aid",
+          meta: "supplies",
+          body: `${groups.consumables.length || 0} consumables ready for treatment or emergency use.`,
+        })}
       </div>
     </div>
   `;
 }
 
-function inventoryPanel(title, entries, meta) {
+function inventorySection(title, entries, state, isMobile = false) {
+  return `
+    <div class="inventory-section">
+      <div class="surface-head inventory-section-head">
+        <h4>${title}</h4>
+        <span class="tag">${entries.length}</span>
+      </div>
+      ${entries.length
+        ? `<div class="inventory-card-grid">${entries.map(([itemId, amount]) => renderInventoryItemCard(itemId, amount, {
+          showAction: true,
+          enableDrag: !isMobile,
+          equipped: state.equipped.weapon === itemId || state.equipped.armor === itemId || state.equipped.backpack === itemId,
+        })).join("")}</div>`
+        : `<p class="empty-state">No ${title.toLowerCase()} packed.</p>`}
+    </div>
+  `;
+}
+
+function storagePanel(title, meta, sections, className) {
   return surfaceCard({
     title,
     meta,
-    className: "inventory-panel-card",
-    body: entries.length
-      ? `<div class="inventory-card-grid">${entries.map(([itemId, amount]) => renderInventoryItemCard(itemId, amount, { showAction: true })).join("")}</div>`
-      : `<p class="empty-state">No ${title.toLowerCase()} packed.</p>`,
+    className,
+    body: `<div class="inventory-stack">${sections.join("")}</div>`,
   });
 }
 
@@ -165,18 +206,35 @@ export function renderSurvivorTab(state, derived, isMobile = false) {
     title: "Loadout",
     meta: state.player.username || "survivor",
     className: "survivor-mannequin-card",
-    body: mannequinMarkup(state),
+    body: mannequinMarkup(state, groups),
   });
 
+  const gearLocker = storagePanel(
+    "Gear Locker",
+    `${groups.weapons.length + groups.armor.length + groups.backpacks.length}`,
+    [
+      inventorySection("Weapons", groups.weapons, state, isMobile),
+      inventorySection("Armor", groups.armor, state, isMobile),
+      inventorySection("Backpacks", groups.backpacks, state, isMobile),
+    ],
+    "inventory-panel-card survivor-storage-card",
+  );
+
+  const suppliesLocker = storagePanel(
+    "Field Supplies",
+    `${groups.tools.length + groups.consumables.length + groups.components.length}`,
+    [
+      inventorySection("Tools", groups.tools, state, isMobile),
+      inventorySection("Consumables", groups.consumables, state, isMobile),
+      inventorySection("Components", groups.components, state, isMobile),
+    ],
+    "inventory-panel-card survivor-storage-card",
+  );
+
   const layout = `
-    ${mannequinCard}
-    ${statsCard}
-    ${inventoryPanel("Weapons", groups.weapons, `${groups.weapons.length}`)}
-    ${inventoryPanel("Armor", groups.armor, `${groups.armor.length}`)}
-    ${inventoryPanel("Backpacks", groups.backpacks, `${groups.backpacks.length}`)}
-    ${inventoryPanel("Tools", groups.tools, `${groups.tools.length}`)}
-    ${inventoryPanel("Consumables", groups.consumables, `${groups.consumables.length}`)}
-    ${inventoryPanel("Components", groups.components, `${groups.components.length}`)}
+    <div class="survivor-left-column">${mannequinCard}</div>
+    <div class="survivor-mid-column">${statsCard}</div>
+    <div class="survivor-right-column">${gearLocker}${suppliesLocker}</div>
   `;
 
   return isMobile

@@ -88,13 +88,31 @@ function renderBoardTiles(state, builtIds, pendingId) {
           type="button"
           class="base-tile ${pendingId ? "is-placement" : ""} ${valid ? "is-valid" : "is-invalid"}"
           ${pendingId
-            ? `data-action="place-structure" data-structure="${pendingId}" data-x="${col}" data-y="${row}" aria-label="Place ${pendingId} at ${col}, ${row}"`
+            ? `data-action="place-structure" data-structure="${pendingId}" data-x="${col}" data-y="${row}" data-valid="${valid ? "true" : "false"}" aria-label="Place ${pendingId} at ${col}, ${row}"`
             : "disabled"}
         ></button>
       `);
     }
   }
   return `<div class="base-grid-tiles">${tiles.join("")}</div>`;
+}
+
+function renderPlacementPreview(state, structure) {
+  const preview = state.ui.placementPreview;
+  if (!structure || !preview || preview.structureId !== structure.id) {
+    return `<div class="base-preview-layer"></div>`;
+  }
+
+  return `
+    <div class="base-preview-layer">
+      <div
+        class="base-placement-preview"
+        style="--x:${preview.x}; --y:${preview.y}; --w:${structure.footprint[0]}; --h:${structure.footprint[1]};"
+      >
+        <span class="base-placement-preview-sprite">${renderStructureSprite(structure.spriteId, 34)}</span>
+      </div>
+    </div>
+  `;
 }
 
 function renderFixedStructure(structure, state) {
@@ -146,10 +164,11 @@ function renderBaseBoard(state) {
     ? `${pendingStructure.label} ${pendingStructure.footprint.join("x")} armed`
     : outpostStage(structures.length + 1);
   return `
-    <div class="base-board"${tooltipAttrs({ title: "Shelter board", meta: placementMeta, body: pendingStructure ? `Move ${pendingStructure.label}. Click a highlighted anchor tile to place the full ${pendingStructure.footprint.join("x")} footprint.` : "Click a built module to inspect it. Arm placement from the rack or inspector, then click a valid tile." })}>
+    <div class="base-board ${pendingStructure ? "is-placement-armed" : ""}"${tooltipAttrs({ title: "Shelter board", meta: placementMeta, body: pendingStructure ? `Move ${pendingStructure.label}. Click a highlighted anchor tile to place the full ${pendingStructure.footprint.join("x")} footprint.` : "Click a built module to inspect it. Arm placement from the rack or inspector, then click a valid tile." })}>
       <div class="base-grid-frame"></div>
       <div class="base-grid-fence"></div>
       ${renderBoardTiles(state, builtIds, pendingId)}
+      ${renderPlacementPreview(state, pendingStructure)}
       ${SHELTER_FIXED_STRUCTURES.filter((structure) => structure.id !== "perimeter_fence" || state.upgrades.includes("basic_barricade")).map((structure) => renderFixedStructure(structure, state)).join("")}
       ${structures
         .filter((structure) => structure.id !== pendingId)

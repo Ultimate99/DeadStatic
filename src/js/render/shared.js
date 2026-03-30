@@ -140,6 +140,12 @@ function resourceDef(resourceId) {
   return RESOURCE_DEFS[resourceId] || { label: resourceId.replace(/_/g, " "), icon: resourceId };
 }
 
+function compactResourceLabel(resourceId, label) {
+  if (resourceId === "water") return "Water";
+  if (resourceId === "electronics") return "Elect";
+  return label;
+}
+
 export function resourceLabel(resourceId) {
   return resourceDef(resourceId).label;
 }
@@ -243,6 +249,7 @@ function countMarkup(tab, state) {
 function resourcePillMarkup(state, resourceId, compact = false) {
   const def = resourceDef(resourceId);
   const value = state.resources?.[resourceId] || 0;
+  const displayLabel = compactResourceLabel(resourceId, def.label);
   const tooltip = {
     title: def.label,
     meta: "resource",
@@ -252,7 +259,7 @@ function resourcePillMarkup(state, resourceId, compact = false) {
     <button type="button" class="resource-pill ${compact ? "is-compact" : ""}" ${tooltipAttrs(tooltip)}>
       <span class="resource-pill-key">
         <span class="resource-icon">${iconMarkup(def.icon || "generic")}</span>
-        <span>${def.label}</span>
+        <span>${displayLabel}</span>
       </span>
       <strong>${value}</strong>
     </button>
@@ -552,6 +559,9 @@ export function renderInventoryItemCard(itemId, amount, options = {}) {
   if (!item) {
     return "";
   }
+  const isEquippable = item.type === "weapon" || item.type === "armor" || item.type === "backpack";
+  const isDraggable = Boolean(options.enableDrag && isEquippable);
+  const isEquipped = Boolean(options.equipped);
   const tooltip = {
     title: item.name,
     meta: item.type,
@@ -559,14 +569,15 @@ export function renderInventoryItemCard(itemId, amount, options = {}) {
   };
   let actionMarkup = "";
   if (options.showAction !== false) {
-    if (item.type === "weapon" || item.type === "armor" || item.type === "backpack") {
+    if (isEquippable) {
       actionMarkup = actionButton({
         action: "equip-item",
-        label: "Equip",
+        label: isEquipped ? "Equipped" : "Equip",
         icon: "gear",
         variant: "compact",
         data: { item: itemId },
         tooltip,
+        disabled: isEquipped,
       });
     } else if (item.type === "consumable") {
       actionMarkup = actionButton({
@@ -581,7 +592,11 @@ export function renderInventoryItemCard(itemId, amount, options = {}) {
   }
 
   return `
-    <div class="inventory-sprite-card"${tooltipAttrs(tooltip)}>
+    <div
+      class="inventory-sprite-card ${isDraggable ? "is-draggable" : ""} ${isEquipped ? "is-equipped" : ""}"
+      ${isDraggable ? `draggable="true" data-drag-item="${itemId}" data-drag-type="${item.type}" data-drag-source="inventory"` : ""}
+      ${tooltipAttrs(tooltip)}
+    >
       <div class="inventory-sprite-top">
         <span class="inventory-sprite-wrap">${renderItemSprite(itemId, item, options.large ? 40 : 24)}</span>
         <span class="inventory-amount">${amount}</span>
@@ -590,6 +605,7 @@ export function renderInventoryItemCard(itemId, amount, options = {}) {
         <strong>${item.name}</strong>
         <small>${itemPrimaryLine(item, amount) || item.type}</small>
       </div>
+      ${isEquipped ? `<span class="item-state-badge">equipped</span>` : ""}
       ${actionMarkup}
     </div>
   `;

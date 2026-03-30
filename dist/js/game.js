@@ -5451,6 +5451,22 @@ function equipItem(state, itemId) {
   return false;
 }
 
+function unequipSlot(state, slotId) {
+  if (!["weapon", "armor", "backpack"].includes(slotId)) {
+    return false;
+  }
+
+  const equippedId = state.equipped?.[slotId];
+  if (!equippedId) {
+    return false;
+  }
+
+  const item = ITEMS[equippedId];
+  state.equipped[slotId] = null;
+  addLog(state, `${slotId === "backpack" ? "Unpacked" : "Unequipped"}: ${item?.name || equippedId}.`, "build");
+  return true;
+}
+
 function useItem(state, itemId) {
   const item = ITEMS[itemId];
   if (!item || !hasItem(state, itemId) || item.type !== "consumable") {
@@ -6606,6 +6622,12 @@ function resourceDef(resourceId) {
   return RESOURCE_DEFS[resourceId] || { label: resourceId.replace(/_/g, " "), icon: resourceId };
 }
 
+function compactResourceLabel(resourceId, label) {
+  if (resourceId === "water") return "Water";
+  if (resourceId === "electronics") return "Elect";
+  return label;
+}
+
 function resourceLabel(resourceId) {
   return resourceDef(resourceId).label;
 }
@@ -6709,6 +6731,7 @@ function countMarkup(tab, state) {
 function resourcePillMarkup(state, resourceId, compact = false) {
   const def = resourceDef(resourceId);
   const value = state.resources?.[resourceId] || 0;
+  const displayLabel = compactResourceLabel(resourceId, def.label);
   const tooltip = {
     title: def.label,
     meta: "resource",
@@ -6718,7 +6741,7 @@ function resourcePillMarkup(state, resourceId, compact = false) {
     <button type="button" class="resource-pill ${compact ? "is-compact" : ""}" ${tooltipAttrs(tooltip)}>
       <span class="resource-pill-key">
         <span class="resource-icon">${iconMarkup(def.icon || "generic")}</span>
-        <span>${def.label}</span>
+        <span>${displayLabel}</span>
       </span>
       <strong>${value}</strong>
     </button>
@@ -7018,6 +7041,9 @@ function renderInventoryItemCard(itemId, amount, options = {}) {
   if (!item) {
     return "";
   }
+  const isEquippable = item.type === "weapon" || item.type === "armor" || item.type === "backpack";
+  const isDraggable = Boolean(options.enableDrag && isEquippable);
+  const isEquipped = Boolean(options.equipped);
   const tooltip = {
     title: item.name,
     meta: item.type,
@@ -7025,14 +7051,15 @@ function renderInventoryItemCard(itemId, amount, options = {}) {
   };
   let actionMarkup = "";
   if (options.showAction !== false) {
-    if (item.type === "weapon" || item.type === "armor" || item.type === "backpack") {
+    if (isEquippable) {
       actionMarkup = actionButton({
         action: "equip-item",
-        label: "Equip",
+        label: isEquipped ? "Equipped" : "Equip",
         icon: "gear",
         variant: "compact",
         data: { item: itemId },
         tooltip,
+        disabled: isEquipped,
       });
     } else if (item.type === "consumable") {
       actionMarkup = actionButton({
@@ -7047,7 +7074,11 @@ function renderInventoryItemCard(itemId, amount, options = {}) {
   }
 
   return `
-    <div class="inventory-sprite-card"${tooltipAttrs(tooltip)}>
+    <div
+      class="inventory-sprite-card ${isDraggable ? "is-draggable" : ""} ${isEquipped ? "is-equipped" : ""}"
+      ${isDraggable ? `draggable="true" data-drag-item="${itemId}" data-drag-type="${item.type}" data-drag-source="inventory"` : ""}
+      ${tooltipAttrs(tooltip)}
+    >
       <div class="inventory-sprite-top">
         <span class="inventory-sprite-wrap">${renderItemSprite(itemId, item, options.large ? 40 : 24)}</span>
         <span class="inventory-amount">${amount}</span>
@@ -7056,6 +7087,7 @@ function renderInventoryItemCard(itemId, amount, options = {}) {
         <strong>${item.name}</strong>
         <small>${itemPrimaryLine(item, amount) || item.type}</small>
       </div>
+      ${isEquipped ? `<span class="item-state-badge">equipped</span>` : ""}
       ${actionMarkup}
     </div>
   `;
@@ -7724,13 +7756,31 @@ function renderBoardTiles(state, builtIds, pendingId) {
           type="button"
           class="base-tile ${pendingId ? "is-placement" : ""} ${valid ? "is-valid" : "is-invalid"}"
           ${pendingId
-            ? `data-action="place-structure" data-structure="${pendingId}" data-x="${col}" data-y="${row}" aria-label="Place ${pendingId} at ${col}, ${row}"`
+            ? `data-action="place-structure" data-structure="${pendingId}" data-x="${col}" data-y="${row}" data-valid="${valid ? "true" : "false"}" aria-label="Place ${pendingId} at ${col}, ${row}"`
             : "disabled"}
         ></button>
       `);
     }
   }
   return `<div class="base-grid-tiles">${tiles.join("")}</div>`;
+}
+
+function renderPlacementPreview(state, structure) {
+  const preview = state.ui.placementPreview;
+  if (!structure || !preview || preview.structureId !== structure.id) {
+    return `<div class="base-preview-layer"></div>`;
+  }
+
+  return `
+    <div class="base-preview-layer">
+      <div
+        class="base-placement-preview"
+        style="--x:${preview.x}; --y:${preview.y}; --w:${structure.footprint[0]}; --h:${structure.footprint[1]};"
+      >
+        <span class="base-placement-preview-sprite">${renderStructureSprite(structure.spriteId, 34)}</span>
+      </div>
+    </div>
+  `;
 }
 
 function renderFixedStructure(structure, state) {
@@ -7782,10 +7832,11 @@ function renderBaseBoard(state) {
     ? `${pendingStructure.label} ${pendingStructure.footprint.join("x")} armed`
     : outpostStage(structures.length + 1);
   return `
-    <div class="base-board"${tooltipAttrs({ title: "Shelter board", meta: placementMeta, body: pendingStructure ? `Move ${pendingStructure.label}. Click a highlighted anchor tile to place the full ${pendingStructure.footprint.join("x")} footprint.` : "Click a built module to inspect it. Arm placement from the rack or inspector, then click a valid tile." })}>
+    <div class="base-board ${pendingStructure ? "is-placement-armed" : ""}"${tooltipAttrs({ title: "Shelter board", meta: placementMeta, body: pendingStructure ? `Move ${pendingStructure.label}. Click a highlighted anchor tile to place the full ${pendingStructure.footprint.join("x")} footprint.` : "Click a built module to inspect it. Arm placement from the rack or inspector, then click a valid tile." })}>
       <div class="base-grid-frame"></div>
       <div class="base-grid-fence"></div>
       ${renderBoardTiles(state, builtIds, pendingId)}
+      ${renderPlacementPreview(state, pendingStructure)}
       ${SHELTER_FIXED_STRUCTURES.filter((structure) => structure.id !== "perimeter_fence" || state.upgrades.includes("basic_barricade")).map((structure) => renderFixedStructure(structure, state)).join("")}
       ${structures
         .filter((structure) => structure.id !== pendingId)
@@ -8139,6 +8190,7 @@ function renderOpsBoard(state, derived) {
   const sources = getAvailableScavengeSources(state);
   const activeJob = getActiveWorkJob(state);
   const forecast = getNightForecast(state);
+  const upkeep = getShelterUpkeep(state);
   const mainActions = [];
 
   mainActions.push(actionButton({
@@ -8146,7 +8198,7 @@ function renderOpsBoard(state, derived) {
     label: "Search rubble",
     meta: "salvage + pressure",
     icon: "search",
-    variant: "primary",
+    variant: "compact primary",
   }));
 
   if (sources.some((source) => source.id === "tree_line")) {
@@ -8175,8 +8227,16 @@ function renderOpsBoard(state, derived) {
     meta: activeJob ? activeJob.kind : "ops",
     className: "ops-directive-card",
     body: `
-      <p class="directive-line">${directiveText(state)}</p>
-      <div class="action-row action-row-wrap">${mainActions.join("")}</div>
+      <div class="directive-compact">
+        <p class="directive-line">${directiveText(state)}</p>
+        <div class="chip-row compact-chip-row">${tagList([
+          activeJob ? `${activeJob.label} ${activeJob.hoursRemaining}h` : "queue open",
+          `meal ${upkeep.mealHoursLeft}h`,
+          `water ${upkeep.waterHoursLeft}h`,
+          forecast.siege ? "siege risk" : "watch line",
+        ])}</div>
+        <div class="action-row action-row-wrap ops-directive-actions">${mainActions.join("")}</div>
+      </div>
     `,
   });
 
@@ -9008,14 +9068,18 @@ function groupedInventory(state) {
   };
 }
 
-function slotCard(label, slotId, itemId, fallbackLabel) {
+function slotCard(label, slotId, itemId, fallbackLabel, { droppable = false } = {}) {
   const item = itemId ? ITEMS[itemId] : null;
   const sprite = item ? renderItemSprite(itemId, item, 42) : `<span class="slot-fallback">${fallbackLabel}</span>`;
   const tooltip = item
     ? { title: item.name, meta: item.type, body: item.description || fallbackLabel }
     : { title: label, meta: "baseline", body: fallbackLabel };
   return `
-    <div class="equipment-slot-card"${tooltipAttrs(tooltip)}>
+    <div
+      class="equipment-slot-card ${droppable ? "is-drop-slot" : ""} ${item ? "is-occupied" : "is-empty"}"
+      ${droppable ? `data-slot="${slotId}" data-slot-filled="${item ? "true" : "false"}"` : ""}
+      ${tooltipAttrs(tooltip)}
+    >
       <div class="equipment-slot-shell">
         ${renderSlotFrame(slotId, Boolean(item))}
         <div class="equipment-slot-sprite">${sprite}</div>
@@ -9024,11 +9088,42 @@ function slotCard(label, slotId, itemId, fallbackLabel) {
         <span>${label}</span>
         <strong>${item ? item.name : fallbackLabel}</strong>
       </div>
+      ${item && droppable ? `
+        <div class="slot-card-actions">
+          ${actionButton({
+            action: "unequip-slot",
+            label: "Unequip",
+            icon: "retreat",
+            variant: "compact secondary",
+            data: { slot: slotId },
+            tooltip: {
+              title: `Unequip ${item.name}`,
+              meta: label,
+              body: `${item.name} will stay in your pack and the slot will return to its baseline state.`,
+            },
+          })}
+        </div>
+      ` : ""}
     </div>
   `;
 }
 
-function mannequinMarkup(state) {
+function infoSlotCard(label, slotId, amount, spriteMarkup, fallbackLabel, tooltip) {
+  return `
+    <div class="equipment-slot-card"${tooltipAttrs(tooltip)}>
+      <div class="equipment-slot-shell">
+        ${renderSlotFrame(slotId, amount > 0)}
+        <div class="equipment-slot-sprite">${spriteMarkup}</div>
+      </div>
+      <div class="equipment-slot-copy">
+        <span>${label}</span>
+        <strong>${amount > 0 ? `${amount} packed` : fallbackLabel}</strong>
+      </div>
+    </div>
+  `;
+}
+
+function mannequinMarkup(state, groups) {
   return `
     <div class="survivor-mannequin">
       <div class="mannequin-figure">
@@ -9040,42 +9135,48 @@ function mannequinMarkup(state) {
         <span class="mannequin-leg mannequin-leg-right"></span>
       </div>
       <div class="mannequin-slots">
-        ${slotCard("Weapon", "weapon", state.equipped.weapon, "Bare Hands")}
-        ${slotCard("Armor", "armor", state.equipped.armor, "Street Clothes")}
-        ${slotCard("Backpack", "backpack", state.equipped.backpack, "No Pack")}
-        <div class="equipment-slot-card">
-          <div class="equipment-slot-shell">
-            ${renderSlotFrame("tool_belt", groupedInventory(state).tools.length > 0)}
-            <div class="equipment-slot-sprite">${renderStructureSprite("bench", 42)}</div>
-          </div>
-          <div class="equipment-slot-copy">
-            <span>Tool Belt</span>
-            <strong>${groupedInventory(state).tools.length || 0} packed</strong>
-          </div>
-        </div>
-        <div class="equipment-slot-card">
-          <div class="equipment-slot-shell">
-            ${renderSlotFrame("field_care", groupedInventory(state).consumables.length > 0)}
-            <div class="equipment-slot-sprite">${renderItemSprite("first_aid_rag", ITEMS.first_aid_rag, 42)}</div>
-          </div>
-          <div class="equipment-slot-copy">
-            <span>Field Aid</span>
-            <strong>${groupedInventory(state).consumables.length || 0} ready</strong>
-          </div>
-        </div>
+        ${slotCard("Weapon", "weapon", state.equipped.weapon, "Bare Hands", { droppable: true })}
+        ${slotCard("Armor", "armor", state.equipped.armor, "Street Clothes", { droppable: true })}
+        ${slotCard("Backpack", "backpack", state.equipped.backpack, "No Pack", { droppable: true })}
+        ${infoSlotCard("Tool Belt", "tool_belt", groups.tools.length, renderStructureSprite("bench", 42), "No tools", {
+          title: "Tool Belt",
+          meta: "kit",
+          body: `${groups.tools.length || 0} tools packed for field use.`,
+        })}
+        ${infoSlotCard("Field Aid", "field_care", groups.consumables.length, renderItemSprite("first_aid_rag", ITEMS.first_aid_rag, 42), "No aid ready", {
+          title: "Field Aid",
+          meta: "supplies",
+          body: `${groups.consumables.length || 0} consumables ready for treatment or emergency use.`,
+        })}
       </div>
     </div>
   `;
 }
 
-function inventoryPanel(title, entries, meta) {
+function inventorySection(title, entries, state, isMobile = false) {
+  return `
+    <div class="inventory-section">
+      <div class="surface-head inventory-section-head">
+        <h4>${title}</h4>
+        <span class="tag">${entries.length}</span>
+      </div>
+      ${entries.length
+        ? `<div class="inventory-card-grid">${entries.map(([itemId, amount]) => renderInventoryItemCard(itemId, amount, {
+          showAction: true,
+          enableDrag: !isMobile,
+          equipped: state.equipped.weapon === itemId || state.equipped.armor === itemId || state.equipped.backpack === itemId,
+        })).join("")}</div>`
+        : `<p class="empty-state">No ${title.toLowerCase()} packed.</p>`}
+    </div>
+  `;
+}
+
+function storagePanel(title, meta, sections, className) {
   return surfaceCard({
     title,
     meta,
-    className: "inventory-panel-card",
-    body: entries.length
-      ? `<div class="inventory-card-grid">${entries.map(([itemId, amount]) => renderInventoryItemCard(itemId, amount, { showAction: true })).join("")}</div>`
-      : `<p class="empty-state">No ${title.toLowerCase()} packed.</p>`,
+    className,
+    body: `<div class="inventory-stack">${sections.join("")}</div>`,
   });
 }
 
@@ -9102,18 +9203,35 @@ function renderSurvivorTab(state, derived, isMobile = false) {
     title: "Loadout",
     meta: state.player.username || "survivor",
     className: "survivor-mannequin-card",
-    body: mannequinMarkup(state),
+    body: mannequinMarkup(state, groups),
   });
 
+  const gearLocker = storagePanel(
+    "Gear Locker",
+    `${groups.weapons.length + groups.armor.length + groups.backpacks.length}`,
+    [
+      inventorySection("Weapons", groups.weapons, state, isMobile),
+      inventorySection("Armor", groups.armor, state, isMobile),
+      inventorySection("Backpacks", groups.backpacks, state, isMobile),
+    ],
+    "inventory-panel-card survivor-storage-card",
+  );
+
+  const suppliesLocker = storagePanel(
+    "Field Supplies",
+    `${groups.tools.length + groups.consumables.length + groups.components.length}`,
+    [
+      inventorySection("Tools", groups.tools, state, isMobile),
+      inventorySection("Consumables", groups.consumables, state, isMobile),
+      inventorySection("Components", groups.components, state, isMobile),
+    ],
+    "inventory-panel-card survivor-storage-card",
+  );
+
   const layout = `
-    ${mannequinCard}
-    ${statsCard}
-    ${inventoryPanel("Weapons", groups.weapons, `${groups.weapons.length}`)}
-    ${inventoryPanel("Armor", groups.armor, `${groups.armor.length}`)}
-    ${inventoryPanel("Backpacks", groups.backpacks, `${groups.backpacks.length}`)}
-    ${inventoryPanel("Tools", groups.tools, `${groups.tools.length}`)}
-    ${inventoryPanel("Consumables", groups.consumables, `${groups.consumables.length}`)}
-    ${inventoryPanel("Components", groups.components, `${groups.components.length}`)}
+    <div class="survivor-left-column">${mannequinCard}</div>
+    <div class="survivor-mid-column">${statsCard}</div>
+    <div class="survivor-right-column">${gearLocker}${suppliesLocker}</div>
   `;
 
   return isMobile
@@ -9501,7 +9619,7 @@ function renderGame(state) {
 
 
 // state.js
-const CURRENT_VERSION = 11;
+const CURRENT_VERSION = 12;
 
 const LEGACY_TAB_MAP = {
   overview: "ops",
@@ -9726,6 +9844,10 @@ function createInitialState() {
       inspectedStructure: "shelter_core",
       selectedStructureId: "shelter_core",
       pendingPlacementStructureId: null,
+      placementPreview: null,
+      dragItemId: null,
+      dragItemType: null,
+      dragSource: null,
       notableFind: null,
       mobileMoreOpen: false,
       mobileResourceDrawerOpen: false,
@@ -9850,6 +9972,10 @@ function normalizeState(rawState) {
       pendingPlacementStructureId: typeof state.ui?.pendingPlacementStructureId === "string"
         ? state.ui.pendingPlacementStructureId
         : null,
+      placementPreview: null,
+      dragItemId: null,
+      dragItemType: null,
+      dragSource: null,
       mobileShelterMode: state.ui?.activeTab === "shelter_map"
         ? "map"
         : (state.ui?.mobileShelterMode || fresh.ui.mobileShelterMode),
