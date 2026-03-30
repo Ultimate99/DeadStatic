@@ -812,6 +812,9 @@ run("standalone build stays inline and bundled runtime renders tabs and actions"
   vm.runInNewContext(bundle, harness.context, { filename: "game.js" });
 
   assert.match(html, /tabs-layout/);
+  assert.match(bundle, /unequip-slot/);
+  assert.match(bundle, /dragstart/);
+  assert.match(bundle, /placementPreview/);
   assert.match(harness.elements.get("tab-bar").innerHTML, /Ops/);
   assert.match(harness.elements.get("tab-bar").innerHTML, /Survivor/);
   assert.match(harness.elements.get("tab-bar").innerHTML, /Log/);

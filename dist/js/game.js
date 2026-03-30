@@ -10185,6 +10185,54 @@ function syncUsernameWithLeaderboard({ save = false } = {}) {
   }
 }
 
+function clearPlacementPreviewState({ rerenderView = false } = {}) {
+  if (!state.ui.placementPreview) {
+    return;
+  }
+  state.ui.placementPreview = null;
+  if (rerenderView) {
+    rerender();
+  }
+}
+
+function setPlacementPreviewState(structureId, x, y) {
+  if (!structureId || !Number.isFinite(x) || !Number.isFinite(y)) {
+    return clearPlacementPreviewState({ rerenderView: true });
+  }
+  const current = state.ui.placementPreview;
+  if (current?.structureId === structureId && current.x === x && current.y === y) {
+    return;
+  }
+  state.ui.placementPreview = { structureId, x, y };
+  rerender();
+}
+
+function clearDropHighlights() {
+  document.querySelectorAll?.(".equipment-slot-card.is-drag-over").forEach((element) => {
+    element.classList.remove("is-drag-over");
+  });
+}
+
+function clearDragState() {
+  state.ui.dragItemId = null;
+  state.ui.dragItemType = null;
+  state.ui.dragSource = null;
+  delete document.body.dataset.dragType;
+  clearDropHighlights();
+}
+
+function placementTileTarget(target) {
+  return target?.closest?.('button[data-action="place-structure"]') || null;
+}
+
+function dropSlotTarget(target) {
+  return target?.closest?.(".equipment-slot-card[data-slot]") || null;
+}
+
+function validEquipDrop(slot, dragType) {
+  return Boolean(slot && dragType && slot.dataset.slot === dragType);
+}
+
 function clearTooltip() {
   if (!tooltipRoot) {
     return;
@@ -10266,6 +10314,7 @@ function handleAction(action, button) {
         changed = true;
       }
       state.ui.pendingPlacementStructureId = null;
+      state.ui.placementPreview = null;
       if (isMobileViewport()) {
         state.ui.mobileInspectorStructure = button.dataset.structure;
         state.ui.mobileShelterMode = "map";
@@ -10277,6 +10326,7 @@ function handleAction(action, button) {
         state.ui.pendingPlacementStructureId = button.dataset.structure;
         state.ui.selectedStructureId = button.dataset.structure;
         state.ui.inspectedStructure = button.dataset.structure;
+        state.ui.placementPreview = null;
         changed = true;
       }
       if (isMobileViewport()) {
@@ -10286,6 +10336,7 @@ function handleAction(action, button) {
     case "clear-placement":
       if (state.ui.pendingPlacementStructureId) {
         state.ui.pendingPlacementStructureId = null;
+        state.ui.placementPreview = null;
         changed = true;
       }
       break;
@@ -10305,6 +10356,7 @@ function handleAction(action, button) {
           [structureId]: { x, y },
         };
         state.ui.pendingPlacementStructureId = null;
+        state.ui.placementPreview = null;
         state.ui.selectedStructureId = structureId;
         state.ui.inspectedStructure = structureId;
         if (isMobileViewport()) {
@@ -10327,6 +10379,9 @@ function handleAction(action, button) {
       break;
     case "equip-item":
       changed = equipItem(state, button.dataset.item);
+      break;
+    case "unequip-slot":
+      changed = unequipSlot(state, button.dataset.slot);
       break;
     case "use-item":
       changed = useItem(state, button.dataset.item);
@@ -10588,6 +10643,18 @@ document.body.addEventListener("click", (event) => {
 
 document.body.addEventListener("mouseover", (event) => {
   const nextTarget = tooltipSource(event.target);
+  const placementTile = placementTileTarget(event.target);
+  if (placementTile && state.ui.pendingPlacementStructureId) {
+    if (placementTile.dataset.valid === "true") {
+      setPlacementPreviewState(
+        placementTile.dataset.structure || state.ui.pendingPlacementStructureId,
+        Number(placementTile.dataset.x),
+        Number(placementTile.dataset.y),
+      );
+    } else {
+      clearPlacementPreviewState({ rerenderView: true });
+    }
+  }
   if (!nextTarget) {
     return;
   }
@@ -10602,6 +10669,10 @@ document.body.addEventListener("mousemove", (event) => {
 });
 
 document.body.addEventListener("mouseout", (event) => {
+  const placementTile = placementTileTarget(event.target);
+  if (placementTile && !placementTileTarget(event.relatedTarget)) {
+    clearPlacementPreviewState({ rerenderView: true });
+  }
   const nextTarget = tooltipSource(event.target);
   if (!nextTarget || tooltipTarget !== nextTarget) {
     return;
@@ -10611,6 +10682,14 @@ document.body.addEventListener("mouseout", (event) => {
 
 document.body.addEventListener("focusin", (event) => {
   const nextTarget = tooltipSource(event.target);
+  const placementTile = placementTileTarget(event.target);
+  if (placementTile && state.ui.pendingPlacementStructureId && placementTile.dataset.valid === "true") {
+    setPlacementPreviewState(
+      placementTile.dataset.structure || state.ui.pendingPlacementStructureId,
+      Number(placementTile.dataset.x),
+      Number(placementTile.dataset.y),
+    );
+  }
   if (!nextTarget) {
     return;
   }
@@ -10618,11 +10697,77 @@ document.body.addEventListener("focusin", (event) => {
 });
 
 document.body.addEventListener("focusout", (event) => {
+  if (placementTileTarget(event.target)) {
+    clearPlacementPreviewState({ rerenderView: true });
+  }
   const nextTarget = tooltipSource(event.target);
   if (!nextTarget) {
     return;
   }
   clearTooltip();
+});
+
+document.body.addEventListener("dragstart", (event) => {
+  const card = event.target.closest?.("[data-drag-item][draggable='true']");
+  if (!card || isMobileViewport()) {
+    return;
+  }
+
+  state.ui.dragItemId = card.dataset.dragItem || null;
+  state.ui.dragItemType = card.dataset.dragType || null;
+  state.ui.dragSource = card.dataset.dragSource || "inventory";
+  if (state.ui.dragItemType) {
+    document.body.dataset.dragType = state.ui.dragItemType;
+  }
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", state.ui.dragItemId || "");
+  }
+});
+
+document.body.addEventListener("dragover", (event) => {
+  const slot = dropSlotTarget(event.target);
+  if (!validEquipDrop(slot, state.ui.dragItemType)) {
+    return;
+  }
+
+  event.preventDefault();
+  clearDropHighlights();
+  slot.classList.add("is-drag-over");
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = "move";
+  }
+});
+
+document.body.addEventListener("dragleave", (event) => {
+  const slot = dropSlotTarget(event.target);
+  if (!slot) {
+    return;
+  }
+  if (!slot.contains(event.relatedTarget)) {
+    slot.classList.remove("is-drag-over");
+  }
+});
+
+document.body.addEventListener("drop", (event) => {
+  const slot = dropSlotTarget(event.target);
+  if (!validEquipDrop(slot, state.ui.dragItemType) || !state.ui.dragItemId) {
+    clearDragState();
+    return;
+  }
+
+  event.preventDefault();
+  clearDropHighlights();
+  const changed = equipItem(state, state.ui.dragItemId);
+  clearDragState();
+  if (changed) {
+    persist("autosaved");
+    rerender();
+  }
+});
+
+document.body.addEventListener("dragend", () => {
+  clearDragState();
 });
 
 rerender();
