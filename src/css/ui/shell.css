@@ -497,8 +497,15 @@
   }
 
   .mobile-survival-strip,
-  .mobile-bottom-nav,
+  .mobile-bottom-nav {
+    display: grid;
+  }
+
   .mobile-sheet-layer {
+    display: none;
+  }
+
+  .mobile-sheet-layer:not(:empty) {
     display: grid;
   }
 
