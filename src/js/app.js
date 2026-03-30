@@ -247,6 +247,10 @@ function handleAction(action, button) {
           state.ui.mobileShelterMode = "map";
         }
         changed = true;
+      } else if (structureId) {
+        setSaveStatus("blocked: choose a highlighted open tile");
+        rerender();
+        return;
       }
       break;
     }

@@ -277,6 +277,7 @@
 .base-screen {
   display: grid;
   gap: 10px;
+  --base-grid-unit: clamp(52px, 4.75vw, 66px);
 }
 
 .base-system-strip {
@@ -321,7 +322,9 @@
 
 .base-board {
   position: relative;
-  min-height: 520px;
+  width: min(100%, calc(var(--base-grid-unit) * 12 + 32px));
+  aspect-ratio: 12 / 8;
+  min-height: 0;
   border: 1px solid rgba(255, 255, 255, 0.045);
   border-radius: 18px;
   background:
@@ -359,9 +362,18 @@
 }
 
 .base-tile.is-placement.is-valid {
-  border-color: rgba(134, 185, 126, 0.26);
-  background: rgba(134, 185, 126, 0.06);
+  border-color: rgba(134, 185, 126, 0.48);
+  background: linear-gradient(180deg, rgba(134, 185, 126, 0.12), rgba(134, 185, 126, 0.06));
+  box-shadow: inset 0 0 0 1px rgba(134, 185, 126, 0.12);
   cursor: pointer;
+}
+
+.base-tile.is-placement.is-invalid {
+  cursor: not-allowed;
+}
+
+.base-tile.is-placement:hover {
+  border-color: rgba(208, 164, 107, 0.42);
 }
 
 .base-grid-fence {
@@ -443,6 +455,78 @@
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+.rack-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--base-grid-unit), var(--base-grid-unit)));
+  gap: 10px;
+}
+
+.rack-card {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 6px;
+  width: var(--base-grid-unit);
+  min-height: var(--base-grid-unit);
+  aspect-ratio: 1 / 1;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.012), transparent 24%), rgba(12, 14, 14, 0.94);
+}
+
+.rack-card.is-armed {
+  border-color: rgba(208, 164, 107, 0.32);
+  box-shadow: inset 0 0 0 1px rgba(208, 164, 107, 0.12);
+}
+
+.rack-top {
+  align-items: center;
+  gap: 8px;
+}
+
+.rack-sprite {
+  width: 28px;
+  height: 28px;
+}
+
+.rack-copy {
+  min-width: 0;
+}
+
+.rack-copy strong,
+.rack-copy small {
+  line-height: 1.05;
+}
+
+.rack-name-line {
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.compact-chip-row .chip {
+  min-height: 18px;
+  padding: 0 6px;
+  font-size: 10px;
+}
+
+.rack-actions {
+  justify-content: flex-end;
+  align-items: end;
+}
+
+.rack-actions .action-button {
+  min-width: 0;
+  width: 100%;
+}
+
+.placement-note {
+  margin: 0;
+  color: var(--accent-amber);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .base-inspector-hero {
@@ -576,7 +660,7 @@
   }
 
   .base-board {
-    min-height: 420px;
+    width: 100%;
   }
 
   .mini-log-line {

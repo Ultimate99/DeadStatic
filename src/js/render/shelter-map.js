@@ -86,8 +86,10 @@ function renderBoardTiles(state, builtIds, pendingId) {
       tiles.push(`
         <button
           type="button"
-          class="base-tile ${pendingId ? "is-placement" : ""} ${valid ? "is-valid" : ""}"
-          ${pendingId ? `data-action="place-structure" data-structure="${pendingId}" data-x="${col}" data-y="${row}" ${valid ? "" : "disabled"}` : "disabled"}
+          class="base-tile ${pendingId ? "is-placement" : ""} ${valid ? "is-valid" : "is-invalid"}"
+          ${pendingId
+            ? `data-action="place-structure" data-structure="${pendingId}" data-x="${col}" data-y="${row}" aria-label="Place ${pendingId} at ${col}, ${row}"`
+            : "disabled"}
         ></button>
       `);
     }
@@ -139,13 +141,20 @@ function renderPlacedStructure(structure, state) {
 function renderBaseBoard(state) {
   const pendingId = state.ui.pendingPlacementStructureId;
   const { builtIds, structures } = builtStructureDefs(state);
+  const pendingStructure = pendingId ? shelterStructureById(pendingId) : null;
+  const placementMeta = pendingStructure
+    ? `${pendingStructure.label} ${pendingStructure.footprint.join("x")} armed`
+    : outpostStage(structures.length + 1);
   return `
-    <div class="base-board"${tooltipAttrs({ title: "Shelter board", meta: outpostStage(structures.length + 1), body: "Click a built module to inspect it. Arm placement from the rack or inspector, then click a valid tile." })}>
+    <div class="base-board"${tooltipAttrs({ title: "Shelter board", meta: placementMeta, body: pendingStructure ? `Move ${pendingStructure.label}. Click a highlighted anchor tile to place the full ${pendingStructure.footprint.join("x")} footprint.` : "Click a built module to inspect it. Arm placement from the rack or inspector, then click a valid tile." })}>
       <div class="base-grid-frame"></div>
       <div class="base-grid-fence"></div>
       ${renderBoardTiles(state, builtIds, pendingId)}
       ${SHELTER_FIXED_STRUCTURES.filter((structure) => structure.id !== "perimeter_fence" || state.upgrades.includes("basic_barricade")).map((structure) => renderFixedStructure(structure, state)).join("")}
-      ${structures.map((structure) => renderPlacedStructure(structure, state)).join("")}
+      ${structures
+        .filter((structure) => structure.id !== pendingId)
+        .map((structure) => renderPlacedStructure(structure, state))
+        .join("")}
       <div class="base-grid-gate">Gate</div>
     </div>
   `;
@@ -155,29 +164,31 @@ function structureRackItem(structure, state) {
   const placed = Boolean(state.shelter.layout?.placed?.[structure.id]);
   const status = structureStatus(structure.id, state);
   const chips = structureEffects(structure.id).slice(0, 2);
+  const moving = state.ui.pendingPlacementStructureId === structure.id;
   return `
-    <div class="rack-card"${tooltipAttrs(structureTooltip(structure, state))}>
+    <div class="rack-card ${moving ? "is-armed" : ""}"${tooltipAttrs(structureTooltip(structure, state))}>
       <div class="rack-top">
         <span class="rack-sprite">${renderStructureSprite(structure.spriteId, 34)}</span>
         <div class="rack-copy">
-          <strong>${structure.label}</strong>
-          <small>${structure.kind}</small>
+          <strong>${structure.short}</strong>
+          <small>${structure.footprint.join("x")}</small>
         </div>
         <span class="tag ${status.tone}">${status.label}</span>
       </div>
-      ${chips.length ? `<div class="chip-row">${tagList(chips)}</div>` : ""}
+      <div class="rack-name-line">${structure.label}</div>
+      ${chips.length ? `<div class="chip-row compact-chip-row">${tagList(chips.slice(0, 1))}</div>` : ""}
       <div class="rack-actions">
         ${actionButton({
           action: "start-placing-structure",
-          label: placed ? "Move" : "Place",
-          meta: `${structure.footprint[0]}x${structure.footprint[1]}`,
+          label: moving ? "Armed" : placed ? "Move" : "Place",
+          meta: moving ? "pick tile" : `${structure.footprint[0]}x${structure.footprint[1]}`,
           icon: "build",
           variant: "compact secondary",
           data: { structure: structure.id },
           tooltip: {
             title: structure.label,
             meta: placed ? "move" : "place",
-            body: `Arm placement and choose a valid tile for ${structure.label}.`,
+            body: `Arm placement and choose a highlighted top-left tile for ${structure.label}.`,
           },
         })}
       </div>
@@ -240,6 +251,7 @@ function renderStructureInspector(state, derived) {
       <div class="fact"><span>Damage</span><strong>${getStructureDamage(state, structure.id)}</strong></div>
     </div>
     ${chips.length ? `<div class="chip-row">${tagList(chips)}</div>` : ""}
+    ${state.ui.pendingPlacementStructureId === structure.id ? `<p class="placement-note">Placement armed. Click a highlighted top-left tile on the board.</p>` : ""}
     <div class="detail-list">
       ${structure.placeable ? actionButton({
         action: "start-placing-structure",

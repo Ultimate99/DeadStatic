@@ -581,7 +581,7 @@ run("base placement mode rejects overlap and exposes valid placement actions", (
 
   assert.match(markup, /data-action="place-structure"/);
   assert.match(markup, /data-structure="campfire"/);
-  assert.match(markup, /disabled/);
+  assert.match(markup, /is-invalid/);
 });
 
 run("survivor recruitment now creates a roster with traited members", () => {
