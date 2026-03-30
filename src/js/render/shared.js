@@ -58,6 +58,14 @@ export function escapeAttribute(value = "") {
     .replace(/>/g, "&gt;");
 }
 
+export function tooltipAttrs(value = "") {
+  if (!value) {
+    return "";
+  }
+  const escaped = escapeAttribute(value);
+  return ` title="${escaped}" data-tooltip="${escaped}"`;
+}
+
 function meterClass(percent) {
   if (percent <= 30) {
     return "danger";
@@ -85,8 +93,8 @@ export function actionButton({ action, label, meta = "", disabled = false, varia
   const dataAttrs = Object.entries(data)
     .map(([key, value]) => ` data-${key}="${value}"`)
     .join("");
-  const classes = ["action-button", variant].filter(Boolean).join(" ");
-  const titleAttr = title ? ` title="${escapeAttribute(title)}"` : "";
+  const classes = ["action-button", variant, title ? "has-tooltip" : ""].filter(Boolean).join(" ");
+  const titleAttr = tooltipAttrs(title);
 
   return `
     <button
@@ -181,13 +189,35 @@ function itemTooltipText(item, amount) {
   const summary = itemSummaryChips(item).filter((chip) => chip !== item.type);
 
   if (summary.length) {
-    lines.push(`Effects: ${summary.join(" | ")}`);
+    lines.push(`Effects: ${summary.join(" • ")}`);
   }
   if (item.description) {
     lines.push(item.description);
   }
 
-  return lines.join(" | ");
+  return lines.join(" • ");
+}
+
+function itemPrimaryLine(item) {
+  if (item.attack) {
+    return `ATK ${item.attack}`;
+  }
+  if (item.defense) {
+    return `DEF ${item.defense}`;
+  }
+  if (item.heal) {
+    return `HEAL ${item.heal}`;
+  }
+  if (item.condition) {
+    return `COND +${item.condition}`;
+  }
+  if (item.type === "tool") {
+    return "TOOL";
+  }
+  if (item.type === "key") {
+    return "KEY ITEM";
+  }
+  return "";
 }
 
 function contentAvailable(state, requirements = {}) {
@@ -1096,17 +1126,15 @@ export function renderInventoryItemCard(itemId, amount) {
     });
   }
 
-  const summary = itemSummaryChips(item)
-    .filter((chip) => chip !== item.type)
-    .slice(0, 2);
+  const primaryLine = itemPrimaryLine(item);
 
   return `
-    <div class="list-block inventory-item-card" title="${escapeAttribute(tooltip)}">
+    <div class="list-block inventory-item-card has-tooltip"${tooltipAttrs(tooltip)}>
       <div class="surface-head">
         <h4>${item.name}</h4>
         <span class="tag">${item.type} x${amount}</span>
       </div>
-      ${summary.length ? `<div class="chip-row">${tagList(summary)}</div>` : ""}
+      ${primaryLine ? `<p class="inventory-primary-line">${primaryLine}</p>` : ""}
       ${actionMarkup}
     </div>
   `;

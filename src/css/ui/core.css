@@ -872,28 +872,72 @@ button.danger {
   opacity: 0.45;
 }
 
+.has-tooltip,
+.map-structure[data-tooltip] {
+  position: relative;
+}
+
+.has-tooltip {
+  cursor: help;
+}
+
+.has-tooltip::after,
 .map-structure::after {
   content: attr(data-tooltip);
   position: absolute;
   left: 50%;
   bottom: calc(100% + 8px);
-  width: 150px;
-  padding: 6px 7px;
+  width: min(260px, 44vw);
+  min-width: 150px;
+  padding: 8px 9px;
   transform: translateX(-50%);
-  border: 1px solid var(--line);
-  background: rgba(9, 11, 11, 0.98);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: rgba(7, 9, 9, 0.98);
   color: var(--text);
-  font-size: 0.62rem;
+  font-size: 0.68rem;
   line-height: 1.4;
+  white-space: normal;
+  text-wrap: pretty;
   opacity: 0;
   pointer-events: none;
+  z-index: 30;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
   transition: opacity 140ms ease, transform 140ms ease;
 }
 
+.has-tooltip::before,
+.map-structure::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 2px);
+  width: 8px;
+  height: 8px;
+  transform: translateX(-50%) rotate(45deg);
+  border-right: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-strong);
+  background: rgba(7, 9, 9, 0.98);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 29;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.has-tooltip:hover::after,
+.has-tooltip:focus-visible::after,
 .map-structure:hover::after,
 .map-structure:focus-visible::after {
   opacity: 1;
   transform: translateX(-50%) translateY(-1px);
+}
+
+.has-tooltip:hover::before,
+.has-tooltip:focus-visible::before,
+.map-structure:hover::before,
+.map-structure:focus-visible::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-1px) rotate(45deg);
 }
 
 .structure-name {
@@ -904,6 +948,13 @@ button.danger {
   text-transform: uppercase;
   text-align: center;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+@media (max-width: 720px) {
+  .has-tooltip::after,
+  .has-tooltip::before {
+    display: none;
+  }
 }
 
 .map-structure small {

@@ -943,6 +943,28 @@ run("player tab renders loadout, field stats, and tools", () => {
   assert.match(markup, /Equipment locker/);
   assert.match(markup, /Rusty Knife/);
   assert.match(markup, /Pry Bar/);
+  assert.match(markup, /data-tooltip=/);
+});
+
+run("craft cards stay cost-first and expose tooltip data for deeper detail", () => {
+  const bundle = readFileSync(path.join(projectRoot, "dist", "js", "game.js"), "utf8");
+  const state = createInitialState();
+  state.ui.activeTab = "craft";
+  state.stats.searches = 5;
+  state.resources.scrap = 20;
+  state.resources.cloth = 3;
+  state.resources.parts = 4;
+  state.inventory.sharp_metal = 1;
+  state.unlockedSections = ["upgrades"];
+
+  const harness = createBundleHarness(SEARCH_PATTERN, { initialSave: state });
+  vm.runInNewContext(bundle, harness.context, { filename: "game.js" });
+  const markup = harness.elements.get("tab-content").innerHTML;
+
+  assert.match(markup, /Backpack/);
+  assert.match(markup, /Rusty Knife/);
+  assert.match(markup, /data-tooltip=/);
+  assert.match(markup, /upgrade-costline/);
 });
 
 run("non-defense support builds do not report fake defense bonuses", () => {

@@ -133,6 +133,28 @@ body::after {
   border-radius: 14px;
 }
 
+.upgrade-card .surface-body {
+  gap: 8px;
+}
+
+.upgrade-costline,
+.upgrade-material-line,
+.inventory-primary-line {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  line-height: 1.45;
+  letter-spacing: 0.04em;
+}
+
+.upgrade-costline {
+  color: var(--text);
+}
+
+.upgrade-material-line {
+  color: var(--text-soft);
+}
+
 .upgrade-card.is-ready-upgrade {
   border-color: rgba(241, 203, 135, 0.14);
   background:
@@ -366,6 +388,15 @@ body::after {
 .trade-offer-card,
 .faction-card {
   border-radius: 14px;
+}
+
+.inventory-item-card .surface-body {
+  gap: 8px;
+}
+
+.inventory-primary-line {
+  color: var(--text);
+  text-transform: uppercase;
 }
 
 .offer-grid {

@@ -26,7 +26,6 @@ import {
 import {
   actionButton,
   describeSourceUnlock,
-  escapeAttribute,
   itemLabel,
   lootBandMarkup,
   renderCommandDesk,
@@ -38,6 +37,7 @@ import {
   sourceRunCount,
   surfaceCard,
   tagList,
+  tooltipAttrs,
 } from "./shared.js";
 import {
   SHELTER_MAP_ANNEXES,
@@ -204,7 +204,7 @@ function upgradeTooltipText(state, upgrade, built, ready, missing) {
     lines.push("Installed.");
   }
 
-  return lines.join(" | ");
+  return lines.join(" • ");
 }
 
 function renderUpgradeQueue(state, title, ready, blocked, emptyText) {
@@ -317,29 +317,24 @@ function renderOverviewActions(state) {
 function renderUpgradeCard(state, upgrade) {
   const built = state.upgrades.includes(upgrade.id);
   const ready = canAfford(state, upgrade.cost) && hasMaterials(state, upgrade.materials);
-  const discipline = upgradeDisciplineLabel(upgrade);
-  const meta = [];
   const missing = getUpgradeMissingNotes(state, upgrade);
   const tooltip = upgradeTooltipText(state, upgrade, built, ready, missing);
-
-  meta.push(discipline);
-  if (Object.keys(upgrade.cost || {}).length) {
-    meta.push(formatCost(upgrade.cost));
-  }
-  if (upgrade.materials && Object.keys(upgrade.materials).length) {
-    meta.push(Object.entries(upgrade.materials).map(([itemId, amount]) => `${ITEMS[itemId]?.name || itemId} x${amount}`).join(" / "));
-  }
+  const costLine = Object.keys(upgrade.cost || {}).length ? formatCost(upgrade.cost) : "No cost";
+  const materialLine = upgrade.materials && Object.keys(upgrade.materials).length
+    ? Object.entries(upgrade.materials).map(([itemId, amount]) => `${ITEMS[itemId]?.name || itemId} x${amount}`).join(" / ")
+    : "";
 
   return `
-    <div class="list-block upgrade-card ${built ? "is-built-upgrade" : ready ? "is-ready-upgrade" : "is-blocked-upgrade"}" title="${escapeAttribute(tooltip)}">
+    <div class="list-block upgrade-card has-tooltip ${built ? "is-built-upgrade" : ready ? "is-ready-upgrade" : "is-blocked-upgrade"}"${tooltipAttrs(tooltip)}>
       <div class="surface-head">
         <h4>${upgrade.name}</h4>
         <span class="tag">${built ? "built" : ready ? "ready" : "blocked"}</span>
       </div>
-      ${meta.length ? `<div class="chip-row">${tagList(meta)}</div>` : ""}
+      <p class="upgrade-costline">${costLine}</p>
+      ${materialLine ? `<p class="upgrade-material-line">${materialLine}</p>` : ""}
       ${built ? "" : actionButton({
         action: "buy-upgrade",
-        label: `${upgrade.verb || "Build"} ${upgrade.name}`,
+        label: upgrade.verb || "Build",
         meta: ready ? "unlock" : missing[0] || "Need salvage or tools",
         disabled: !ready,
         data: { upgrade: upgrade.id },
